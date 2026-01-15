@@ -1,1 +1,212 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>🦷🦷 POLADENT – Control de Horas</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
 
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+<!-- Excel -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+<style>
+body{font-family:Arial;background:#f4f6f8;margin:0;padding:0}
+h2{margin:10px 0}
+.container{max-width:900px;margin:auto;padding:20px}
+.box{background:#fff;padding:15px;border-radius:10px;margin-bottom:15px}
+button{padding:10px 15px;border:none;border-radius:8px;background:#0a7cff;color:#fff;font-weight:bold;cursor:pointer}
+button:hover{opacity:.9}
+input,select{width:100%;padding:8px;margin:5px 0}
+.hidden{display:none}
+.alert{background:#e8f3ff;padding:10px;border-radius:6px;margin:5px 0}
+table{width:100%;border-collapse:collapse}
+td,th{border:1px solid #ccc;padding:6px;text-align:center}
+</style>
+</head>
+
+<body>
+<div class="container">
+
+<h2>🦷🦷 POLADENT</h2>
+
+<!-- LOGIN -->
+<div id="login" class="box">
+  <h3>Ingreso</h3>
+  <input id="email" placeholder="Email">
+  <input id="password" type="password" placeholder="Contraseña">
+  <button onclick="login()">Entrar</button>
+</div>
+
+<!-- ADMIN -->
+<div id="admin" class="hidden">
+  <div class="box">
+    <h3>👨‍💼 Administrador</h3>
+    <p id="adminTime"></p>
+    <button onclick="exportExcel()">📤 Exportar Excel</button>
+    <button onclick="logout()">Salir</button>
+  </div>
+
+  <div class="box">
+    <h3>🔔 Notificaciones</h3>
+    <div id="notifs"></div>
+  </div>
+
+  <div class="box">
+    <h3>📊 Resumen Empleados</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Empleado</th>
+          <th>Horas</th>
+          <th>Extras</th>
+          <th>Salario</th>
+        </tr>
+      </thead>
+      <tbody id="resume"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- EMPLEADO -->
+<div id="employee" class="hidden">
+  <div class="box">
+    <h3>👷 Empleado</h3>
+    <p id="empTime"></p>
+    <button onclick="mark('entrada')">🟢 Entrada</button>
+    <button onclick="mark('salida')">🔴 Salida</button>
+    <button onclick="logout()">Salir</button>
+  </div>
+</div>
+
+</div>
+
+<script>
+// 🔥 Firebase Config (TU CONFIG)
+firebase.initializeApp({
+  apiKey: "AIzaSyAFOyMEo2SgWpcs8WHp2nKCO_ax9-lYZWo",
+  authDomain: "poladent-5fa13.firebaseapp.com",
+  databaseURL: "https://poladent-5fa13-default-rtdb.firebaseio.com",
+  projectId: "poladent-5fa13",
+  storageBucket: "poladent-5fa13.firebasestorage.app",
+  messagingSenderId: "539152567873",
+  appId: "1:539152567873:web:89c67ebb14bd55a77900c0"
+});
+
+const auth = firebase.auth();
+const db = firebase.database();
+
+const START = 8;
+const END = 17;
+let EXTRA_FACTOR = 1.5;
+
+// LOGIN
+function login(){
+  auth.signInWithEmailAndPassword(
+    email.value, password.value
+  ).then(u=>{
+    loginDiv(false);
+    u.user.email.includes("admin") ? showAdmin() : showEmployee();
+  }).catch(e=>alert("Error de login"));
+}
+
+function logout(){
+  auth.signOut();
+  location.reload();
+}
+
+function loginDiv(show){
+  document.getElementById("login").style.display = show?"block":"none";
+}
+
+// ADMIN
+function showAdmin(){
+  admin.classList.remove("hidden");
+  updateAdminTime();
+  loadResume();
+}
+
+function updateAdminTime(){
+  setInterval(()=>{
+    adminTime.innerText = "🕒 " + new Date().toLocaleString();
+  },1000);
+}
+
+function loadResume(){
+  db.ref("marks").on("value",snap=>{
+    resume.innerHTML="";
+    let data = {};
+    snap.forEach(d=>{
+      let v=d.val();
+      if(!data[v.user]) data[v.user]={h:0,e:0,s:0};
+      data[v.user].h+=v.hours;
+      data[v.user].e+=v.extra;
+      data[v.user].s+=v.salary;
+    });
+    Object.keys(data).forEach(u=>{
+      resume.innerHTML+=`
+        <tr>
+          <td>${u}</td>
+          <td>${data[u].h}</td>
+          <td>${data[u].e}</td>
+          <td>$${data[u].s.toFixed(2)}</td>
+        </tr>`;
+    });
+  });
+}
+
+// EMPLEADO
+function showEmployee(){
+  employee.classList.remove("hidden");
+  setInterval(()=>{
+    empTime.innerText = "🕒 " + new Date().toLocaleString();
+  },1000);
+}
+
+function mark(type){
+  navigator.geolocation.getCurrentPosition(pos=>{
+    const now=new Date();
+    const hour=now.getHours();
+    let hours=0,extra=0,salary=0;
+
+    if(type==="salida"){
+      hours=Math.max(0,Math.min(hour,END)-START);
+      extra=Math.max(0,hour-END);
+      salary=(hours*10)+(extra*10*EXTRA_FACTOR);
+    }
+
+    db.ref("marks").push({
+      user:auth.currentUser.email,
+      type,
+      date:now.toLocaleString(),
+      hours,
+      extra,
+      salary,
+      lat:pos.coords.latitude,
+      lng:pos.coords.longitude
+    });
+
+    alert("✔ Registro guardado");
+  });
+}
+
+// EXCEL
+function exportExcel(){
+  db.ref("marks").once("value",snap=>{
+    let arr=[["Empleado","Tipo","Fecha","Horas","Extra","Salario"]];
+    snap.forEach(d=>{
+      let v=d.val();
+      arr.push([v.user,v.type,v.date,v.hours,v.extra,v.salary]);
+    });
+    let wb=XLSX.utils.book_new();
+    let ws=XLSX.utils.aoa_to_sheet(arr);
+    XLSX.utils.book_append_sheet(wb,ws,"Reporte");
+    XLSX.writeFile(wb,"poladent.xlsx");
+  });
+}
+</script>
+</body>
+  </html>
