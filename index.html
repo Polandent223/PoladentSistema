@@ -1,1 +1,136 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Administrador</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f6f8;
+      padding: 20px;
+    }
+    h2 {
+      text-align: center;
+    }
+    .card {
+      background: white;
+      padding: 15px;
+      margin-bottom: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    input, button {
+      padding: 10px;
+      margin: 5px 0;
+      width: 100%;
+    }
+    button {
+      cursor: pointer;
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+    }
+    button.danger {
+      background: #dc3545;
+    }
+    .empleado {
+      border-bottom: 1px solid #ddd;
+      padding: 10px 0;
+    }
+  </style>
+</head>
+<body>
 
+<h2>Panel Administrador</h2>
+
+<!-- AGREGAR EMPLEADO -->
+<div class="card">
+  <h3>Agregar empleado</h3>
+  <input type="text" id="nombreEmpleado" placeholder="Nombre del empleado">
+  <input type="text" id="pinEmpleado" placeholder="PIN del empleado">
+  <button onclick="agregarEmpleado()">Guardar empleado</button>
+</div>
+
+<!-- LISTA DE EMPLEADOS -->
+<div class="card">
+  <h3>Empleados registrados</h3>
+  <div id="listaEmpleados"></div>
+</div>
+
+<button onclick="logout()">Salir</button>
+
+<!-- FIREBASE -->
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyAFOyMEo2SgWpcs8WHp2nKCO_ax9-lYZWo",
+    authDomain: "poladent-5fa13.firebaseapp.com",
+    databaseURL: "https://poladent-5fa13-default-rtdb.firebaseio.com",
+    projectId: "poladent-5fa13",
+    storageBucket: "poladent-5fa13.firebasestorage.app",
+    messagingSenderId: "539152567873",
+    appId: "1:539152567873:web:89c67ebb14bd55a77900c0"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+
+  function agregarEmpleado() {
+    const nombre = document.getElementById("nombreEmpleado").value.trim();
+    const pin = document.getElementById("pinEmpleado").value.trim();
+
+    if (!nombre || !pin) {
+      alert("Completa todos los campos");
+      return;
+    }
+
+    const id = db.ref("empleados").push().key;
+
+    db.ref("empleados/" + id).set({
+      nombre: nombre,
+      pin: pin,
+      creado: Date.now()
+    });
+
+    document.getElementById("nombreEmpleado").value = "";
+    document.getElementById("pinEmpleado").value = "";
+  }
+
+  function cargarEmpleados() {
+    const contenedor = document.getElementById("listaEmpleados");
+    db.ref("empleados").on("value", snap => {
+      contenedor.innerHTML = "";
+      snap.forEach(emp => {
+        const data = emp.val();
+        contenedor.innerHTML += `
+          <div class="empleado">
+            <strong>${data.nombre}</strong><br>
+            PIN: ${data.pin}<br>
+            <button class="danger" onclick="borrarEmpleado('${emp.key}')">
+              Borrar
+            </button>
+          </div>
+        `;
+      });
+    });
+  }
+
+  function borrarEmpleado(id) {
+    if (confirm("¿Seguro que deseas borrar este empleado?")) {
+      db.ref("empleados/" + id).remove();
+      db.ref("registros/" + id).remove();
+    }
+  }
+
+  function logout() {
+    window.location.href = "index.html";
+  }
+
+  cargarEmpleados();
+</script>
+
+</body>
+</html>
