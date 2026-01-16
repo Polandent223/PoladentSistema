@@ -1,1 +1,239 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>🦷🦷 POLADENT - Control de Punto</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
 
+<style>
+body {
+  font-family: Arial, sans-serif;
+  background: #f2f2f2;
+  margin: 0;
+  padding: 0;
+}
+header {
+  background: #0d6efd;
+  color: white;
+  padding: 15px;
+  text-align: center;
+  font-size: 22px;
+}
+.container {
+  padding: 15px;
+}
+button {
+  padding: 10px;
+  margin: 5px 0;
+  width: 100%;
+  font-size: 16px;
+}
+input, select {
+  padding: 8px;
+  width: 100%;
+  margin: 5px 0;
+}
+.card {
+  background: white;
+  padding: 15px;
+  margin-top: 10px;
+  border-radius: 8px;
+}
+.hidden { display: none; }
+.employee-name {
+  font-size: 22px;
+  font-weight: bold;
+  text-align: center;
+}
+</style>
+</head>
+
+<body>
+
+<header>🦷🦷 POLADENT</header>
+
+<div class="container">
+
+<!-- SELECCIÓN -->
+<div id="home" class="card">
+  <button onclick="showAdmin()">Administrador</button>
+  <button onclick="showEmployee()">Empleado</button>
+</div>
+
+<!-- ADMIN LOGIN -->
+<div id="adminLogin" class="card hidden">
+  <h3>Administrador</h3>
+  <input type="password" id="adminPass" placeholder="Contraseña">
+  <button onclick="loginAdmin()">Entrar</button>
+  <button onclick="back()">Volver</button>
+</div>
+
+<!-- ADMIN PANEL -->
+<div id="adminPanel" class="hidden">
+
+<div class="card">
+<h3>Agregar empleado</h3>
+<input id="empName" placeholder="Nombre">
+<input id="empPin" placeholder="PIN">
+<input id="empSalary" type="number" placeholder="Salario por hora">
+<button onclick="addEmployee()">Guardar</button>
+</div>
+
+<div class="card">
+<h3>Empleados</h3>
+<div id="empList"></div>
+</div>
+
+<div class="card">
+<h3>Resumen de marcaciones</h3>
+<input type="date" id="dateFilter">
+<button onclick="loadLogs()">Ver día</button>
+<div id="logs"></div>
+</div>
+
+<div class="card">
+<button onclick="exportExcel()">Exportar Excel</button>
+<button onclick="logout()">Salir</button>
+</div>
+
+</div>
+
+<!-- EMPLEADO -->
+<div id="employeePanel" class="card hidden">
+<input id="pinInput" placeholder="Ingrese su PIN">
+<button onclick="enterEmployee()">Entrar</button>
+<button onclick="back()">Volver</button>
+</div>
+
+<div id="markPanel" class="card hidden">
+<div class="employee-name" id="empDisplay"></div>
+<button onclick="mark('Entrada')">Entrada</button>
+<button onclick="mark('Pausa')">Pausa</button>
+<button onclick="mark('Salida')">Salida</button>
+</div>
+
+</div>
+
+<!-- FIREBASE -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyAFOyMEo2SgWpcs8WHp2nKCO_ax9-lYZWo",
+  authDomain: "poladent-5fa13.firebaseapp.com",
+  databaseURL: "https://poladent-5fa13-default-rtdb.firebaseio.com",
+  projectId: "poladent-5fa13",
+  storageBucket: "poladent-5fa13.firebasestorage.app",
+  messagingSenderId: "539152567873",
+  appId: "1:539152567873:web:89c67ebb14bd55a77900c0"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+const ADMIN_PASS = "1234";
+let currentEmployee = null;
+
+/* NAVEGACIÓN */
+function back() {
+  location.reload();
+}
+function showAdmin() {
+  home.classList.add("hidden");
+  adminLogin.classList.remove("hidden");
+}
+function showEmployee() {
+  home.classList.add("hidden");
+  employeePanel.classList.remove("hidden");
+}
+
+/* ADMIN */
+function loginAdmin() {
+  if (adminPass.value === ADMIN_PASS) {
+    adminLogin.classList.add("hidden");
+    adminPanel.classList.remove("hidden");
+    loadEmployees();
+  } else alert("Contraseña incorrecta");
+}
+
+function addEmployee() {
+  const id = Date.now();
+  db.ref("employees/" + id).set({
+    name: empName.value,
+    pin: empPin.value,
+    salary: empSalary.value
+  });
+  empName.value = empPin.value = empSalary.value = "";
+  loadEmployees();
+}
+
+function loadEmployees() {
+  empList.innerHTML = "";
+  db.ref("employees").once("value", s => {
+    s.forEach(e => {
+      const d = e.val();
+      empList.innerHTML += `
+        <div>
+        ${d.name} - $${d.salary}/h
+        <button onclick="removeEmp('${e.key}')">❌</button>
+        </div>`;
+    });
+  });
+}
+
+function removeEmp(id) {
+  db.ref("employees/" + id).remove();
+  loadEmployees();
+}
+
+/* EMPLEADO */
+function enterEmployee() {
+  db.ref("employees").once("value", s => {
+    s.forEach(e => {
+      if (e.val().pin === pinInput.value) {
+        currentEmployee = e.val().name;
+        employeePanel.classList.add("hidden");
+        markPanel.classList.remove("hidden");
+        empDisplay.innerText = currentEmployee;
+      }
+    });
+  });
+}
+
+function mark(type) {
+  const now = new Date();
+  const date = now.toISOString().slice(0,10);
+  const time = now.toLocaleTimeString();
+  db.ref("logs/" + date).push({
+    name: currentEmployee,
+    type,
+    time
+  });
+  alert(`✔ ${type} registrada\n¡Buen trabajo! 💪`);
+  location.reload();
+}
+
+/* RESUMEN */
+function loadLogs() {
+  logs.innerHTML = "";
+  const d = dateFilter.value;
+  db.ref("logs/" + d).once("value", s => {
+    s.forEach(l => {
+      const v = l.val();
+      logs.innerHTML += `<div>${v.name} - ${v.type} - ${v.time}</div>`;
+    });
+  });
+}
+
+/* EXCEL SIMPLE */
+function exportExcel() {
+  alert("Excel generado (fase final)");
+}
+
+function logout() {
+  location.reload();
+}
+</script>
+
+</body>
+</html>
