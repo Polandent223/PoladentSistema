@@ -1,1 +1,221 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Poladent – Sistema Completo</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+<style>
+body{font-family:Arial;background:#eaf6ff;padding:20px;text-align:center;}
+h1,h2,h3{text-align:center;}
+.card{background:white;padding:20px;border-radius:10px;margin:15px auto;max-width:400px;box-shadow:0 2px 5px rgba(0,0,0,0.1);}
+input,button{padding:10px;margin:5px;width:90%;font-size:15px;}
+button{cursor:pointer;background:#007bff;color:white;border:none;border-radius:5px;}
+button.danger{background:#dc3545;}
+.hidden{display:none;}
+.notice{background:#dff3ff;padding:10px;margin-top:8px;border-radius:6px;}
+.empleado{border-bottom:1px solid #ddd;padding:10px 0;}
+.nombreGrande{font-size:24px;font-weight:bold;margin-bottom:10px;}
+</style>
+</head>
+
+<body>
+
+<h1>Poladent 🦷🦷</h1>
+
+<!-- PANTALLA PRINCIPAL -->
+<div id="home" class="card">
+  <button onclick="goAdmin()">Administrador</button>
+  <button onclick="goEmployee()">Empleado</button>
+</div>
+
+<!-- LOGIN ADMIN -->
+<div id="adminLogin" class="card hidden">
+  <h3>Administrador</h3>
+  <input id="adminEmail" placeholder="Correo">
+  <input id="adminPass" type="password" placeholder="Contraseña">
+  <br>
+  <button onclick="loginAdmin()">Entrar</button>
+  <button onclick="backHome()">Volver</button>
+</div>
+
+<!-- PANEL ADMIN -->
+<div id="adminPanel" class="card hidden">
+  <h3>Panel Administrador</h3>
+
+  <!-- Agregar empleado -->
+  <div class="card">
+    <h4>Agregar empleado</h4>
+    <input id="nombreEmpleado" placeholder="Nombre del empleado">
+    <input id="pinEmpleado" placeholder="PIN del empleado">
+    <button onclick="agregarEmpleado()">Guardar empleado</button>
+  </div>
+
+  <!-- Configuración salario -->
+  <div class="card">
+    <h4>Configuración de salarios</h4>
+    <input id="salarioHora" type="number" value="10" placeholder="Salario por hora">
+    <input id="factorExtra" type="number" value="1.5" placeholder="Factor horas extra">
+  </div>
+
+  <!-- Lista empleados -->
+  <div class="card">
+    <h4>Empleados registrados</h4>
+    <div id="listaEmpleados"></div>
+  </div>
+
+  <!-- Resumen marcaciones -->
+  <div class="card">
+    <h4>Resumen de marcaciones</h4>
+    <div id="adminList"></div>
+    <button onclick="exportExcel()">Exportar Excel</button>
+  </div>
+
+  <button onclick="logout()">Salir</button>
+</div>
+
+<!-- PANEL EMPLEADO -->
+<div id="employeePanel" class="card hidden">
+  <div class="nombreGrande" id="empNombreGrande"></div>
+  <input id="empPin" type="password" placeholder="PIN">
+  <br>
+  <button onclick="mark('entrada')">Entrada</button>
+  <button onclick="mark('almuerzo_salida')">Salida Almuerzo</button>
+  <button onclick="mark('almuerzo_regreso')">Regreso Almuerzo</button>
+  <button onclick="mark('salida')">Salida</button>
+  <div id="empMsg" class="notice"></div>
+  <button onclick="backHome()">Volver</button>
+</div>
+
+<script>
+// 🔥 FIREBASE CONFIG
+const firebaseConfig={
+apiKey:"AIzaSyAFOyMEo2SgWpcs8WHp2nKCO_ax9-lYZWo",
+authDomain:"poladent-5fa13.firebaseapp.com",
+databaseURL:"https://poladent-5fa13-default-rtdb.firebaseio.com",
+projectId:"poladent-5fa13",
+storageBucket:"poladent-5fa13.firebasestorage.app",
+messagingSenderId:"539152567873",
+appId:"1:539152567873:web:89c67ebb14bd55a77900c0"
+};
+firebase.initializeApp(firebaseConfig);
+const auth=firebase.auth(), db=firebase.database();
+
+/* NAVEGACIÓN */
+function hideAll(){home.classList.add("hidden");adminLogin.classList.add("hidden");adminPanel.classList.add("hidden");employeePanel.classList.add("hidden");}
+function backHome(){hideAll();home.classList.remove("hidden");document.getElementById("empNombreGrande").innerHTML="";document.getElementById("empPin").value="";}
+function goAdmin(){hideAll();adminLogin.classList.remove("hidden");}
+function goEmployee(){hideAll();employeePanel.classList.remove("hidden");}
+
+/* ADMIN LOGIN */
+function loginAdmin(){
+auth.signInWithEmailAndPassword(adminEmail.value,adminPass.value)
+.then(()=>{hideAll();adminPanel.classList.remove("hidden");loadEmpleados();loadMarcaciones();})
+.catch(()=>alert("Error de acceso"));
+}
+function logout(){auth.signOut();backHome();}
+
+/* EMPLEADOS */
+function agregarEmpleado(){
+const nombre=document.getElementById("nombreEmpleado").value.trim();
+const pin=document.getElementById("pinEmpleado").value.trim();
+if(!nombre||!pin){alert("Completa todos los campos");return;}
+const id=db.ref("empleados").push().key;
+db.ref("empleados/"+id).set({nombre,pin,creado:Date.now()});
+document.getElementById("nombreEmpleado").value="";
+document.getElementById("pinEmpleado").value="";
+}
+function cargarEmpleados(){
+const contenedor=document.getElementById("listaEmpleados");
+db.ref("empleados").on("value",snap=>{
+contenedor.innerHTML="";
+snap.forEach(emp=>{
+const data=emp.val();
+contenedor.innerHTML+=`<div class="empleado">
+<strong>${data.nombre}</strong><br>
+PIN: ${data.pin}<br>
+<button class="danger" onclick="borrarEmpleado('${emp.key}')">Borrar</button>
+</div>`;
+});
+});
+}
+function loadEmpleados(){cargarEmpleados();}
+function borrarEmpleado(id){
+if(confirm("¿Seguro que deseas borrar este empleado?")){
+db.ref("empleados/"+id).remove();
+db.ref("marcaciones/"+id).remove();
+}
+}
+
+/* EMPLEADO – MARCACIONES CON NOMBRE Y FRASES */
+let empleadoActual=null;
+function mark(tipo){
+const pin=document.getElementById("empPin").value.trim();
+if(!pin){alert("Ingresa tu PIN");return;}
+db.ref("empleados").orderByChild("pin").equalTo(pin).once("value",snap=>{
+if(!snap.exists()){alert("PIN no encontrado");return;}
+snap.forEach(empSnap=>{
+empleadoActual={id:empSnap.key,nombre:empSnap.val().nombre};
+document.getElementById("empNombreGrande").innerHTML=empleadoActual.nombre;
+
+// Registrar marcación
+const now=new Date(),fecha=now.toLocaleDateString(),hora=now.toLocaleTimeString();
+const ref=db.ref("marcaciones/"+empleadoActual.id+"/"+fecha+"/"+tipo);
+ref.once("value",s=>{
+if(s.exists()){document.getElementById("empMsg").innerHTML="⚠️ Ya marcado";}
+else{
+ref.set({nombre:empleadoActual.nombre,tipo,fecha,hora,timestamp:now.getTime()});
+let frase="";
+if(tipo=="entrada") frase="¡Que tengas un buen inicio de jornada!";
+if(tipo=="almuerzo_salida") frase="Buen provecho 🍽️";
+if(tipo=="almuerzo_regreso") frase="Bienvenido de vuelta 👋";
+if(tipo=="salida") frase="¡Buen trabajo!";
+document.getElementById("empMsg").innerHTML=`${empleadoActual.nombre} | ${frase} (${hora})`;
+loadMarcaciones();
+}
+});
+});
+});
+}
+
+/* ADMIN – RESUMEN MARCACIONES */
+let excelRows=[];
+function loadMarcaciones(){
+const contenedor=document.getElementById("adminList");
+db.ref("marcaciones").on("value",snap=>{
+contenedor.innerHTML="";
+excelRows=[];
+snap.forEach(empSnap=>{
+const empID=empSnap.key;
+empSnap.forEach(fechaSnap=>{
+const fecha=fechaSnap.key;
+fechaSnap.forEach(tipoSnap=>{
+const data=tipoSnap.val();
+contenedor.innerHTML+=`<p><b>${data.nombre}</b> | ${data.tipo} | ${fecha} ${data.hora}</p>`;
+excelRows.push([data.nombre,fecha,data.tipo,data.hora]);
+});
+});
+});
+});
+}
+
+/* EXPORTAR EXCEL */
+function exportExcel(){
+let wb=XLSX.utils.book_new();
+let ws=XLSX.utils.aoa_to_sheet([["Nombre","Fecha","Tipo","Hora"],...excelRows]);
+XLSX.utils.book_append_sheet(wb,ws,"Resumen");
+XLSX.writeFile(wb,"Poladent.xlsx");
+}
+
+/* INICIO */
+backHome();
+</script>
+
+</body>
+</html>
