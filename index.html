@@ -1,1 +1,189 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>PolaDent Control</title>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+body{font-family:Arial;background:#f4f6f8;text-align:center}
+.box{background:#fff;padding:20px;margin:20px auto;width:360px;border-radius:10px}
+button{padding:10px 15px;margin:5px;border:none;border-radius:6px;background:#1976d2;color:#fff}
+input,select{padding:8px;width:90%;margin:5px}
+h2{color:#1976d2}
+.hidden{display:none}
+.big{font-size:22px;font-weight:bold}
+</style>
+</head>
+<body>
 
+<div class="box" id="home">
+<h2>PolaDent</h2>
+<button onclick="showAdmin()">Administrador</button>
+<button onclick="showEmp()">Empleado</button>
+</div>
+
+<!-- ADMIN LOGIN -->
+<div class="box hidden" id="adminLogin">
+<h2>Administrador</h2>
+<input id="adminEmail" placeholder="Email">
+<input id="adminPass" type="password" placeholder="Contraseña">
+<button onclick="adminLogin()">Entrar</button>
+</div>
+
+<!-- ADMIN PANEL -->
+<div class="box hidden" id="adminPanel">
+<h2>Panel Administrador</h2>
+
+<input id="empName" placeholder="Nombre">
+<input id="empPin" placeholder="PIN">
+<select id="empType">
+<option>Diario</option>
+<option>Quincenal</option>
+<option>Mensual</option>
+</select>
+<input id="empSalary" placeholder="Salario">
+<button onclick="addEmp()">Agregar empleado</button>
+
+<h3>Empleados</h3>
+<div id="empList"></div>
+
+<h3>Resumen diario</h3>
+<input type="date" id="datePick">
+<button onclick="loadSummary()">Ver</button>
+<div id="summary"></div>
+
+<button onclick="exportExcel()">Exportar Excel</button>
+<button onclick="logout()">Salir</button>
+</div>
+
+<!-- EMP PANEL -->
+<div class="box hidden" id="empPanel">
+<h2>Empleado</h2>
+<input id="pinInput" placeholder="PIN">
+<button onclick="enterPin()">Entrar</button>
+
+<div id="empActions" class="hidden">
+<div class="big" id="empNameBig"></div>
+<button onclick="mark('Entrada')">Entrada</button>
+<button onclick="mark('Pausa')">Pausa</button>
+<button onclick="mark('Retorno')">Retorno</button>
+<button onclick="mark('Salida')">Salida</button>
+</div>
+</div>
+
+<script>
+const firebaseConfig = {
+ apiKey: "AIzaSyAFOyMEo2SgWpcs8WHp2nKCO_ax9-lYZWo",
+ authDomain: "poladent-5fa13.firebaseapp.com",
+ databaseURL: "https://poladent-5fa13-default-rtdb.firebaseio.com",
+ projectId: "poladent-5fa13",
+ storageBucket: "poladent-5fa13.firebasestorage.app",
+ messagingSenderId: "539152567873",
+ appId: "1:539152567873:web:89c67ebb14bd55a77900c0"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+let currentEmp = null;
+
+function showAdmin(){
+ home.classList.add("hidden");
+ adminLogin.classList.remove("hidden");
+}
+function showEmp(){
+ home.classList.add("hidden");
+ empPanel.classList.remove("hidden");
+}
+
+function adminLogin(){
+ firebase.auth().signInWithEmailAndPassword(
+  adminEmail.value, adminPass.value
+ ).then(()=>{
+  adminLogin.classList.add("hidden");
+  adminPanel.classList.remove("hidden");
+  loadEmps();
+ });
+}
+
+function addEmp(){
+ db.ref("employees/"+empPin.value).set({
+  name: empName.value,
+  pin: empPin.value,
+  type: empType.value,
+  salary: empSalary.value
+ });
+ loadEmps();
+}
+
+function loadEmps(){
+ empList.innerHTML="";
+ db.ref("employees").once("value",s=>{
+  s.forEach(e=>{
+   let d=e.val();
+   empList.innerHTML+=`
+   <div>${d.name}
+   <button onclick="delEmp('${d.pin}')">❌</button>
+   <button onclick="pdf('${d.name}')">PDF</button>
+   </div>`;
+  });
+ });
+}
+
+function delEmp(pin){
+ db.ref("employees/"+pin).remove();
+ loadEmps();
+}
+
+function enterPin(){
+ let pin=pinInput.value;
+ db.ref("employees/"+pin).once("value",s=>{
+  if(!s.exists()) return alert("PIN inválido");
+  currentEmp=s.val();
+  empNameBig.innerText=currentEmp.name;
+  empActions.classList.remove("hidden");
+ });
+}
+
+function mark(type){
+ let d=new Date();
+ let day=d.toISOString().split("T")[0];
+ db.ref("marks/"+day).push({
+  name:currentEmp.name,
+  type:type,
+  time:d.toLocaleTimeString()
+ });
+ alert("✔ "+type+" registrada");
+ location.reload();
+}
+
+function loadSummary(){
+ let d=datePick.value;
+ summary.innerHTML="";
+ db.ref("marks/"+d).once("value",s=>{
+  s.forEach(m=>{
+   let v=m.val();
+   summary.innerHTML+=`${v.name} - ${v.type} - ${v.time}<br>`;
+  });
+ });
+}
+
+function exportExcel(){
+ alert("Exportación lista (simulada)");
+}
+
+function pdf(name){
+ const {jsPDF}=window.jspdf;
+ let doc=new jsPDF();
+ doc.text("Olerite - "+name,20,20);
+ doc.save(name+".pdf");
+}
+
+function logout(){
+ location.reload();
+}
+</script>
+</body>
+</html>
