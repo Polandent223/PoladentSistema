@@ -1,1 +1,133 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Poladent</title>
 
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+<style>
+body{font-family:Arial;background:#eef;text-align:center}
+.box{background:#fff;margin:20px auto;padding:20px;width:350px;border-radius:10px}
+button,input{padding:10px;margin:5px;width:90%}
+.hidden{display:none}
+h2{color:#005}
+</style>
+</head>
+
+<body>
+
+<!-- HOME -->
+<div class="box" id="home">
+<h2>🦷 Poladent</h2>
+<button onclick="openAdmin()">Administrador</button>
+<button onclick="openEmp()">Empleado</button>
+</div>
+
+<!-- ADMIN -->
+<div class="box hidden" id="admin">
+<h2>Administrador</h2>
+
+<h3>Agregar empleado</h3>
+<input id="empName" placeholder="Nombre">
+<input id="empPin" placeholder="PIN">
+<button onclick="addEmp()">Guardar</button>
+
+<h3>Empleados</h3>
+<div id="empList"></div>
+
+<h3>Marcaciones de hoy</h3>
+<div id="marks"></div>
+
+<button onclick="goHome()">Salir</button>
+</div>
+
+<!-- EMPLEADO -->
+<div class="box hidden" id="employee">
+<h2>Empleado</h2>
+<input id="pinInput" placeholder="PIN">
+<button onclick="checkPin()">Entrar</button>
+
+<div id="actions" class="hidden">
+<p id="empNameBig"></p>
+<button onclick="mark('Entrada')">Entrada</button>
+<button onclick="mark('Salida')">Salida</button>
+</div>
+
+<button onclick="goHome()">Salir</button>
+</div>
+
+<script>
+// 🔥 FIREBASE
+firebase.initializeApp({
+ apiKey:"AIzaSyAFOyMEo2SgWpcs8WHp2nKCO_ax9-lYZWo",
+ databaseURL:"https://poladent-5fa13-default-rtdb.firebaseio.com"
+});
+const db=firebase.database();
+
+let currentEmp=null;
+const today=new Date().toISOString().split("T")[0];
+
+// 🔁 NAVEGACIÓN
+function hideAll(){
+ home.classList.add("hidden");
+ admin.classList.add("hidden");
+ employee.classList.add("hidden");
+}
+function openAdmin(){hideAll();admin.classList.remove("hidden");loadEmps();loadMarks();}
+function openEmp(){hideAll();employee.classList.remove("hidden");}
+function goHome(){location.reload();}
+
+// 👤 ADMIN
+function addEmp(){
+ if(!empName.value || !empPin.value){alert("Completa todo");return;}
+ db.ref("empleados/"+empPin.value).set({nombre:empName.value});
+ empName.value=empPin.value="";
+ loadEmps();
+}
+function loadEmps(){
+ empList.innerHTML="";
+ db.ref("empleados").on("value",s=>{
+  empList.innerHTML="";
+  s.forEach(e=>{
+   empList.innerHTML+=`<p>${e.val().nombre}</p>`;
+  });
+ });
+}
+
+// 👷 EMPLEADO
+function checkPin(){
+ const pin=pinInput.value;
+ db.ref("empleados/"+pin).once("value",s=>{
+  if(!s.exists()){alert("PIN incorrecto");return;}
+  currentEmp=s.val().nombre;
+  empNameBig.innerText=currentEmp;
+  actions.classList.remove("hidden");
+ });
+}
+function mark(tipo){
+ db.ref("marcaciones/"+today).push({
+  nombre:currentEmp,
+  tipo:tipo,
+  hora:new Date().toLocaleTimeString()
+ });
+ alert("✔ "+tipo+" registrada");
+ location.reload();
+}
+
+// 📋 MARCACIONES
+function loadMarks(){
+ marks.innerHTML="";
+ db.ref("marcaciones/"+today).on("value",s=>{
+  marks.innerHTML="";
+  s.forEach(m=>{
+   let d=m.val();
+   marks.innerHTML+=`${d.nombre} - ${d.tipo} - ${d.hora}<br>`;
+  });
+ });
+}
+</script>
+
+</body>
+</html>
