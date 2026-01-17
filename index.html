@@ -1,1 +1,251 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Poladent – Control de Asistencia</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+<!-- Excel -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+<style>
+body{font-family:Arial;background:#eaf6ff;padding:20px;text-align:center}
+.card{background:#fff;padding:20px;border-radius:10px;max-width:500px;margin:15px auto;box-shadow:0 2px 5px rgba(0,0,0,.1)}
+button,input{padding:10px;margin:5px;width:90%;font-size:15px}
+button{background:#007bff;color:#fff;border:none;border-radius:5px;cursor:pointer}
+button.danger{background:#dc3545}
+.hidden{display:none}
+.empleado{border-bottom:1px solid #ddd;padding:10px}
+.nombreGrande{font-size:24px;font-weight:bold;margin-bottom:10px}
+.notif{background:#fff3cd;padding:8px;margin:5px;border-radius:5px}
+</style>
+</head>
+
+<body>
+
+<h1>Poladent 🦷🦷</h1>
+
+<div id="home" class="card">
+  <button onclick="showAdmin()">Administrador</button>
+  <button onclick="showEmpleado()">Empleado</button>
+</div>
+
+<div id="adminLogin" class="card hidden">
+  <h3>Administrador</h3>
+  <input id="adminEmail" placeholder="Correo">
+  <input id="adminPass" type="password" placeholder="Contraseña">
+  <button onclick="loginAdmin()">Entrar</button>
+  <button onclick="goHome()">Volver</button>
+</div>
+
+<div id="adminPanel" class="card hidden">
+  <h3>Panel Administrador</h3>
+
+  <div class="card">
+    <h4>Agregar empleado</h4>
+    <input id="empNombre" placeholder="Nombre">
+    <input id="empPin" placeholder="PIN">
+    <button onclick="addEmpleado()">Guardar</button>
+  </div>
+
+  <div class="card">
+    <h4>Empleados</h4>
+    <div id="listaEmpleados"></div>
+  </div>
+
+  <div class="card">
+    <h4>Resumen diario y salarial</h4>
+    <input type="date" id="fechaFiltro">
+    <div id="resumen"></div>
+    <button onclick="exportarExcel()">Exportar Marcaciones Excel</button>
+    <button onclick="exportarExcelSalarial()">Exportar Salario Excel</button>
+  </div>
+
+  <button onclick="logout()">Salir</button>
+</div>
+
+<div id="empleadoPanel" class="card hidden">
+  <div id="empNombreGrande" class="nombreGrande"></div>
+  <input id="pinInput" type="password" placeholder="Ingresa tu PIN">
+  <div id="acciones" class="hidden">
+    <button onclick="marcar('entrada')">Entrada</button>
+    <button onclick="marcar('almuerzo_salida')">Salida Almuerzo</button>
+    <button onclick="marcar('almuerzo_regreso')">Regreso Almuerzo</button>
+    <button onclick="marcar('salida')">Salida</button>
+  </div>
+  <div id="msg"></div>
+  <button onclick="goHome()">Volver</button>
+</div>
+
+<script>
+// 🔥 FIREBASE
+firebase.initializeApp({
+ apiKey:"AIzaSyAFOyMEo2SgWpcs8WHp2nKCO_ax9-lYZWo",
+ authDomain:"poladent-5fa13.firebaseapp.com",
+ databaseURL:"https://poladent-5fa13-default-rtdb.firebaseio.com",
+ projectId:"poladent-5fa13"
+});
+const auth=firebase.auth(), db=firebase.database();
+
+// 🔄 NAVEGACIÓN
+function hideAll(){home.classList.add("hidden");adminLogin.classList.add("hidden");adminPanel.classList.add("hidden");empleadoPanel.classList.add("hidden")}
+function goHome(){hideAll();home.classList.remove("hidden")}
+function showAdmin(){hideAll();adminLogin.classList.remove("hidden")}
+function showEmpleado(){hideAll();empleadoPanel.classList.remove("hidden")}
+
+// 🔐 LOGIN ADMIN
+function loginAdmin(){
+  auth.signInWithEmailAndPassword(adminEmail.value,adminPass.value)
+  .then(()=>{hideAll();adminPanel.classList.remove("hidden");cargarEmpleados();setFechaHoy()})
+  .catch(()=>alert("Error de acceso"))
+}
+function logout(){auth.signOut();goHome()}
+
+// 👷 EMPLEADOS
+function addEmpleado(){
+  if(!empNombre.value||!empPin.value) return alert("Completa todo");
+  db.ref("empleados").push({nombre:empNombre.value,pin:empPin.value});
+  empNombre.value="";empPin.value="";
+}
+function cargarEmpleados(){
+  db.ref("empleados").on("value",s=>{
+    listaEmpleados.innerHTML="";
+    s.forEach(e=>{
+      listaEmpleados.innerHTML+=`
+        <div class="empleado">
+          <b>${e.val().nombre}</b> | PIN: ${e.val().pin}
+          <button class="danger" onclick="delEmp('${e.key}')">X</button>
+        </div>`;
+    });
+  });
+}
+function delEmp(id){
+  if(confirm("¿Borrar empleado?")){
+    db.ref("empleados/"+id).remove();
+    db.ref("marcaciones/"+id).remove();
+  }
+}
+
+// 👤 EMPLEADO
+let empActual=null;
+pinInput.onchange=()=>{
+  db.ref("empleados").once("value",s=>{
+    empActual=null;
+    s.forEach(e=>{
+      if(e.val().pin===pinInput.value){
+        empActual={id:e.key,nombre:e.val().nombre};
+      }
+    });
+    if(!empActual) return alert("PIN incorrecto");
+    empNombreGrande.innerText=empActual.nombre;
+    acciones.classList.remove("hidden");
+  });
+};
+
+function marcar(tipo){
+  const now=new Date();
+  const fecha=now.toISOString().slice(0,10);
+  const hora=now.toLocaleTimeString();
+  db.ref(`marcaciones/${empActual.id}/${fecha}/${tipo}`)
+  .set({nombre:empActual.nombre,tipo,hora,ts:Date.now()});
+  msg.innerText="Marcado ✔";
+  setTimeout(goHome,2000);
+}
+
+// 📅 CALENDARIO E7
+function setFechaHoy(){fechaFiltro.value=new Date().toISOString().slice(0,10);fechaFiltro.onchange=mostrarResumen;mostrarResumen()}
+
+// 📊 RESUMEN Y HORAS
+function mostrarResumen(){
+  resumen.innerHTML="";
+  const fecha=fechaFiltro.value;
+  let excelRows=[], excelSalarial=[];
+  db.ref("marcaciones").once("value",snap=>{
+    snap.forEach(emp=>{
+      const dias=emp.val()[fecha];
+      if(dias){
+        let entrada=null, salida=null;
+        Object.values(dias).forEach(m=>{
+          resumen.innerHTML+=`<p><b>${m.nombre}</b> – ${m.tipo} – ${m.hora}</p>`;
+          excelRows.push([m.nombre,m.tipo,m.hora]);
+          if(m.tipo==="entrada") entrada=m.ts;
+          if(m.tipo==="salida") salida=m.ts;
+        });
+
+        if(entrada && salida){
+          let hrs=(salida-entrada)/3600000;
+          let extra=Math.max(0,hrs-8);
+          let normales=Math.min(8,hrs);
+          let bancoTotal=extra; // banco de horas
+          resumen.innerHTML+=`<p>Horas normales: ${normales.toFixed(2)}, Extra: ${extra.toFixed(2)}, Banco: ${bancoTotal.toFixed(2)}</p>`;
+
+          // Guardar salario y banco
+          db.ref(`salarios/${emp.key}/${fecha}`).set({
+            nombre:emp.val().nombre,
+            horas_normales:normales.toFixed(2),
+            horas_extra:extra.toFixed(2),
+            banco:bancoTotal.toFixed(2)
+          });
+        }
+
+        // Detectar atrasos y salidas tempranas
+        if(entrada){
+          const hEntrada=new Date(entrada);
+          if(hEntrada.getHours()>8) resumen.innerHTML+=`<p style="color:red">⚠️ ${emp.val().nombre} llegó tarde</p>`;
+        }
+        if(salida){
+          const hSalida=new Date(salida);
+          if(hSalida.getHours()<17) resumen.innerHTML+=`<p style="color:red">⚠️ ${emp.val().nombre} salió temprano</p>`;
+        }
+      }
+    });
+  });
+}
+
+// 📤 EXCEL
+function exportarExcel(){
+  let data=[["Nombre","Tipo","Hora"]];
+  const fecha=fechaFiltro.value;
+  db.ref("marcaciones").once("value",snap=>{
+    snap.forEach(emp=>{
+      const dias=emp.val()[fecha];
+      if(dias){
+        Object.values(dias).forEach(m=>{
+          data.push([m.nombre,m.tipo,m.hora]);
+        });
+      }
+    });
+    let wb=XLSX.utils.book_new();
+    let ws=XLSX.utils.aoa_to_sheet(data);
+    XLSX.utils.book_append_sheet(wb,ws,"Marcaciones");
+    XLSX.writeFile(wb,"Poladent_"+fecha+".xlsx");
+  });
+}
+
+function exportarExcelSalarial(){
+  let data=[["Nombre","Horas normales","Horas extra","Banco de horas"]];
+  const fecha=fechaFiltro.value;
+  db.ref(`salarios`).once("value",snap=>{
+    snap.forEach(emp=>{
+      const dia=emp.val()[fecha];
+      if(dia){
+        data.push([dia.nombre,dia.horas_normales,dia.horas_extra,dia.banco]);
+      }
+    });
+    let wb=XLSX.utils.book_new();
+    let ws=XLSX.utils.aoa_to_sheet(data);
+    XLSX.utils.book_append_sheet(wb,ws,"Salarios");
+    XLSX.writeFile(wb,"Salario_"+fecha+".xlsx");
+  });
+}
+
+// INICIO
+goHome();
+</script>
+</body>
+</html>
