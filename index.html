@@ -1,1 +1,215 @@
 
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Poladent – E17 Resumido</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+<style>
+body{font-family:Arial;background:#eaf6ff;padding:20px;text-align:center;}
+h1,h2,h3{text-align:center;}
+.card{background:white;padding:20px;border-radius:10px;margin:15px auto;max-width:450px;box-shadow:0 2px 5px rgba(0,0,0,0.1);}
+input,button,select{padding:10px;margin:5px;width:90%;font-size:15px;}
+button{cursor:pointer;background:#007bff;color:white;border:none;border-radius:5px;}
+button.danger{background:#dc3545;}
+.hidden{display:none;}
+.notice{background:#dff3ff;padding:10px;margin-top:8px;border-radius:6px;}
+.nombreGrande{font-size:24px;font-weight:bold;margin-bottom:10px;}
+.notif{background:#fff3cd;padding:10px;margin:5px;border-radius:5px;border:1px solid #ffeeba;}
+.empleado{border-bottom:1px solid #ddd;padding:10px 0;}
+</style>
+</head>
+
+<body>
+<h1>Poladent 🦷🦷</h1>
+
+<div id="home" class="card">
+  <button onclick="goAdmin()">Administrador</button>
+  <button onclick="goEmployee()">Empleado</button>
+</div>
+
+<div id="adminLogin" class="card hidden">
+  <h3>Administrador</h3>
+  <input id="adminEmail" placeholder="Correo">
+  <input id="adminPass" type="password" placeholder="Contraseña">
+  <br>
+  <button onclick="loginAdmin()">Entrar</button>
+  <button onclick="backHome()">Volver</button>
+</div>
+
+<div id="adminPanel" class="card hidden">
+  <h3>Panel Administrador</h3>
+
+  <div class="card">
+    <h4>Agregar empleado</h4>
+    <input id="nombreEmpleado" placeholder="Nombre del empleado">
+    <input id="pinEmpleado" placeholder="PIN del empleado">
+    <button onclick="agregarEmpleado()">Guardar</button>
+  </div>
+
+  <div class="card">
+    <h4>Empleados registrados</h4>
+    <div id="listaEmpleados"></div>
+  </div>
+
+  <div class="card">
+    <h4>Resumen marcaciones</h4>
+    <input type="date" id="filterDate" onchange="renderMarcaciones()">
+    <select id="periodoResumen" onchange="renderMarcaciones()">
+      <option value="diario">Diario</option>
+      <option value="quincenal">Quincenal</option>
+      <option value="mensual">Mensual</option>
+    </select>
+    <div id="adminList"></div>
+    <div id="notificaciones"></div>
+    <button onclick="exportExcel()">Exportar Marcaciones</button>
+  </div>
+
+  <button onclick="logout()">Salir</button>
+</div>
+
+<div id="employeePanel" class="card hidden">
+  <div class="nombreGrande" id="empNombreGrande"></div>
+  <input id="empPin" type="password" placeholder="Ingresa tu PIN">
+  <div id="employeeButtons" class="hidden">
+    <button onclick="mark('entrada')">Entrada</button>
+    <button onclick="mark('almuerzo_salida')">Salida Almuerzo</button>
+    <button onclick="mark('almuerzo_regreso')">Regreso Almuerzo</button>
+    <button onclick="mark('salida')">Salida</button>
+  </div>
+  <div id="empMsg" class="notice"></div>
+  <button onclick="backHome()">Volver</button>
+</div>
+
+<script>
+// 🔥 CONFIG FIREBASE
+const firebaseConfig={
+apiKey:"AIzaSyAFOyMEo2SgWpcs8WHp2nKCO_ax9-lYZWo",
+authDomain:"poladent-5fa13.firebaseapp.com",
+databaseURL:"https://poladent-5fa13-default-rtdb.firebaseio.com",
+projectId:"poladent-5fa13",
+storageBucket:"poladent-5fa13.firebasestorage.app",
+messagingSenderId:"539152567873",
+appId:"1:539152567873:web:89c67ebb14bd55a77900c0"
+};
+firebase.initializeApp(firebaseConfig);
+const auth=firebase.auth(), db=firebase.database();
+
+// 🌐 NAVEGACIÓN
+function hideAll(){
+  ["home","adminLogin","adminPanel","employeePanel"].forEach(id=>document.getElementById(id).classList.add("hidden"));
+}
+function backHome(){hideAll();document.getElementById("home").classList.remove("hidden");resetEmployeePanel();}
+function goAdmin(){hideAll();document.getElementById("adminLogin").classList.remove("hidden");}
+function goEmployee(){hideAll();document.getElementById("employeePanel").classList.remove("hidden");}
+function resetEmployeePanel(){
+  empleadoActual=null;
+  document.getElementById("empNombreGrande").innerHTML="";
+  document.getElementById("empPin").value="";
+  document.getElementById("employeeButtons").classList.add("hidden");
+  document.getElementById("empMsg").innerHTML="";
+}
+
+// 👤 ADMIN LOGIN
+function loginAdmin(){
+  auth.signInWithEmailAndPassword(adminEmail.value,adminPass.value)
+  .then(()=>{hideAll();document.getElementById("adminPanel").classList.remove("hidden");setDefaultDate();loadEmpleados();loadMarcaciones();})
+  .catch(()=>alert("Error de acceso"));
+}
+function logout(){auth.signOut();backHome();}
+
+// 👷 EMPLEADOS
+function agregarEmpleado(){
+  const nombre=document.getElementById("nombreEmpleado").value.trim();
+  const pin=document.getElementById("pinEmpleado").value.trim();
+  if(!nombre||!pin){alert("Completa todos los campos");return;}
+  const id=db.ref("empleados").push().key;
+  db.ref("empleados/"+id).set({nombre,pin,creado:Date.now()});
+  document.getElementById("nombreEmpleado").value="";document.getElementById("pinEmpleado").value="";
+}
+function loadEmpleados(){
+  const cont=document.getElementById("listaEmpleados");
+  db.ref("empleados").on("value",snap=>{
+    cont.innerHTML="";snap.forEach(emp=>{
+      const e=emp.val();
+      cont.innerHTML+=`<div class="empleado"><b>${e.nombre}</b><br>PIN: ${e.pin}<br><button class="danger" onclick="borrarEmpleado('${emp.key}')">Borrar</button></div>`;
+    });
+  });
+}
+function borrarEmpleado(id){if(confirm("Seguro?")){db.ref("empleados/"+id).remove();db.ref("marcaciones/"+id).remove();}}
+
+// 👷 EMPLEADO
+let empleadoActual=null;
+function mark(tipo){
+  if(!empleadoActual) return;
+  if(!navigator.geolocation){alert("GPS no disponible");return;}
+  navigator.geolocation.getCurrentPosition(pos=>{
+    const lat=pos.coords.latitude,lon=pos.coords.longitude;
+    const now=new Date();
+    const fecha=`${now.getFullYear()}-${("0"+(now.getMonth()+1)).slice(-2)}-${("0"+now.getDate()).slice(-2)}`;
+    const hora=now.toLocaleTimeString(), ts=now.getTime();
+    const ref=db.ref(`marcaciones/${empleadoActual.id}/${fecha}/${tipo}`);
+    ref.once("value",s=>s.exists()?document.getElementById("empMsg").innerHTML="⚠️ Ya marcado":ref.set({nombre:empleadoActual.nombre,tipo,fecha,hora,timestamp:ts,lat,lon},()=>{showMsg(tipo,hora);renderMarcaciones();}));
+  },err=>alert("No se pudo obtener ubicación"));
+}
+function showMsg(tipo,hora){
+  let frases={"entrada":"¡Que tengas un buen inicio!","almuerzo_salida":"Buen provecho 🍽️","almuerzo_regreso":"Bienvenido de vuelta 👋","salida":"¡Buen trabajo!"};
+  document.getElementById("empMsg").innerHTML=`${empleadoActual.nombre} | ${frases[tipo]} (${hora})`;
+  setTimeout(backHome,2000);
+}
+document.getElementById("empPin").addEventListener("change",()=>{
+  const pin=document.getElementById("empPin").value.trim();
+  if(!pin)return;
+  db.ref("empleados").orderByChild("pin").equalTo(pin).once("value",snap=>{
+    if(!snap.exists()){alert("PIN no encontrado");document.getElementById("employeeButtons").classList.add("hidden");return;}
+    snap.forEach(eSnap=>{empleadoActual={id:eSnap.key,nombre:eSnap.val().nombre};document.getElementById("empNombreGrande").innerHTML=empleadoActual.nombre;document.getElementById("employeeButtons").classList.remove("hidden");document.getElementById("empMsg").innerHTML="";});
+  });
+});
+
+// 📝 ADMIN RESUMEN + NOTIFICACIONES
+let allMarcaciones={};
+function loadMarcaciones(){db.ref("marcaciones").on("value",snap=>{allMarcaciones=snap.val()||{};renderMarcaciones();});}
+function renderMarcaciones(){
+  const cont=document.getElementById("adminList"),notif=document.getElementById("notificaciones");
+  cont.innerHTML="";notif.innerHTML="";
+  const dateFilter=document.getElementById("filterDate").value;
+  const periodo=document.getElementById("periodoResumen").value;
+  for(const empID in allMarcaciones){
+    const dias=allMarcaciones[empID];
+    for(const fecha in dias){
+      if(periodo!=="diario" && dateFilter && !fecha.startsWith(dateFilter.slice(0,7))) continue;
+      if(periodo==="diario" && dateFilter && fecha!==dateFilter) continue;
+      Object.values(dias[fecha]).sort((a,b)=>a.timestamp-b.timestamp).forEach(d=>{
+        cont.innerHTML+=`<p><b>${d.nombre}</b> | ${d.tipo} | ${fecha} | ${d.hora}</p>`;
+        notif.innerHTML+=`<div class="notif">${d.nombre} marcó ${d.tipo} a las ${d.hora}</div>`;
+      });
+    }
+  }
+}
+
+// 📊 EXPORTAR
+function exportExcel(){
+  let rows=[];
+  for(const empID in allMarcaciones){
+    const dias=allMarcaciones[empID];
+    for(const fecha in dias) for(const t in dias[fecha]){const m=dias[fecha][t];rows.push([m.nombre,m.fecha,m.tipo,m.hora]);}
+  }
+  let wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([["Nombre","Fecha","Tipo","Hora"],...rows]),"Resumen");
+  XLSX.writeFile(wb,"Poladent_Marcaciones.xlsx");
+}
+
+// 📅 CALENDARIO
+function setDefaultDate(){const t=new Date();document.getElementById("filterDate").value=`${t.getFullYear()}-${("0"+(t.getMonth()+1)).slice(-2)}-${("0"+t.getDate()).slice(-2)}`;}
+
+// 🔹 INICIO
+backHome();loadEmpleados();loadMarcaciones();
+</script>
+</body>
+</html>
