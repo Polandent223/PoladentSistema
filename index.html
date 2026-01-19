@@ -1,1 +1,172 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Sistema de Marcación E26</title>
+<style>
+body { font-family: Arial; background:#f4f6f8; margin:0; }
+header { background:#222; color:white; padding:15px; text-align:center; }
+button { padding:10px 15px; margin:5px; cursor:pointer; }
+.container { padding:20px; }
+.hidden { display:none; }
+.card { background:white; padding:15px; margin-bottom:15px; border-radius:6px; }
+.employee-name { font-size:22px; font-weight:bold; margin-bottom:10px; }
+.log { font-size:14px; margin-left:10px; }
+.success { color:green; }
+.error { color:red; }
+</style>
+</head>
+<body>
 
+<header>
+  <h2>Sistema de Marcación</h2>
+</header>
+
+<div class="container" id="home">
+  <button onclick="openEmployee()">Empleado</button>
+  <button onclick="openAdmin()">Administrador</button>
+</div>
+
+<!-- EMPLEADO -->
+<div class="container hidden" id="employeePanel">
+  <div class="card">
+    <div class="employee-name" id="empName"></div>
+    <div id="empButtons"></div>
+    <button onclick="goHome()">Salir</button>
+  </div>
+</div>
+
+<!-- ADMIN -->
+<div class="container hidden" id="adminPanel">
+  <div class="card">
+    <h3>Empleados</h3>
+    <input id="newEmp" placeholder="Nombre empleado">
+    <button onclick="addEmployee()">Agregar</button>
+    <ul id="empList"></ul>
+  </div>
+
+  <div class="card">
+    <button onclick="toggleResumen()">📊 Resumen del día</button>
+    <div id="resumen" class="hidden"></div>
+  </div>
+
+  <button onclick="goHome()">Salir</button>
+</div>
+
+<script>
+/* ======= DATOS ======= */
+let employees = JSON.parse(localStorage.getItem("employees")) || [];
+let logs = JSON.parse(localStorage.getItem("logs")) || {};
+let currentEmp = null;
+
+const steps = [
+  "Entrada",
+  "Salida Almuerzo",
+  "Regreso Almuerzo",
+  "Salida"
+];
+
+/* ======= NAVEGACIÓN ======= */
+function goHome() {
+  document.querySelectorAll(".container").forEach(d => d.classList.add("hidden"));
+  document.getElementById("home").classList.remove("hidden");
+}
+
+function openEmployee() {
+  if (employees.length === 0) {
+    alert("No hay empleados creados");
+    return;
+  }
+  currentEmp = employees[0];
+  showEmployee();
+}
+
+function openAdmin() {
+  document.querySelectorAll(".container").forEach(d => d.classList.add("hidden"));
+  document.getElementById("adminPanel").classList.remove("hidden");
+  renderEmployees();
+}
+
+/* ======= EMPLEADO ======= */
+function showEmployee() {
+  document.querySelectorAll(".container").forEach(d => d.classList.add("hidden"));
+  document.getElementById("employeePanel").classList.remove("hidden");
+  document.getElementById("empName").innerText = currentEmp;
+
+  if (!logs[currentEmp]) logs[currentEmp] = [];
+
+  let done = logs[currentEmp].length;
+  let buttons = document.getElementById("empButtons");
+  buttons.innerHTML = "";
+
+  if (done < steps.length) {
+    let btn = document.createElement("button");
+    btn.innerText = steps[done];
+    btn.onclick = () => markStep();
+    buttons.appendChild(btn);
+  } else {
+    buttons.innerHTML = "<p class='success'>Jornada finalizada</p>";
+    setTimeout(goHome, 2000);
+  }
+}
+
+function markStep() {
+  let time = new Date().toLocaleTimeString();
+  logs[currentEmp].push({
+    step: steps[logs[currentEmp].length],
+    time: time,
+    date: new Date().toLocaleDateString()
+  });
+  localStorage.setItem("logs", JSON.stringify(logs));
+  showEmployee();
+}
+
+/* ======= ADMIN ======= */
+function addEmployee() {
+  let name = document.getElementById("newEmp").value.trim();
+  if (!name) return;
+  employees.push(name);
+  localStorage.setItem("employees", JSON.stringify(employees));
+  document.getElementById("newEmp").value = "";
+  renderEmployees();
+}
+
+function renderEmployees() {
+  let ul = document.getElementById("empList");
+  ul.innerHTML = "";
+  employees.forEach(e => {
+    let li = document.createElement("li");
+    li.innerText = e;
+    ul.appendChild(li);
+  });
+}
+
+function toggleResumen() {
+  let div = document.getElementById("resumen");
+  div.classList.toggle("hidden");
+  renderResumen();
+}
+
+function renderResumen() {
+  let div = document.getElementById("resumen");
+  div.innerHTML = "";
+
+  employees.forEach(emp => {
+    let card = document.createElement("div");
+    card.className = "card";
+    card.innerHTML = `<strong>${emp}</strong>`;
+
+    if (!logs[emp] || logs[emp].length === 0) {
+      card.innerHTML += "<p class='error'>Sin marcaciones</p>";
+    } else {
+      logs[emp].forEach(l => {
+        card.innerHTML += `<div class="log">${l.step} - ${l.time}</div>`;
+      });
+    }
+    div.appendChild(card);
+  });
+}
+</script>
+
+</body>
+</html>
