@@ -84,6 +84,24 @@ button.danger{background:#dc3545;}
   <button onclick="logout()">Salir</button>
 </div>
 
+  <!-- Gráfico de horas trabajadas -->
+<div class="card">
+  <h4>Gráfico de horas trabajadas</h4>
+  <canvas id="horasChart" width="400" height="200"></canvas>
+</div>
+
+<!-- Exportación avanzada por rango de fechas -->
+<div class="card">
+  <h4>Exportar por rango de fechas</h4>
+  <input type="date" id="fechaInicio">
+  <input type="date" id="fechaFin">
+  <button onclick="exportExcelRango()">Exportar Excel</button>
+  <button onclick="exportExcelSalarialRango()">Exportar Salario</button>
+</div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
 <!-- EMPLEADO PANEL -->
 <div id="employeePanel" class="card hidden">
   <div class="nombreGrande" id="empNombreGrande"></div>
@@ -198,6 +216,54 @@ function renderAdminList(dateFilter){
     }
   }
 }
+  function generarGraficoHoras() {
+    // Calcular horas totales por empleado
+    const horasPorEmpleado = {};
+    for(const emp in allMarcaciones){
+        const fechas = allMarcaciones[emp];
+        for(const fecha in fechas){
+            const tipos = fechas[fecha];
+            let entrada=null, salida=null;
+            for(const key in tipos){
+                if(tipos[key].tipo === "entrada") entrada=tipos[key].timestamp;
+                if(tipos[key].tipo === "salida") salida=tipos[key].timestamp;
+            }
+            if(entrada && salida){
+                const hrs = (salida-entrada)/3600000;
+                if(!horasPorEmpleado[tipos[Object.keys(tipos)[0]].nombre]) horasPorEmpleado[tipos[Object.keys(tipos)[0]].nombre]=0;
+                horasPorEmpleado[tipos[Object.keys(tipos)[0]].nombre] += hrs;
+            }
+        }
+    }
+
+    const ctx = document.getElementById('horasChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: Object.keys(horasPorEmpleado),
+            datasets: [{
+                label: 'Horas trabajadas',
+                data: Object.values(horasPorEmpleado),
+                backgroundColor: 'rgba(54, 162, 235, 0.6)',
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { display: false },
+                title: { display: true, text: 'Horas trabajadas por empleado' }
+            }
+        }
+    });
+}
+
+// Llamar cada vez que cargues marcaciones
+loadMarcaciones = (function(orig){
+    return function(){
+        orig();
+        generarGraficoHoras();
+    }
+})(loadMarcaciones);
 
 // 📊 EXPORT
 function exportExcelFiltro(){const rows=[["Nombre","Fecha","Tipo","Hora"],...excelRows]; const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),"Resumen"); XLSX.writeFile(wb,"Poladent_Marcaciones.xlsx");}
@@ -219,6 +285,52 @@ function exportExcelSalarialFiltro(){
     }
   }
   const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(ws),"Salario"); XLSX.writeFile(wb,"Poladent_Salario.xlsx");
+}
+  function exportExcelRango(){
+    const inicio = document.getElementById('fechaInicio').value;
+    const fin = document.getElementById('fechaFin').value;
+    if(!inicio || !fin){alert("Selecciona ambas fechas"); return;}
+    const rows=[["Nombre","Fecha","Tipo","Hora"]];
+    for(const m of excelRows){
+        if(m[1] >= inicio && m[1] <= fin) rows.push(m);
+    }
+    const wb=XLSX.utils.book_new();
+    const ws=XLSX.utils.aoa_to_sheet(rows);
+    XLSX.utils.book_append_sheet(wb, ws, "ResumenRango");
+    XLSX.writeFile(wb, "Poladent_Marcaciones_Rango.xlsx");
+}
+
+function exportExcelSalarialRango(){
+    const inicio = document.getElementById('fechaInicio').value;
+    const fin = document.getElementById('fechaFin').value;
+    if(!inicio || !fin){alert("Selecciona ambas fechas"); return;}
+    const resumen={};
+    for(const m of excelSalarial){
+        if(m.fecha >= inicio && m.fecha <= fin){
+            if(!resumen[m.nombre]) resumen[m.nombre]={dias:{}};
+            if(!resumen[m.nombre].dias[m.fecha]) resumen[m.nombre].dias[m.fecha]={entrada:null,salida:null};
+            if(m.tipo==="entrada") resumen[m.nombre].dias[m.fecha].entrada=m.timestamp;
+            if(m.tipo==="salida") resumen[m.nombre].dias[m.fecha].salida=m.timestamp;
+        }
+    }
+    const wsData=[["Nombre","Fecha","Horas trabajadas","Horas extra","Banco de horas"]];
+    for(const emp in resumen){
+        let bancoTotal=0;
+        for(const dia in resumen[emp].dias){
+            const ent=resumen[emp].dias[dia].entrada;
+            const sal=resumen[emp].dias[dia].salida;
+            if(!ent||!sal) continue;
+            let hrs=(sal-ent)/3600000;
+            let extra=Math.max(0,hrs-8);
+            let normales=Math.min(8,hrs);
+            bancoTotal+=extra;
+            wsData.push([emp,dia,normales.toFixed(2),extra.toFixed(2),bancoTotal.toFixed(2)]);
+        }
+    }
+    const wb=XLSX.utils.book_new();
+    const ws=XLSX.utils.aoa_to_sheet(wsData);
+    XLSX.utils.book_append_sheet(wb, ws, "SalarioRango");
+    XLSX.writeFile(wb, "Poladent_Salario_Rango.xlsx");
 }
 
 // 📅 CALENDARIO
