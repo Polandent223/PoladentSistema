@@ -58,48 +58,7 @@ button.danger{background:#dc3545;}
   </div>
 
   <!-- Lista empleados -->
-  <div class="card">
-    <h4>Empleados registrados</h4>
-    <div id="listaEmpleados"></div>
-  </div>
 
-  <!-- Filtro por fecha / período -->
-  <div class="card">
-    <h4>Resumen de marcaciones</h4>
-    <button onclick="toggleResumen()">Abrir / Cerrar Resumen</button>
-    <div id="resumenCont" class="hidden">
-      <input type="date" id="filterDate" onchange="filterByDate()">
-      <select id="periodoResumen" onchange="filterByDate()">
-        <option value="diario">Diario</option>
-        <option value="quincenal">Quincenal</option>
-        <option value="mensual">Mensual</option>
-      </select>
-      <div id="adminList"></div>
-      <div id="notificaciones"></div>
-      <button onclick="exportExcelFiltro()">Exportar Marcaciones</button>
-      <button onclick="exportExcelSalarialFiltro()">Exportar Salario</button>
-      <button onclick="exportPDFDia()">Exportar Resumen del Día PDF</button>
-    </div>
-  </div>
-
-  <button onclick="logout()">Salir</button>
-</div>
-
-<div id="employeePanel" class="card hidden">
-  <div class="nombreGrande" id="empNombreGrande"></div>
-  <input id="empPin" type="password" placeholder="Ingresa tu PIN">
-  <br>
-  <div id="employeeButtons" class="hidden">
-    <button onclick="mark('entrada')">Entrada</button>
-    <button onclick="mark('almuerzo_salida')">Salida Almuerzo</button>
-    <button onclick="mark('almuerzo_regreso')">Regreso Almuerzo</button>
-    <button onclick="mark('salida')">Salida</button>
-  </div>
-  <div id="empMsg" class="notice"></div>
-  <button onclick="backHome()">Volver</button>
-</div>
-
-<script>
 // 🔥 FIREBASE CONFIG
 const firebaseConfig={
 apiKey:"AIzaSyAFOyMEo2SgWpcs8WHp2nKCO_ax9-lYZWo",
