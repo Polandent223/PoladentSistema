@@ -83,23 +83,8 @@ button.danger{background:#dc3545;}
 
   <button onclick="logout()">Salir</button>
 </div>
-  <!-- Gráfico de horas trabajadas -->
-<div class="card">
-  <h4>Gráfico de horas trabajadas</h4>
-  <canvas id="horasChart" width="400" height="200"></canvas>
-</div>
 
-<!-- Exportación avanzada por rango de fechas -->
-<div class="card">
-  <h4>Exportar por rango de fechas</h4>
-  <input type="date" id="fechaInicio">
-  <input type="date" id="fechaFin">
-  <button onclick="exportExcelRango()">Exportar Excel</button>
-  <button onclick="exportExcelSalarialRango()">Exportar Salario</button>
-</div>
- 
-
-<!-- EMPLEADO PANEL -->
+ <!-- EMPLEADO PANEL -->
 <div id="employeePanel" class="card hidden">
   <div class="nombreGrande" id="empNombreGrande"></div>
   <input id="empPin" type="password" placeholder="Ingresa tu PIN">
@@ -112,6 +97,21 @@ button.danger{background:#dc3545;}
   </div>
   <div id="empMsg" class="notice"></div>
   <button onclick="backHome()">Volver</button>
+</div>
+
+    <!-- Gráfico de horas trabajadas -->
+<div class="card">
+  <h4>Gráfico de horas trabajadas</h4>
+  <canvas id="horasChart" width="400" height="200"></canvas>
+</div>
+
+<!-- Exportación avanzada por rango de fechas -->
+<div class="card">
+  <h4>Exportar por rango de fechas</h4>
+  <input type="date" id="fechaInicio">
+  <input type="date" id="fechaFin">
+  <button onclick="exportExcelRango()">Exportar Excel</button>
+  <button onclick="exportExcelSalarialRango()">Exportar Salario</button>
 </div>
    
 <script>
