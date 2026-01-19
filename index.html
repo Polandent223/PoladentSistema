@@ -58,6 +58,77 @@ button.danger{background:#dc3545;}
   </div>
 
   <!-- Lista empleados -->
+  <!-- Lista de empleados corregida -->
+<div class="card">
+  <h4>Empleados registrados</h4>
+  <div id="listaEmpleados"></div>
+</div>
+
+<script>
+// 🔹 Cargar empleados correctamente
+function cargarEmpleados() {
+  const contenedor = document.getElementById("listaEmpleados");
+  db.ref("empleados").on("value", snap => {
+    contenedor.innerHTML = ""; // Limpiamos antes de mostrar
+    snap.forEach(emp => {
+      const data = emp.val();
+      const empDiv = document.createElement("div");
+      empDiv.className = "empleado";
+      empDiv.innerHTML = `
+        <strong>${data.nombre}</strong><br>
+        PIN: ${data.pin}<br>
+        Salario: ${data.salario} (${data.tipoSalario})
+        <div class="empActions">
+          <button onclick="borrarEmpleado('${emp.key}')">Borrar</button>
+          <button onclick="asignarSalario('${emp.key}')">Asignar Salario</button>
+          <button onclick="generarOlerite('${emp.key}')">Olerite PDF</button>
+        </div>
+      `;
+      contenedor.appendChild(empDiv);
+    });
+  });
+}
+
+// 🔹 Cargar empleados desde el panel
+function loadEmpleados() {
+  cargarEmpleados();
+}
+
+// 🔹 Borrar empleado
+function borrarEmpleado(id){
+  if(confirm("¿Seguro que deseas borrar este empleado?")){
+    db.ref("empleados/"+id).remove();
+    db.ref("marcaciones/"+id).remove();
+    loadEmpleados(); // recarga la lista automáticamente
+  }
+}
+
+// 🔹 Asignar salario
+function asignarSalario(empID){
+  const salario = prompt("Ingresa el salario:");
+  if(!salario) return;
+  const tipo = prompt("Tipo de salario (diario/quincenal/mensual):","diario");
+  db.ref("empleados/"+empID).update({salario: parseFloat(salario), tipoSalario: tipo});
+  loadEmpleados(); // recarga la lista con los nuevos valores
+}
+
+// 🔹 Generar Olerite PDF
+function generarOlerite(empID){
+  db.ref("empleados/"+empID).once("value", snap => {
+    const emp = snap.val();
+    if(!emp) return;
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    doc.setFontSize(20);
+    doc.text("Olerite de Pago", 20, 20);
+    doc.setFontSize(14);
+    doc.text(`Empleado: ${emp.nombre}`, 20, 40);
+    doc.text(`Salario: ${emp.salario} (${emp.tipoSalario})`, 20, 50);
+    doc.text(`Fecha: ${new Date().toLocaleDateString()}`, 20, 60);
+    doc.save(`Olerite_${emp.nombre}.pdf`);
+  });
+}
+</script>
 
 // 🔥 FIREBASE CONFIG
 const firebaseConfig={
