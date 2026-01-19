@@ -1,1 +1,174 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Sistema de Marcación</title>
+<style>
+body { font-family: Arial; background:#f4f4f4; margin:0; }
+header { background:#2c3e50; color:#fff; padding:15px; text-align:center; }
+button { padding:10px 15px; margin:5px; cursor:pointer; }
+.hidden { display:none; }
+.panel { background:#fff; margin:20px; padding:20px; border-radius:8px; }
+h2 { margin-top:0; }
+table { width:100%; border-collapse:collapse; }
+th, td { border:1px solid #ccc; padding:8px; text-align:center; }
+</style>
+</head>
 
+<body>
+
+<header>
+  <h1>Sistema de Control de Jornada</h1>
+</header>
+
+<div class="panel" id="inicio">
+  <button onclick="loginAdmin()">Administrador</button>
+  <button onclick="loginEmpleado()">Empleado</button>
+</div>
+
+<!-- ADMIN -->
+<div class="panel hidden" id="adminPanel">
+  <h2>Administrador</h2>
+
+  <button onclick="mostrar('empleadosPanel')">Empleados</button>
+  <button onclick="mostrar('resumenPanel')">Resumen</button>
+  <button onclick="mostrar('controlDiarioPanel')">📅 Control diario</button>
+  <button onclick="logout()">Salir</button>
+
+  <!-- EMPLEADOS -->
+  <div id="empleadosPanel" class="hidden">
+    <h3>Empleados</h3>
+    <input id="empNombre" placeholder="Nombre">
+    <input id="empPin" placeholder="PIN">
+    <button onclick="agregarEmpleado()">Agregar</button>
+    <ul id="listaEmpleados"></ul>
+  </div>
+
+  <!-- RESUMEN -->
+  <div id="resumenPanel" class="hidden">
+    <h3>Resumen de marcaciones</h3>
+    <table>
+      <thead>
+        <tr><th>Empleado</th><th>Tipo</th><th>Hora</th><th>Fecha</th></tr>
+      </thead>
+      <tbody id="tablaResumen"></tbody>
+    </table>
+  </div>
+
+  <!-- CONTROL DIARIO (E19) -->
+  <div id="controlDiarioPanel" class="hidden">
+    <h3>Control diario</h3>
+    <input type="date" id="fechaControl" onchange="cargarControlDiario()">
+    <table>
+      <thead>
+        <tr><th>Empleado</th><th>Tipo</th><th>Hora</th></tr>
+      </thead>
+      <tbody id="tablaControlDiario"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- EMPLEADO -->
+<div class="panel hidden" id="empleadoPanel">
+  <h2>Empleado</h2>
+  <input id="pinEmpleado" placeholder="PIN">
+  <button onclick="validarPin()">Entrar</button>
+
+  <div id="accionesEmpleado" class="hidden">
+    <h3 id="nombreEmpleado"></h3>
+    <button onclick="marcar('Entrada')">Entrada</button>
+    <button onclick="marcar('Salida')">Salida</button>
+  </div>
+</div>
+
+<script>
+let empleados = JSON.parse(localStorage.getItem('empleados')||'[]');
+let marcaciones = JSON.parse(localStorage.getItem('marcaciones')||'[]');
+let empleadoActual = null;
+
+function loginAdmin(){
+  ocultarTodo();
+  document.getElementById('adminPanel').classList.remove('hidden');
+  renderEmpleados();
+  renderResumen();
+}
+function loginEmpleado(){
+  ocultarTodo();
+  document.getElementById('empleadoPanel').classList.remove('hidden');
+}
+function logout(){
+  ocultarTodo();
+  document.getElementById('inicio').classList.remove('hidden');
+}
+
+function ocultarTodo(){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.add('hidden'));
+}
+
+function mostrar(id){
+  document.querySelectorAll('#adminPanel > div').forEach(d=>d.classList.add('hidden'));
+  document.getElementById(id).classList.remove('hidden');
+}
+
+function agregarEmpleado(){
+  empleados.push({
+    nombre: empNombre.value,
+    pin: empPin.value
+  });
+  localStorage.setItem('empleados', JSON.stringify(empleados));
+  empNombre.value = empPin.value = '';
+  renderEmpleados();
+}
+
+function renderEmpleados(){
+  listaEmpleados.innerHTML='';
+  empleados.forEach(e=>{
+    let li=document.createElement('li');
+    li.textContent = e.nombre + ' (PIN '+e.pin+')';
+    listaEmpleados.appendChild(li);
+  });
+}
+
+function validarPin(){
+  let pin = pinEmpleado.value;
+  empleadoActual = empleados.find(e=>e.pin===pin);
+  if(!empleadoActual){ alert('PIN incorrecto'); return; }
+  nombreEmpleado.textContent = empleadoActual.nombre;
+  accionesEmpleado.classList.remove('hidden');
+}
+
+function marcar(tipo){
+  let ahora = new Date();
+  marcaciones.push({
+    nombre: empleadoActual.nombre,
+    tipo,
+    hora: ahora.toLocaleTimeString(),
+    fecha: ahora.toISOString().slice(0,10)
+  });
+  localStorage.setItem('marcaciones', JSON.stringify(marcaciones));
+  accionesEmpleado.classList.add('hidden');
+  pinEmpleado.value='';
+}
+
+function renderResumen(){
+  tablaResumen.innerHTML='';
+  marcaciones.forEach(m=>{
+    tablaResumen.innerHTML+=`<tr>
+      <td>${m.nombre}</td><td>${m.tipo}</td><td>${m.hora}</td><td>${m.fecha}</td>
+    </tr>`;
+  });
+}
+
+function cargarControlDiario(){
+  let fecha = fechaControl.value;
+  tablaControlDiario.innerHTML='';
+  marcaciones.filter(m=>m.fecha===fecha).forEach(m=>{
+    tablaControlDiario.innerHTML+=`<tr>
+      <td>${m.nombre}</td><td>${m.tipo}</td><td>${m.hora}</td>
+    </tr>`;
+  });
+}
+</script>
+
+</body>
+</html>
