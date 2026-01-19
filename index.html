@@ -1,1 +1,143 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Poladent – Sistema Completo</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<style>
+body{font-family:Arial;background:#eaf6ff;padding:20px;text-align:center;}
+.card{background:white;padding:20px;border-radius:10px;margin:15px auto;max-width:450px;box-shadow:0 2px 5px rgba(0,0,0,0.1);}
+input,button,select{padding:10px;margin:5px;width:90%;}
+button{background:#007bff;color:white;border:none;border-radius:5px;}
+.hidden{display:none;}
+.notice{background:#dff3ff;padding:10px;margin-top:8px;border-radius:6px;}
+.nombreGrande{font-size:24px;font-weight:bold;}
+</style>
+</head>
+
+<body>
+
+<h1>Poladent 🦷</h1>
+
+<div id="home" class="card">
+  <button onclick="goAdmin()">Administrador</button>
+  <button onclick="goEmployee()">Empleado</button>
+</div>
+
+<div id="employeePanel" class="card hidden">
+  <div class="nombreGrande" id="empNombreGrande"></div>
+  <input id="empPin" type="password" placeholder="Ingresa tu PIN">
+  <div id="employeeButtons" class="hidden">
+    <button onclick="mark('entrada')">Entrada</button>
+    <button onclick="mark('almuerzo_salida')">Salida Almuerzo</button>
+    <button onclick="mark('almuerzo_regreso')">Regreso Almuerzo</button>
+    <button onclick="mark('salida')">Salida</button>
+  </div>
+  <div id="empMsg" class="notice"></div>
+  <button onclick="backHome()">Volver</button>
+</div>
+
+<script>
+// 🔥 FIREBASE
+firebase.initializeApp({
+  apiKey:"AIzaSyAFOyMEo2SgWpcs8WHp2nKCO_ax9-lYZWo",
+  authDomain:"poladent-5fa13.firebaseapp.com",
+  databaseURL:"https://poladent-5fa13-default-rtdb.firebaseio.com",
+  projectId:"poladent-5fa13"
+});
+const db=firebase.database();
+
+// 🌐 NAVEGACIÓN
+function hideAll(){
+  home.classList.add("hidden");
+  employeePanel.classList.add("hidden");
+}
+function backHome(){
+  hideAll();
+  home.classList.remove("hidden");
+  empPin.value="";
+  empMsg.innerHTML="";
+  employeeButtons.classList.add("hidden");
+}
+function goEmployee(){hideAll();employeePanel.classList.remove("hidden");}
+
+// 👷 EMPLEADO
+let empleadoActual=null;
+
+empPin.addEventListener("change",()=>{
+  const pin=empPin.value.trim();
+  if(!pin) return;
+  db.ref("empleados").orderByChild("pin").equalTo(pin).once("value",snap=>{
+    if(!snap.exists()){
+      empMsg.innerHTML="❌ PIN incorrecto";
+      return;
+    }
+    snap.forEach(e=>{
+      empleadoActual={id:e.key,nombre:e.val().nombre};
+      empNombreGrande.innerHTML=empleadoActual.nombre;
+      employeeButtons.classList.remove("hidden");
+      empMsg.innerHTML="✔ Acceso autorizado";
+    });
+  });
+});
+
+// 🕒 FECHA HOY
+function fechaHoy(){
+  const d=new Date();
+  return d.toISOString().slice(0,10);
+}
+
+// 🚦 VALIDACIÓN DE ORDEN (E20 PARTE 1)
+const orden=["entrada","almuerzo_salida","almuerzo_regreso","salida"];
+
+function mark(tipo){
+  if(!empleadoActual) return;
+
+  const fecha=fechaHoy();
+  const refDia=db.ref(`marcaciones/${empleadoActual.id}/${fecha}`);
+
+  refDia.once("value",snap=>{
+    const marcaciones=snap.val()||{};
+    const yaMarcadas=Object.keys(marcaciones);
+
+    // ❌ ya marcado
+    if(yaMarcadas.includes(tipo)){
+      empMsg.innerHTML="⚠️ Ya marcaste esto hoy";
+      return;
+    }
+
+    // ❌ validar orden
+    const siguiente=orden[yaMarcadas.length];
+    if(tipo!==siguiente){
+      empMsg.innerHTML=`❌ Debes marcar: ${siguiente.replace("_"," ")}`;
+      return;
+    }
+
+    // ✅ guardar
+    const now=new Date();
+    refDia.child(tipo).set({
+      nombre:empleadoActual.nombre,
+      tipo,
+      fecha,
+      hora:now.toLocaleTimeString(),
+      timestamp:now.getTime()
+    });
+
+    empMsg.innerHTML=`✅ ${tipo.replace("_"," ")} registrado`;
+    if(tipo==="salida") setTimeout(backHome,2000);
+  });
+}
+
+// 🔹 INICIO
+backHome();
+</script>
+
+</body>
+</html>
