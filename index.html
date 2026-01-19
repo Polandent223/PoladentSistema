@@ -333,7 +333,7 @@ function exportExcelSalarialFiltro(){
 }
 
 // 📅 FECHAS
-function getToday(){const d=new Date(); return `${d.getFullYear()}-${(d.getMonth()+1+1<10?'0'+(d.getMonth()+1):d.getMonth()+1}-${d.getDate()<10?'0'+d.getDate():d.getDate()}`;}
+function getToday(){const d=new Date(); return `${d.getFullYear()}-${(d.getMonth()+1<10?'0'+(d.getMonth()+1):d.getMonth()+1}-${d.getDate()<10?'0'+d.getDate():d.getDate()}`;}
 
 function setDefaultDate(){
   const today=new Date();
