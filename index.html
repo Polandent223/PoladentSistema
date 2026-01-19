@@ -83,6 +83,21 @@ button.danger{background:#dc3545;}
 
   <button onclick="logout()">Salir</button>
 </div>
+  
+  <!-- Gráfico de horas trabajadas -->
+<div class="card">
+  <h4>Gráfico de horas trabajadas</h4>
+  <canvas id="horasChart" width="400" height="200"></canvas>
+</div>
+
+<!-- Exportación avanzada por rango de fechas -->
+<div class="card">
+  <h4>Exportar por rango de fechas</h4>
+  <input type="date" id="fechaInicio">
+  <input type="date" id="fechaFin">
+  <button onclick="exportExcelRango()">Exportar Excel</button>
+  <button onclick="exportExcelSalarialRango()">Exportar Salario</button>
+</div>
 
 <!-- EMPLEADO PANEL -->
 <div id="employeePanel" class="card hidden">
@@ -236,5 +251,53 @@ function toggleResumen(){resumenVisible=!resumenVisible; adminList.style.display
 // 🔹 INICIO
 backHome(); loadEmpleados(); loadMarcaciones();
 </script>
+  function exportExcelRango() {
+  const inicio = document.getElementById("fechaInicio").value;
+  const fin = document.getElementById("fechaFin").value;
+  if (!inicio || !fin) { alert("Selecciona ambas fechas"); return; }
+  const rows = [["Nombre","Fecha","Tipo","Hora"]];
+  for(const m of excelRows){
+    if(m[1] >= inicio && m[1] <= fin){
+      rows.push(m);
+    }
+  }
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  XLSX.utils.book_append_sheet(wb, ws, "ResumenRango");
+  XLSX.writeFile(wb, "Poladent_Marcaciones_Rango.xlsx");
+}
+
+function exportExcelSalarialRango() {
+  const inicio = document.getElementById("fechaInicio").value;
+  const fin = document.getElementById("fechaFin").value;
+  if (!inicio || !fin) { alert("Selecciona ambas fechas"); return; }
+  const resumen = {};
+  for(const m of excelSalarial){
+    if(m.fecha >= inicio && m.fecha <= fin){
+      if(!resumen[m.nombre]) resumen[m.nombre]={dias:{}};
+      if(!resumen[m.nombre].dias[m.fecha]) resumen[m.nombre].dias[m.fecha]={entrada:null,salida:null};
+      if(m.tipo==="entrada") resumen[m.nombre].dias[m.fecha].entrada=m.timestamp;
+      if(m.tipo==="salida") resumen[m.nombre].dias[m.fecha].salida=m.timestamp;
+    }
+  }
+  const wsData=[["Nombre","Fecha","Horas trabajadas","Horas extra","Banco de horas"]];
+  for(const emp in resumen){
+    let bancoTotal=0;
+    for(const dia in resumen[emp].dias){
+      const ent=resumen[emp].dias[dia].entrada;
+      const sal=resumen[emp].dias[dia].salida;
+      if(!ent||!sal) continue;
+      let hrs=(sal-ent)/3600000;
+      let extra=Math.max(0,hrs-8);
+      let normales=Math.min(8,hrs);
+      bancoTotal+=extra;
+      wsData.push([emp,dia,normales.toFixed(2),extra.toFixed(2),bancoTotal.toFixed(2)]);
+    }
+  }
+  const wb=XLSX.utils.book_new();
+  const ws=XLSX.utils.aoa_to_sheet(wsData);
+  XLSX.utils.book_append_sheet(wb, ws, "SalarioRango");
+  XLSX.writeFile(wb, "Poladent_Salario_Rango.xlsx");
+}
 </body>
 </html>
