@@ -51,39 +51,6 @@ button.danger{background:#dc3545;}
 <!-- ADMIN PANEL -->
 <div id="adminPanel" class="card hidden">
   <h3>Panel Administrador</h3>
-
-  <!-- Agregar empleado -->
-  <div class="card">
-    <h4>Agregar empleado</h4>
-    <input id="nombreEmpleado" placeholder="Nombre del empleado">
-    <input id="pinEmpleado" placeholder="PIN del empleado">
-    <button onclick="agregarEmpleado()">Guardar empleado</button>
-  </div>
-
-  <!-- Lista empleados -->
-  <div class="card">
-    <h4>Empleados registrados <button onclick="toggleListaEmpleados()">Mostrar/Ocultar</button></h4>
-    <div id="listaEmpleados"></div>
-  </div>
-
-  <!-- Resumen marcaciones -->
-  <div class="card">
-    <h4>Resumen de marcaciones <button onclick="toggleResumen()">Mostrar/Ocultar</button></h4>
-    <input type="date" id="filterDate" onchange="renderAdminList(filterDate.value)">
-    <select id="periodoResumen" onchange="renderAdminList(filterDate.value)">
-      <option value="diario">Diario</option>
-      <option value="quincenal">Quincenal</option>
-      <option value="mensual">Mensual</option>
-    </select>
-    <div id="adminList"></div>
-    <div id="notificaciones"></div>
-    <button onclick="exportExcelFiltro()">Exportar Marcaciones</button>
-    <button onclick="exportExcelSalarialFiltro()">Exportar Salario</button>
-  </div>
-
-  <button onclick="logout()">Salir</button>
-</div>
-
   <!-- Gráfico de horas trabajadas -->
 <div class="card">
   <h4>Gráfico de horas trabajadas</h4>
@@ -118,6 +85,40 @@ button.danger{background:#dc3545;}
 </div>
 
 <script>
+
+  <!-- Agregar empleado -->
+  <div class="card">
+    <h4>Agregar empleado</h4>
+    <input id="nombreEmpleado" placeholder="Nombre del empleado">
+    <input id="pinEmpleado" placeholder="PIN del empleado">
+    <button onclick="agregarEmpleado()">Guardar empleado</button>
+  </div>
+
+  <!-- Lista empleados -->
+  <div class="card">
+    <h4>Empleados registrados <button onclick="toggleListaEmpleados()">Mostrar/Ocultar</button></h4>
+    <div id="listaEmpleados"></div>
+  </div>
+
+  <!-- Resumen marcaciones -->
+  <div class="card">
+    <h4>Resumen de marcaciones <button onclick="toggleResumen()">Mostrar/Ocultar</button></h4>
+    <input type="date" id="filterDate" onchange="renderAdminList(filterDate.value)">
+    <select id="periodoResumen" onchange="renderAdminList(filterDate.value)">
+      <option value="diario">Diario</option>
+      <option value="quincenal">Quincenal</option>
+      <option value="mensual">Mensual</option>
+    </select>
+    <div id="adminList"></div>
+    <div id="notificaciones"></div>
+    <button onclick="exportExcelFiltro()">Exportar Marcaciones</button>
+    <button onclick="exportExcelSalarialFiltro()">Exportar Salario</button>
+  </div>
+
+  <button onclick="logout()">Salir</button>
+</div>
+
+  
 // 🔥 FIREBASE
 const firebaseConfig={
   apiKey:"AIzaSyAFOyMEo2SgWpcs8WHp2nKCO_ax9-lYZWo",
