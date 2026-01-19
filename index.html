@@ -235,22 +235,6 @@ function exportExcelSalarialFiltro(){
   }
   const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(ws),"Salario"); XLSX.writeFile(wb,"Poladent_Salario.xlsx");
 }
-
-// 📅 CALENDARIO
-function setDefaultDate(){const today=new Date(), yyyy=today.getFullYear(), mm=(today.getMonth()+1).toString().padStart(2,"0"), dd=today.getDate().toString().padStart(2,"0"); filterDate.value=`${yyyy}-${mm}-${dd}`;}
-function getToday(){const t=new Date(); return `${t.getFullYear()}-${(t.getMonth()+1).toString().padStart(2,"0")}-${t.getDate().toString().padStart(2,"0")}`;}
-
-// 🔔 NOTIFICACIONES
-function mostrarNotificacion(text){const div=document.createElement("div"); div.className="notif"; div.innerText=text; notificaciones.prepend(div);}
-
-// 🔹 VER/OCULTAR LISTAS
-let listaVisible=true, resumenVisible=true;
-function toggleListaEmpleados(){listaVisible=!listaVisible; listaEmpleados.style.display=listaVisible?"block":"none";}
-function toggleResumen(){resumenVisible=!resumenVisible; adminList.style.display=resumenVisible?"block":"none"; notificaciones.style.display=resumenVisible?"block":"none";}
-
-// 🔹 INICIO
-backHome(); loadEmpleados(); loadMarcaciones();
-</script>
   function exportExcelRango() {
   const inicio = document.getElementById("fechaInicio").value;
   const fin = document.getElementById("fechaFin").value;
@@ -299,5 +283,20 @@ function exportExcelSalarialRango() {
   XLSX.utils.book_append_sheet(wb, ws, "SalarioRango");
   XLSX.writeFile(wb, "Poladent_Salario_Rango.xlsx");
 }
+// 📅 CALENDARIO
+function setDefaultDate(){const today=new Date(), yyyy=today.getFullYear(), mm=(today.getMonth()+1).toString().padStart(2,"0"), dd=today.getDate().toString().padStart(2,"0"); filterDate.value=`${yyyy}-${mm}-${dd}`;}
+function getToday(){const t=new Date(); return `${t.getFullYear()}-${(t.getMonth()+1).toString().padStart(2,"0")}-${t.getDate().toString().padStart(2,"0")}`;}
+
+// 🔔 NOTIFICACIONES
+function mostrarNotificacion(text){const div=document.createElement("div"); div.className="notif"; div.innerText=text; notificaciones.prepend(div);}
+
+// 🔹 VER/OCULTAR LISTAS
+let listaVisible=true, resumenVisible=true;
+function toggleListaEmpleados(){listaVisible=!listaVisible; listaEmpleados.style.display=listaVisible?"block":"none";}
+function toggleResumen(){resumenVisible=!resumenVisible; adminList.style.display=resumenVisible?"block":"none"; notificaciones.style.display=resumenVisible?"block":"none";}
+
+// 🔹 INICIO
+backHome(); loadEmpleados(); loadMarcaciones();
+</script>
 </body>
 </html>
