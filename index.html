@@ -59,7 +59,22 @@ button.danger{background:#dc3545;}
     <input id="pinEmpleado" placeholder="PIN del empleado">
     <button onclick="agregarEmpleado()">Guardar empleado</button>
   </div>
+   
+  <!-- Gráfico de horas trabajadas -->
+<div class="card">
+  <h4>Gráfico de horas trabajadas</h4>
+  <canvas id="horasChart" width="400" height="200"></canvas>
+</div>
 
+<!-- Exportación avanzada por rango de fechas -->
+<div class="card">
+  <h4>Exportar por rango de fechas</h4>
+  <input type="date" id="fechaInicio">
+  <input type="date" id="fechaFin">
+  <button onclick="exportExcelRango()">Exportar Excel</button>
+  <button onclick="exportExcelSalarialRango()">Exportar Salario</button>
+</div>
+  
   <!-- Lista empleados -->
   <div class="card">
     <h4>Empleados registrados <button onclick="toggleListaEmpleados()">Mostrar/Ocultar</button></h4>
@@ -99,21 +114,6 @@ button.danger{background:#dc3545;}
   <button onclick="backHome()">Volver</button>
 </div>
 
-    <!-- Gráfico de horas trabajadas -->
-<div class="card">
-  <h4>Gráfico de horas trabajadas</h4>
-  <canvas id="horasChart" width="400" height="200"></canvas>
-</div>
-
-<!-- Exportación avanzada por rango de fechas -->
-<div class="card">
-  <h4>Exportar por rango de fechas</h4>
-  <input type="date" id="fechaInicio">
-  <input type="date" id="fechaFin">
-  <button onclick="exportExcelRango()">Exportar Excel</button>
-  <button onclick="exportExcelSalarialRango()">Exportar Salario</button>
-</div>
-   
 <script>
 // 🔥 FIREBASE
 const firebaseConfig={
