@@ -267,16 +267,27 @@ function mark(tipo){
     } else alert("GPS no disponible");
   });
 }
-document.getElementById("empPin").addEventListener("change",()=>{
-  const pin=document.getElementById("empPin").value.trim();
-  if(!pin) return;
-  db.ref("empleados").orderByChild("pin").equalTo(pin).once("value",snap=>{
-    if(!snap.exists()){alert("PIN no encontrado"); document.getElementById("employeeButtons").classList.add("hidden"); return;}
-    snap.forEach(empSnap=>{
-      empleadoActual={id:empSnap.key,nombre:empSnap.val().nombre};
-      document.getElementById("empNombreGrande").innerHTML=empleadoActual.nombre;
+document.getElementById("empPin").addEventListener("input", () => {
+  const pin = document.getElementById("empPin").value.trim();
+  if (!pin) {
+    document.getElementById("employeeButtons").classList.add("hidden");
+    document.getElementById("empNombreGrande").innerHTML = "";
+    return;
+  }
+
+  db.ref("empleados").orderByChild("pin").equalTo(pin).once("value", snap => {
+    if (!snap.exists()) {
+      document.getElementById("employeeButtons").classList.add("hidden");
+      document.getElementById("empNombreGrande").innerHTML = "";
+      document.getElementById("empMsg").innerHTML = "⚠️ PIN no encontrado";
+      return;
+    }
+
+    snap.forEach(empSnap => {
+      empleadoActual = { id: empSnap.key, nombre: empSnap.val().nombre };
+      document.getElementById("empNombreGrande").innerHTML = empleadoActual.nombre;
       document.getElementById("employeeButtons").classList.remove("hidden");
-      document.getElementById("empMsg").innerHTML="";
+      document.getElementById("empMsg").innerHTML = "";
     });
   });
 });
