@@ -218,36 +218,68 @@ let empleadoActual=null;
 const etapas=['entrada','almuerzo_salida','almuerzo_regreso','salida'];
 function mark(tipo){
   if(!empleadoActual) return;
-  const now=new Date();
-  const yyyy=now.getFullYear(), mm=now.getMonth()+1, dd=now.getDate();
-  const fecha=`${yyyy}-${mm<10?'0'+mm:mm}-${dd<10?'0'+dd:dd}`;
-  const ref=db.ref("marcaciones/"+empleadoActual.id+"/"+fecha);
+
+  const now = new Date();
+  const yyyy = now.getFullYear(), mm = now.getMonth()+1, dd = now.getDate();
+  const fecha = `${yyyy}-${mm<10?'0'+mm:mm}-${dd<10?'0'+dd:dd}`;
+
+  const ref = db.ref("marcaciones/"+empleadoActual.id+"/"+fecha);
   ref.once("value", snap => {
-  const marc = snap.val() ? snap.val() : {};
+    const marc = snap.val() || {};
 
-  let lastEtapa = null;
-  let lastTime = 0;
+    // 🔹 Control de orden
+    const lastEtapa = Object.keys(marc).length ? Object.keys(marc).sort().pop() : null;
+    const lastIndex = lastEtapa ? etapas.indexOf(lastEtapa) : -1;
+    const tipoIndex = etapas.indexOf(tipo);
 
-  Object.values(marc).forEach(m => {
-    if (m.timestamp && m.timestamp > lastTime) {
-      lastTime = m.timestamp;
-      lastEtapa = m.tipo;
+    if(tipoIndex === -1){
+      document.getElementById("empMsg").innerHTML = "⚠️ Tipo de marcación inválido";
+      return;
     }
+
+    // Debe iniciar con Entrada
+    if(lastIndex === -1 && tipo !== 'entrada'){
+      document.getElementById("empMsg").innerHTML = "⚠️ Debes iniciar con Entrada";
+      return;
+    }
+
+    // Solo puede seguir la etapa siguiente
+    if(tipoIndex !== lastIndex + 1){
+      document.getElementById("empMsg").innerHTML = "⚠️ Debes seguir el orden de marcación";
+      return;
+    }
+
+    // 🔹 Bloqueo de doble marcación
+    if(marc[tipo]){
+      document.getElementById("empMsg").innerHTML = "⚠️ Ya marcaste esta etapa";
+      return;
+    }
+
+    // 🔹 Marcación GPS
+    if(navigator.geolocation){
+      navigator.geolocation.getCurrentPosition(pos => {
+        const lat = pos.coords.latitude, lon = pos.coords.longitude;
+        const hora = now.toLocaleTimeString(), timestamp = now.getTime();
+
+        ref.child(tipo).set({nombre: empleadoActual.nombre, tipo, fecha, hora, timestamp, lat, lon});
+
+        let frase = "";
+        if(tipo=="entrada") frase="¡Que tengas un buen inicio de jornada!";
+        if(tipo=="almuerzo_salida") frase="Buen provecho 🍽️";
+        if(tipo=="almuerzo_regreso") frase="Bienvenido de vuelta 👋";
+        if(tipo=="salida") frase="¡Buen trabajo!";
+
+        document.getElementById("empMsg").innerHTML = `${empleadoActual.nombre} | ${frase} (${hora})`;
+        mostrarNotificacion(`${empleadoActual.nombre} marcó ${tipo} a las ${hora}`);
+
+        setTimeout(backHome,2000);
+        loadMarcaciones();
+        updateChart();
+
+      }, ()=>alert("No se pudo obtener ubicación GPS"));
+    } else alert("GPS no disponible");
   });
-
-  const lastIndex = lastEtapa ? etapas.indexOf(lastEtapa) : -1;
-
-  if (lastIndex === -1 && tipo !== 'entrada') {
-    document.getElementById("empMsg").innerHTML =
-      "⚠️ Debes iniciar con Entrada";
-    return;
-  }
-
-  if (lastIndex !== -1 && etapas.indexOf(tipo) !== lastIndex + 1) {
-    document.getElementById("empMsg").innerHTML =
-      "⚠️ Debes seguir el orden de marcación";
-    return;
-  }
+}
 
     if(navigator.geolocation){
       navigator.geolocation.getCurrentPosition(pos=>{
