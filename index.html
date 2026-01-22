@@ -224,8 +224,15 @@ function mark(tipo){
   const ref=db.ref("marcaciones/"+empleadoActual.id+"/"+fecha);
   ref.once("value",snap=>{
     const marc=snap.val()||{};
-    const lastEtapa=Object.keys(marc).length ? Object.keys(marc).sort().pop() : null;
-    if(lastEtapa){
+ let lastEtapa = null;
+let lastTime = 0;
+
+Object.values(marc).forEach(m => {
+  if (m.timestamp && m.timestamp > lastTime) {
+    lastTime = m.timestamp;
+    lastEtapa = m.tipo;
+  }
+});
       const lastIndex=etapas.indexOf(lastEtapa);
       if(etapas.indexOf(tipo) !== lastIndex+1 && !(lastIndex===-1 && tipo==='entrada')){
         document.getElementById("empMsg").innerHTML="⚠️ Debes seguir el orden de marcación";
