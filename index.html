@@ -222,26 +222,33 @@ function mark(tipo){
   const yyyy=now.getFullYear(), mm=now.getMonth()+1, dd=now.getDate();
   const fecha=`${yyyy}-${mm<10?'0'+mm:mm}-${dd<10?'0'+dd:dd}`;
   const ref=db.ref("marcaciones/"+empleadoActual.id+"/"+fecha);
-  ref.once("value",snap=>{
-    const marc=snap.val()||{};
- let lastEtapa = null;
-let lastTime = 0;
+  ref.once("value", snap => {
+  const marc = snap.val() ? snap.val() : {};
 
-Object.values(marc).forEach(m => {
-  if (m.timestamp && m.timestamp > lastTime) {
-    lastTime = m.timestamp;
-    lastEtapa = m.tipo;
-  }
-});
-      const lastIndex=etapas.indexOf(lastEtapa);
-      if(etapas.indexOf(tipo) !== lastIndex+1 && !(lastIndex===-1 && tipo==='entrada')){
-        document.getElementById("empMsg").innerHTML="⚠️ Debes seguir el orden de marcación";
-        return;
-      }
-    } else if(tipo!=='entrada'){
-      document.getElementById("empMsg").innerHTML="⚠️ Debes iniciar con Entrada";
-      return;
+  let lastEtapa = null;
+  let lastTime = 0;
+
+  Object.values(marc).forEach(m => {
+    if (m.timestamp && m.timestamp > lastTime) {
+      lastTime = m.timestamp;
+      lastEtapa = m.tipo;
     }
+  });
+
+  const lastIndex = lastEtapa ? etapas.indexOf(lastEtapa) : -1;
+
+  if (lastIndex === -1 && tipo !== 'entrada') {
+    document.getElementById("empMsg").innerHTML =
+      "⚠️ Debes iniciar con Entrada";
+    return;
+  }
+
+  if (lastIndex !== -1 && etapas.indexOf(tipo) !== lastIndex + 1) {
+    document.getElementById("empMsg").innerHTML =
+      "⚠️ Debes seguir el orden de marcación";
+    return;
+  }
+
     if(navigator.geolocation){
       navigator.geolocation.getCurrentPosition(pos=>{
         const lat=pos.coords.latitude, lon=pos.coords.longitude;
