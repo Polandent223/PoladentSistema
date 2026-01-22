@@ -312,6 +312,7 @@ function loadMarcaciones(){
     allMarcaciones=snap.val()||{};
     renderAdminList(document.getElementById("filterDate").value);
     updateChart();
+    generarGraficoDia();
   });
 }
 
