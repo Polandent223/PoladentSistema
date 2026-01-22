@@ -88,6 +88,11 @@ button.danger{background:#dc3545;}
   <button onclick="exportExcelFiltro()">Exportar Marcaciones</button>
   <button onclick="exportExcelSalarialFiltro()">Exportar Salario</button>
 </div>
+  <div id="graficoDia" style="display:block;">
+  <canvas id="chartDia" height="120"></canvas>
+   <h4 style="cursor:pointer;" onclick="toggleSection('graficoDia')">
+  Gráfico del día ▼
+     
   <!-- Gráfico horas trabajadas -->
   <div class="card">
     <h4>Gráfico de horas trabajadas</h4>
@@ -114,11 +119,6 @@ button.danger{background:#dc3545;}
   <button onclick="backHome()">Volver</button>
 </div>
  
-
-<div id="graficoDia" style="display:block;">
-  <canvas id="chartDia" height="120"></canvas>
-   <h4 style="cursor:pointer;" onclick="toggleSection('graficoDia')">
-  Gráfico del día ▼
 </h4>
 </div>
 
