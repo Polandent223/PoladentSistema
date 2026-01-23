@@ -88,11 +88,6 @@ button.danger{background:#dc3545;}
   <button onclick="exportExcelFiltro()">Exportar Marcaciones</button>
   <button onclick="exportExcelSalarialFiltro()">Exportar Salario</button>
 </div>
-  <div id="graficoDia" style="display:block;">
-  <canvas id="chartDia" height="120"></canvas>
-   <h4 style="cursor:pointer;" onclick="toggleSection('graficoDia')">
-  Gráfico del día ▼
-     
   <!-- Gráfico horas trabajadas -->
   <div class="card">
     <h4>Gráfico de horas trabajadas</h4>
@@ -117,9 +112,6 @@ button.danger{background:#dc3545;}
   </div>
   <div id="empMsg" class="notice"></div>
   <button onclick="backHome()">Volver</button>
-</div>
- 
-</h4>
 </div>
 
 <script>
@@ -313,7 +305,6 @@ function loadMarcaciones(){
     allMarcaciones=snap.val()||{};
     renderAdminList(document.getElementById("filterDate").value);
     updateChart();
-    generarGraficoDia();
   });
 }
 
@@ -473,58 +464,8 @@ function toggleSection(id){
     header.innerHTML = header.innerHTML.replace('▼','▲');
   }
 }
-  let chartDia = null;
-
-function generarGraficoDia() {
-  const hoy = new Date().toISOString().split('T')[0];
-  const empleadosHoras = {};
-
-  registros.forEach(r => {
-    if (r.fecha === hoy && r.entrada && r.salida) {
-      const entrada = new Date(`${r.fecha} ${r.entrada}`);
-      const salida = new Date(`${r.fecha} ${r.salida}`);
-      const horas = (salida - entrada) / 3600000;
-
-      empleadosHoras[r.nombre] = (empleadosHoras[r.nombre] || 0) + horas;
-    }
-  });
-
-  const nombres = Object.keys(empleadosHoras);
-  const horas = Object.values(empleadosHoras);
-
-  const ctx = document.getElementById('chartDia');
-
-  if (chartDia) chartDia.destroy();
-
-  chartDia = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: nombres,
-      datasets: [{
-        label: 'Horas trabajadas hoy',
-        data: horas,
-      }]
-    },
-    options: {
-      responsive: true,
-      plugins: {
-        legend: { display: false }
-      },
-      scales: {
-        y: {
-          beginAtZero: true,
-          title: {
-            display: true,
-            text: 'Horas'
-          }
-        }
-      }
-    }
-  });
-}
 // 🔹 INICIO
 backHome();
 </script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </body>
 </html>
