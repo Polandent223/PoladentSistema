@@ -145,8 +145,8 @@ canvas{
 <!-- ADMIN PANEL -->
 <div id="adminPanel" class="panel hidden">
   <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;margin-top:20px;">
-  <h3>Panel Administrador</h3>
-</div>
+    <h3>Panel Administrador</h3>
+  </div>
   
   <!-- Agregar empleado -->
   <div class="card">
@@ -156,64 +156,54 @@ canvas{
     <button onclick="agregarEmpleado()">Guardar empleado</button>
   </div>
     
-<!-- columna derecha -->
-<!-- Empleados registrados -->
-<div class="card">
-  <h4 style="cursor:pointer;" onclick="toggleSection('listaEmpleados')">
-    👥 Empleados registrados ▼
-  </h4>
-  <div id="listaEmpleados" style="max-height:300px; overflow:auto;"></div>
-</div>
-
-<!-- Resumen marcaciones -->
-<div class="card">
-  <h4 style="cursor:pointer;" onclick="toggleSection('adminList')">
-    Resumen de marcaciones ▼
-  </h4>
-  <input type="date" id="filterDate" onchange="filterByDate()">
-  <select id="periodoResumen" onchange="filterByDate()">
-    <option value="diario">Diario</option>
-    <option value="quincenal">Quincenal</option>
-    <option value="mensual">Mensual</option>
-  </select>
-  <div id="adminList" style="max-height:300px; overflow:auto;"></div>
-</div>
-
-<!-- Notificaciones -->
-<div class="card">
-  <h4 style="cursor:pointer;" onclick="toggleSection('notificaciones')">
-    Notificaciones ▼
-  </h4>
-  <div id="notificaciones" style="max-height:200px; overflow:auto;"></div>
-  <button onclick="exportExcelFiltro()">Exportar Marcaciones</button>
-  <button onclick="exportExcelSalarialFiltro()">Exportar Salario</button>
-</div>
-
-<!-- Gráfico horas trabajadas -->
-<div class="card">
-  <label>Desde: <input type="date" id="chartStart" onchange="updateChart()"></label>
-  <label>Hasta: <input type="date" id="chartEnd" onchange="updateChart()"></label>
-
-  <canvas id="horasChart" width="400" height="200"></canvas>
-
-  <h4 style="margin-top:15px;">📊 Gráfico de horas trabajadas por empleado</h4>
-</div>
-
-<!-- EMPLEADO PANEL -->
-<div id="employeePanel" class="card hidden">
-  <div class="nombreGrande" id="empNombreGrande"></div>
-  <input id="empPin" type="password" placeholder="Ingresa tu PIN">
-  <br>
-  <div id="employeeButtons" class="hidden">
-    <button onclick="mark('entrada')">Entrada</button>
-    <button onclick="mark('almuerzo_salida')">Salida Almuerzo</button>
-    <button onclick="mark('almuerzo_regreso')">Regreso Almuerzo</button>
-    <button onclick="mark('salida')">Salida</button>
+  <!-- Empleados registrados -->
+  <div class="card">
+    <h4 style="cursor:pointer;" onclick="toggleSection('listaEmpleados')">
+      👥 Empleados registrados ▼
+    </h4>
+    <div id="listaEmpleados" style="max-height:300px; overflow:auto;"></div>
   </div>
-  <div id="empMsg" class="notice"></div>
-  <button onclick="backHome()">Volver</button>
-</div>
 
+  <!-- Resumen marcaciones -->
+  <div class="card">
+    <h4 style="cursor:pointer;" onclick="toggleSection('adminList')">
+      Resumen de marcaciones ▼
+    </h4>
+    <input type="date" id="filterDate" onchange="filterByDate()">
+    <select id="periodoResumen" onchange="filterByDate()">
+      <option value="diario">Diario</option>
+      <option value="quincenal">Quincenal</option>
+      <option value="mensual">Mensual</option>
+    </select>
+    <div id="adminList" style="max-height:300px; overflow:auto;"></div>
+  </div>
+
+  <!-- Notificaciones -->
+  <div class="card">
+    <h4 style="cursor:pointer;" onclick="toggleSection('notificaciones')">
+      Notificaciones ▼
+    </h4>
+    <div id="notificaciones" style="max-height:200px; overflow:auto;"></div>
+    <button onclick="exportExcelFiltro()">Exportar Marcaciones</button>
+    <button onclick="exportExcelSalarialFiltro()">Exportar Salario</button>
+  </div>
+
+  <!-- Gráfico principal (como antes) -->
+  <div class="card">
+    <h4>📊 Gráfico horas trabajadas</h4>
+    <canvas id="horasChart" width="400" height="200"></canvas>
+  </div>
+
+  <!-- Segundo gráfico por empleado -->
+  <div class="card">
+    <h4>📊 Horas trabajadas por empleado</h4>
+    <label>Desde: <input type="date" id="chartStart" onchange="updateChart()"></label>
+    <label>Hasta: <input type="date" id="chartEnd" onchange="updateChart()"></label>
+    <canvas id="horasChartEmpleado" width="400" height="200"></canvas>
+  </div>
+
+  <button onclick="logout()">Salir</button>
+</div>
 <script>
 // 🔥 CONFIGURACIÓN FIREBASE
 const firebaseConfig={
