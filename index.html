@@ -114,9 +114,9 @@ button.danger{
 }
 
 canvas{
-  margin-top:15px;
-  background:#fff;
-  border-radius:10px;
+  margin-top:10px;
+  border-radius:8px;
+  background:#f8fbff;
   padding:10px;
 }
 </style>
@@ -191,12 +191,12 @@ canvas{
 
 <!-- Gráfico horas trabajadas -->
 <div class="card">
-  <h4>📊 Gráfico de horas trabajadas por empleado</h4>
   <label>Desde: <input type="date" id="chartStart" onchange="updateChart()"></label>
   <label>Hasta: <input type="date" id="chartEnd" onchange="updateChart()"></label>
+
   <canvas id="horasChart" width="400" height="200"></canvas>
-</div>
-  <button onclick="logout()">Salir</button>
+
+  <h4 style="margin-top:15px;">📊 Gráfico de horas trabajadas por empleado</h4>
 </div>
 
 <!-- EMPLEADO PANEL -->
