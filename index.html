@@ -554,6 +554,84 @@ function toggleSection(id){
     header.innerHTML = header.innerHTML.replace('▼','▲');
   }
 }
+  // 📊 SEGUNDO GRÁFICO: Horas trabajadas por empleado (filtrable)
+let horasChartEmpleadoInstance = null;
+
+function renderChartEmpleado(startDate='', endDate='') {
+  const ctx = document.getElementById("horasChartEmpleado").getContext("2d");
+  const filtroInicio = startDate ? new Date(startDate) : null;
+  const filtroFin = endDate ? new Date(endDate) : null;
+
+  const resumenHoras = {};
+
+  // Recorremos todas las marcaciones
+  for (const empID in allMarcaciones) {
+    const fechas = allMarcaciones[empID];
+    for (const fecha in fechas) {
+      const fechaObj = new Date(fecha);
+      if (filtroInicio && fechaObj < filtroInicio) continue;
+      if (filtroFin && fechaObj > filtroFin) continue;
+
+      const tipos = fechas[fecha];
+      let entrada = null, salida = null;
+      Object.values(tipos).forEach(m => {
+        if (m.tipo === 'entrada') entrada = m.timestamp;
+        if (m.tipo === 'salida') salida = m.timestamp;
+      });
+      if (!entrada || !salida) continue;
+
+      const nombre = Object.values(tipos)[0].nombre || 'Sin nombre';
+      if (!resumenHoras[nombre]) resumenHoras[nombre] = 0;
+      resumenHoras[nombre] += (salida - entrada) / 3600000;
+    }
+  }
+
+  const labels = Object.keys(resumenHoras);
+  const data = Object.values(resumenHoras);
+
+  if (horasChartEmpleadoInstance) horasChartEmpleadoInstance.destroy();
+
+  horasChartEmpleadoInstance = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'Horas trabajadas',
+        data: data,
+        backgroundColor: 'rgba(255, 99, 132, 0.5)',
+        borderColor: 'rgba(255, 99, 132, 1)',
+        borderWidth: 1
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: {
+          beginAtZero: true,
+          title: { display: true, text: 'Horas' }
+        },
+        x: {
+          title: { display: true, text: 'Empleado' }
+        }
+      }
+    }
+  });
+}
+
+// Función para actualizar al cambiar fechas
+function updateChartEmpleado() {
+  const start = document.getElementById("chartStart").value;
+  const end = document.getElementById("chartEnd").value;
+  renderChartEmpleado(start, end);
+}
+
+// Actualizamos automáticamente cuando cargan las marcaciones
+db.ref("marcaciones").on("value", snap => {
+  allMarcaciones = snap.val() || {};
+  updateChartEmpleado();
+});
+  
 // 🔹 INICIO
 backHome();
 </script>
