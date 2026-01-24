@@ -507,45 +507,111 @@ function mostrarNotificacion(text){
   notif.prepend(div);
 }
 
-// 📊 GRÁFICO HORAS
+<!-- GRÁFICO COMPLETO -->
+<div class="card">
+  <canvas id="horasChart" width="400" height="200"></canvas>
+  <h4>📊 Gráfico del día</h4>
+</div>
+
+<!-- GRÁFICO POR EMPLEADO -->
+<div class="card">
+  <label>Desde: <input type="date" id="chartStart"></label>
+  <label>Hasta: <input type="date" id="chartEnd"></label>
+  <canvas id="horasChartEmpleado" width="400" height="200"></canvas>
+  <h4>📊 Horas trabajadas por empleado</h4>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+/* --- DATOS DE EJEMPLO --- */
+let allMarcacionesEjemplo = {
+  "emp1": {
+    "2026-01-24": {
+      "entrada": {tipo:"entrada", nombre:"Juan", timestamp: Date.now() - 3600000*8},
+      "salida": {tipo:"salida", nombre:"Juan", timestamp: Date.now()}
+    }
+  },
+  "emp2": {
+    "2026-01-24": {
+      "entrada": {tipo:"entrada", nombre:"Ana", timestamp: Date.now() - 3600000*7},
+      "salida": {tipo:"salida", nombre:"Ana", timestamp: Date.now()}
+    }
+  }
+};
+
+/* --- FUNCIÓN PARA GRÁFICO GENERAL --- */
 function renderChart(startDate='', endDate=''){
-  const ctx=document.getElementById("horasChart").getContext("2d");
-  let chartData={labels:[], datasets:[{label:'Horas trabajadas', data:[], backgroundColor:'rgba(0,123,255,0.5)'}]};
-  const filtroInicio=startDate ? new Date(startDate) : null;
-  const filtroFin=endDate ? new Date(endDate) : null;
+  const ctx = document.getElementById("horasChart").getContext("2d");
+  const chartData = {labels:[], datasets:[{label:'Horas trabajadas', data:[], backgroundColor:'rgba(0,123,255,0.5)'}]};
+  const resumenHoras = {};
 
-  const resumenHoras={};
-  for(const empID in allMarcaciones){
-    const fechas=allMarcaciones[empID];
+  for(const empID in allMarcacionesEjemplo){
+    const fechas = allMarcacionesEjemplo[empID];
     for(const fecha in fechas){
-      const fechaObj=new Date(fecha);
-      if(filtroInicio && fechaObj<filtroInicio) continue;
-      if(filtroFin && fechaObj>filtroFin) continue;
-
-      const tipos=fechas[fecha];
-      let entrada=null, salida=null;
-      Object.values(tipos).forEach(m=>{
-        if(m.tipo==='entrada') entrada=m.timestamp;
-        if(m.tipo==='salida') salida=m.timestamp;
-      });
+      const tipos = fechas[fecha];
+      let entrada = tipos["entrada"]?.timestamp;
+      let salida = tipos["salida"]?.timestamp;
       if(!entrada || !salida) continue;
-      const nombre=Object.values(tipos)[0].nombre || 'Sin nombre';
-      if(!resumenHoras[nombre]) resumenHoras[nombre]=0;
-      resumenHoras[nombre]+=(salida-entrada)/3600000;
+      const nombre = tipos["entrada"].nombre || "Sin nombre";
+      resumenHoras[nombre] = (resumenHoras[nombre]||0) + (salida-entrada)/3600000;
     }
   }
 
-  chartData.labels=Object.keys(resumenHoras);
-  chartData.datasets[0].data=Object.values(resumenHoras);
+  chartData.labels = Object.keys(resumenHoras);
+  chartData.datasets[0].data = Object.values(resumenHoras);
 
   if(window.horasChartInstance) window.horasChartInstance.destroy();
-  window.horasChartInstance=new Chart(ctx,{
+  window.horasChartInstance = new Chart(ctx,{
     type:'bar',
-    data:chartData,
+    data: chartData,
     options:{responsive:true, plugins:{legend:{display:false}}}
   });
 }
 
+/* --- FUNCIÓN PARA GRÁFICO POR EMPLEADO --- */
+function renderChartEmpleado(startDate='', endDate=''){
+  const ctx = document.getElementById("horasChartEmpleado").getContext("2d");
+  const chartData = {labels:[], datasets:[{label:'Horas trabajadas', data:[], backgroundColor:'rgba(0,123,255,0.5)'}]};
+  const resumenHoras = {};
+
+  for(const empID in allMarcacionesEjemplo){
+    const fechas = allMarcacionesEjemplo[empID];
+    for(const fecha in fechas){
+      const tipos = fechas[fecha];
+      let entrada = tipos["entrada"]?.timestamp;
+      let salida = tipos["salida"]?.timestamp;
+      if(!entrada || !salida) continue;
+      const nombre = tipos["entrada"].nombre || "Sin nombre";
+      resumenHoras[nombre] = (resumenHoras[nombre]||0) + (salida-entrada)/3600000;
+    }
+  }
+
+  chartData.labels = Object.keys(resumenHoras);
+  chartData.datasets[0].data = Object.values(resumenHoras);
+
+  if(window.horasChartEmpleadoInstance) window.horasChartEmpleadoInstance.destroy();
+  window.horasChartEmpleadoInstance = new Chart(ctx,{
+    type:'bar',
+    data: chartData,
+    options:{responsive:true, plugins:{legend:{display:false}}}
+  });
+}
+
+/* --- ACTUALIZAR GRÁFICOS AL CAMBIAR FECHAS --- */
+document.getElementById("chartStart").addEventListener("change", ()=>updateCharts());
+document.getElementById("chartEnd").addEventListener("change", ()=>updateCharts());
+
+function updateCharts(){
+  const start = document.getElementById("chartStart").value;
+  const end = document.getElementById("chartEnd").value;
+  renderChart(start,end);
+  renderChartEmpleado(start,end);
+}
+
+/* --- INICIALIZAR --- */
+renderChart();
+renderChartEmpleado();
+</script>
 // Actualiza gráfico al cambiar rango
 function updateChart(){
   const start=document.getElementById("chartStart").value;
