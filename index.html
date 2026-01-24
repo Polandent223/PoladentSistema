@@ -612,24 +612,7 @@ function updateCharts(){
 renderChart();
 renderChartEmpleado();
 </script>
-// Actualiza gráfico al cambiar rango
-function updateChart(){
-  const start=document.getElementById("chartStart").value;
-  const end=document.getElementById("chartEnd").value;
-  renderChart(start,end);
-}
-// 🔽 Función para minimizar/expandir listas
-function toggleSection(id){
-  const el = document.getElementById(id);
-  const header = el.previousElementSibling;
-  if(el.style.display === 'none'){
-    el.style.display = 'block';
-    header.innerHTML = header.innerHTML.replace('▲','▼');
-  } else {
-    el.style.display = 'none';
-    header.innerHTML = header.innerHTML.replace('▼','▲');
-  }
-}
+
 // 🔹 INICIO
 backHome();
 </script>
