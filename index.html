@@ -144,6 +144,7 @@ canvas{
 
 <!-- ADMIN PANEL -->
 <div id="adminPanel" class="panel hidden">
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;margin-top:20px;"></div>
   <h3>Panel Administrador</h3>
 
   <!-- Agregar empleado -->
@@ -153,10 +154,11 @@ canvas{
     <input id="pinEmpleado" placeholder="PIN del empleado">
     <button onclick="agregarEmpleado()">Guardar empleado</button>
   </div>
-
+    
+!-- columna derecha -->
   <!-- Empleados registrados -->
 <div class="card">
-<h4 style="cursor:pointer;" onclick="toggleSection('listaEmpleados')">
+<h4 style="cursor:pointer;" onclick="toggleSection('listaEmpleados')"></div>
     👥 Empleados registrados ▼
 </h4>
   </h4>
