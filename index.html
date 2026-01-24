@@ -157,7 +157,7 @@ canvas{
   </div>
     
 <!-- columna derecha -->
-  <!-- Empleados registrados -->
+<!-- Empleados registrados -->
 <div class="card">
   <h4 style="cursor:pointer;" onclick="toggleSection('listaEmpleados')">
     👥 Empleados registrados ▼
@@ -177,25 +177,25 @@ canvas{
     <option value="mensual">Mensual</option>
   </select>
   <div id="adminList" style="max-height:300px; overflow:auto;"></div>
-</div>  <!-- cierre resumen -->
+</div>
+
 <!-- Notificaciones -->
 <div class="card">
   <h4 style="cursor:pointer;" onclick="toggleSection('notificaciones')">
     Notificaciones ▼
   </h4>
   <div id="notificaciones" style="max-height:200px; overflow:auto;"></div>
-</div>
   <button onclick="exportExcelFiltro()">Exportar Marcaciones</button>
   <button onclick="exportExcelSalarialFiltro()">Exportar Salario</button>
 </div>
-  <!-- Gráfico horas trabajadas -->
-  <div class="card">
-    <<h4>📊 Gráfico de horas trabajadas por empleado</h4>
-    <label>Desde: <input type="date" id="chartStart" onchange="updateChart()"></label>
-    <label>Hasta: <input type="date" id="chartEnd" onchange="updateChart()"></label>
-    <canvas id="horasChart" width="400" height="200"></canvas>
-  </div>
 
+<!-- Gráfico horas trabajadas -->
+<div class="card">
+  <h4>📊 Gráfico de horas trabajadas por empleado</h4>
+  <label>Desde: <input type="date" id="chartStart" onchange="updateChart()"></label>
+  <label>Hasta: <input type="date" id="chartEnd" onchange="updateChart()"></label>
+  <canvas id="horasChart" width="400" height="200"></canvas>
+</div>
   <button onclick="logout()">Salir</button>
 </div>
 
