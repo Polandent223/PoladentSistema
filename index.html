@@ -199,17 +199,23 @@ canvas{
   <h4 style="margin-top:15px;">📊 Gráfico de horas trabajadas por empleado</h4>
 </div>
 
+<button onclick="logout()">Salir</button>
+</div>
+
 <!-- EMPLEADO PANEL -->
 <div id="employeePanel" class="card hidden">
   <div class="nombreGrande" id="empNombreGrande"></div>
+
   <input id="empPin" type="password" placeholder="Ingresa tu PIN">
   <br>
+
   <div id="employeeButtons" class="hidden">
     <button onclick="mark('entrada')">Entrada</button>
     <button onclick="mark('almuerzo_salida')">Salida Almuerzo</button>
     <button onclick="mark('almuerzo_regreso')">Regreso Almuerzo</button>
     <button onclick="mark('salida')">Salida</button>
   </div>
+
   <div id="empMsg" class="notice"></div>
   <button onclick="backHome()">Volver</button>
 </div>
