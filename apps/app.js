@@ -448,6 +448,71 @@ async function calcularPagos() {
 
   resultsDiv.innerHTML = html;
       }
+async function calcularPagos() {
+  const start = document.getElementById("payStart").value;
+  const end = document.getElementById("payEnd").value;
+  const resultsDiv = document.getElementById("payResults");
+  const filtro = document.getElementById("empleadoFiltro").value;
+
+  if (!start || !end) {
+    alert("Selecciona un rango de fechas");
+    return;
+  }
+
+  resultsDiv.innerHTML = "Calculando...";
+
+  const empleadosSnap = await db.ref("empleados").once("value");
+  const empleados = empleadosSnap.val();
+  let html = "";
+
+  for (const empId in empleados) {
+    if (filtro !== "todos" && filtro !== empId) continue;
+
+    const nombre = empleados[empId].nombre;
+    const valorHora = empleados[empId].valorHora || 0;
+
+    const marcacionesSnap = await db.ref("marcaciones/" + empId).once("value");
+    const marcaciones = marcacionesSnap.val();
+    if (!marcaciones) continue;
+
+    let totalMinutos = 0;
+
+    for (const fecha in marcaciones) {
+      if (fecha >= start && fecha <= end) {
+        const dia = marcaciones[fecha];
+
+        // ⚡ Solo consideramos entrada y salida
+        if (dia.entrada?.timestamp && dia.salida?.timestamp) {
+          let entrada = dia.entrada.timestamp;
+          let salida = dia.salida.timestamp;
+          let minutosTrabajados = (salida - entrada) / 60000; // convertir ms a minutos
+
+          // ⚡ Descontar almuerzo si existe
+          if (dia.almuerzo_salida?.timestamp && dia.almuerzo_regreso?.timestamp) {
+            let almuerzo = (dia.almuerzo_regreso.timestamp - dia.almuerzo_salida.timestamp) / 60000;
+            minutosTrabajados -= almuerzo;
+          }
+
+          totalMinutos += minutosTrabajados;
+        }
+      }
+    }
+
+    const totalHoras = (totalMinutos / 60).toFixed(2);
+    const totalPagar = (totalHoras * valorHora).toFixed(2);
+
+    html += `
+      <div class="card">
+        <strong>${nombre}</strong><br>
+        Horas trabajadas: ${totalHoras} h<br>
+        Valor hora: $${valorHora}<br>
+        <strong>Total a pagar: $${totalPagar}</strong>
+      </div>
+    `;
+  }
+
+  resultsDiv.innerHTML = html;
+}
 
 // 🔹 INICIO
 backHome();
