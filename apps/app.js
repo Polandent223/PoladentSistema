@@ -108,10 +108,17 @@ function borrarEmpleado(id) {
 function asignarSalario(empID) {
   const salario = prompt("Ingresa el salario:");
   if (!salario) return;
-  const tipo = prompt("Tipo de salario (diario/quincenal/mensual):", "diario");
-  db.ref("empleados/" + empID).update({ salario: parseFloat(salario), tipoSalario: tipo });
-  loadEmpleados();
-}
+ const valorHora = 
+   document.getElementById("valorHoraEmpleado").value) || 0;
+
+db.ref("empleados/"+id).set({
+  nombre,
+  pin,
+  valorHora,
+  creado: Date.now(),
+  salario: 0,
+  tipoSalario: "diario"
+});
 
 // 🔹 OLERITE PDF
 function generarOlerite(empID) {
