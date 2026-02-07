@@ -82,10 +82,17 @@ function cargarEmpleados() {
     cont.innerHTML = "";
     snap.forEach(emp => {
       const data = emp.val();
-      cont.innerHTML += `<div class="empleado">
-        <strong>${data.nombre}</strong><br>
-        PIN: ${data.pin}<br>
-        Salario: ${data.salario} (${data.tipoSalario})
+      cont.innerHTML+=`<div class="empleado">
+  <strong>${data.nombre}</strong><br>
+  PIN: ${data.pin}<br>
+  Valor hora: $${data.valorHora}<br>
+  Salario: ${data.salario} (${data.tipoSalario})
+  <div class="empActions">
+    <button onclick="borrarEmpleado('${emp.key}')">Borrar</button>
+    <button onclick="asignarSalario('${emp.key}')">Asignar Salario</button>
+    <button onclick="generarOlerite('${emp.key}')">Olerite PDF</button>
+  </div>
+</div>`;
         <div class="empActions">
           <button onclick="borrarEmpleado('${emp.key}')">Borrar</button>
           <button onclick="asignarSalario('${emp.key}')">Asignar Salario</button>
