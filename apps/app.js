@@ -380,6 +380,83 @@ function toggleSection(id){
   }
 }
 
+function calcularPagos(){
+  const start = new Date(document.getElementById("payStart").value);
+  const end = new Date(document.getElementById("payEnd").value);
+  const cont = document.getElementById("payResults");
+  cont.innerHTML = "";
+
+  db.ref("empleados").once("value", empSnap => {
+    empSnap.forEach(emp => {
+      const empID = emp.key;
+      const dataEmp = emp.val();
+
+      let totalHoras = 0;
+      let bancoHoras = 0;
+      let diasTrabajados = 0;
+
+      db.ref("marcaciones/"+empID).once("value", marcSnap => {
+        marcSnap.forEach(fechaSnap => {
+          const fecha = new Date(fechaSnap.key);
+          if(fecha < start || fecha > end) return;
+
+          const registros = fechaSnap.val();
+          let entrada=null, salida=null, almuerzoOut=null, almuerzoIn=null;
+
+          Object.values(registros).forEach(r=>{
+            if(r.tipo==="entrada") entrada=r.timestamp;
+            if(r.tipo==="salida") salida=r.timestamp;
+            if(r.tipo==="almuerzo_salida") almuerzoOut=r.timestamp;
+            if(r.tipo==="almuerzo_regreso") almuerzoIn=r.timestamp;
+          });
+
+          if(entrada && salida){
+            let horas = (salida - entrada)/3600000;
+
+            if(almuerzoOut && almuerzoIn){
+              horas -= (almuerzoIn - almuerzoOut)/3600000;
+            }
+
+            totalHoras += horas;
+            diasTrabajados++;
+
+            if(horas > 8){
+              bancoHoras += (horas - 8);
+            }
+          }
+        });
+
+        let pago = 0;
+
+        if(dataEmp.tipoSalario === "diario"){
+          pago = diasTrabajados * dataEmp.salario;
+        }
+
+        if(dataEmp.tipoSalario === "quincenal"){
+          const valorDia = dataEmp.salario / 15;
+          pago = diasTrabajados * valorDia;
+        }
+
+        if(dataEmp.tipoSalario === "mensual"){
+          const valorDia = dataEmp.salario / 30;
+          pago = diasTrabajados * valorDia;
+        }
+
+        cont.innerHTML += `
+          <div class="empleado">
+            <strong>${dataEmp.nombre}</strong><br>
+            Días trabajados: ${diasTrabajados}<br>
+            Horas trabajadas: ${totalHoras.toFixed(2)}<br>
+            Banco de horas: ${bancoHoras.toFixed(2)}<br>
+            <strong>Total a pagar: $${pago.toFixed(2)}</strong>
+          </div>
+        `;
+      });
+    });
+  });
+}
+
+
 // 🔹 INICIO
 backHome();
 setDefaultDate();
