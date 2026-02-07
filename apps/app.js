@@ -93,12 +93,6 @@ function cargarEmpleados() {
     <button onclick="generarOlerite('${emp.key}')">Olerite PDF</button>
   </div>
 </div>`;
-        <div class="empActions">
-          <button onclick="borrarEmpleado('${emp.key}')">Borrar</button>
-          <button onclick="asignarSalario('${emp.key}')">Asignar Salario</button>
-          <button onclick="generarOlerite('${emp.key}')">Olerite PDF</button>
-        </div>
-      </div>`;
     });
   });
 }
@@ -129,7 +123,7 @@ db.ref("empleados/"+id).set({
 
 // 🔹 OLERITE PDF
 function generarOlerite(empID) {
-  db.ref("empleados/" + empID).once("value", snap => {
+  db.ref("empleados/" + "value", snap => {
     const emp = snap.val();
     if (!emp) return;
     const { jsPDF } = window.jspdf;
