@@ -515,8 +515,38 @@ async function calcularPagos() {
       </div>
     `;
   }
-
+6
   resultsDiv.innerHTML = html;
+}
+
+// 🔹 LLENAR SELECT DE EMPLEADOS AUTOMÁTICAMENTE
+function llenarSelectEmpleados() {
+  const select = document.getElementById("empleadoFiltro");
+  select.innerHTML = '<option value="todos">Todos</option>'; // Reinicia el select
+
+  db.ref("empleados").once("value").then(snap => {
+    const empleados = snap.val();
+    if (!empleados) return;
+
+    for (const empId in empleados) {
+      const nombre = empleados[empId].nombre;
+      const option = document.createElement("option");
+      option.value = empId;
+      option.textContent = nombre;
+      select.appendChild(option);
+    }
+  });
+}
+
+// 🔹 Llamar a la función al cargar admin
+document.addEventListener("DOMContentLoaded", () => {
+  llenarSelectEmpleados();
+});
+
+// 🔹 También actualizar cada vez que cargues empleados
+function loadEmpleados() {
+  cargarEmpleados();
+  llenarSelectEmpleados();
 }
 
 // 🔹 INICIO
