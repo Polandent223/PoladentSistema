@@ -98,6 +98,14 @@
 
     <canvas id="horasChart" width="400" height="200"></canvas>
 
+    <div class="card">
+  <h4>💰 Cálculo de pago por período</h4>
+  <label>Desde: <input type="date" id="payStart"></label>
+  <label>Hasta: <input type="date" id="payEnd"></label>
+  <button onclick="calcularPagos()">Calcular pagos</button>
+  <div id="payResults"></div>
+</div>
+
     <h4 style="margin-top:15px;">📊 Gráfico de horas trabajadas por empleado</h4>
   </div>
 
