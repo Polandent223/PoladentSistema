@@ -380,12 +380,12 @@ function toggleSection(id){
   }
 }
 
-// ================== CALCULO DE PAGOS ==================
-
+/// ================== CALCULO DE PAGOS ADAPTADO ==================
 async function calcularPagos() {
   const start = document.getElementById("payStart").value;
   const end = document.getElementById("payEnd").value;
   const resultsDiv = document.getElementById("payResults");
+  const filtro = document.getElementById("empleadoFiltro").value;
 
   if (!start || !end) {
     alert("Selecciona el rango de fechas");
@@ -399,15 +399,15 @@ async function calcularPagos() {
 
   let html = "";
 
-  const filtro = document.getElementById("empleadoFiltro").value;
+  for (const empId in empleados) {
+    if (filtro !== "todos" && filtro !== empId) continue;
 
-for (const empId in empleados) {
-  if (filtro !== "todos" && filtro !== empId) continue;
     const nombre = empleados[empId].nombre;
     const valorHora = empleados[empId].valorHora || 0;
 
     const marcacionesSnap = await db.ref("marcaciones/" + empId).once("value");
     const marcaciones = marcacionesSnap.val();
+    if (!marcaciones) continue;
 
     let totalMinutos = 0;
 
@@ -416,15 +416,15 @@ for (const empId in empleados) {
         const dia = marcaciones[fecha];
 
         if (dia.entrada && dia.salida) {
-          const entrada = new Date(dia.entrada);
-          const salida = new Date(dia.salida);
+          // Construimos fecha + hora manualmente
+          const entrada = new Date(`${fecha}T${dia.entrada}`);
+          const salida = new Date(`${fecha}T${dia.salida}`);
 
           let minutos = (salida - entrada) / 60000;
 
-          // Restar almuerzo si existe
           if (dia.almuerzo_salida && dia.almuerzo_regreso) {
-            const a1 = new Date(dia.almuerzo_salida);
-            const a2 = new Date(dia.almuerzo_regreso);
+            const a1 = new Date(`${fecha}T${dia.almuerzo_salida}`);
+            const a2 = new Date(`${fecha}T${dia.almuerzo_regreso}`);
             minutos -= (a2 - a1) / 60000;
           }
 
@@ -447,25 +447,7 @@ for (const empId in empleados) {
   }
 
   resultsDiv.innerHTML = html;
-                                   
-}
-
-// Cargar empleados en el selector
-async function cargarEmpleadosFiltro() {
-  const select = document.getElementById("empleadoFiltro");
-  const snap = await db.ref("empleados").once("value");
-  const empleados = snap.val();
-
-  for (const id in empleados) {
-    const option = document.createElement("option");
-    option.value = id;
-    option.textContent = empleados[id].nombre;
-    select.appendChild(option);
-  }
-}
-
-// Ejecutar cuando abre el panel admin
-document.addEventListener("DOMContentLoaded", cargarEmpleadosFiltro);
+      }
 
 // 🔹 INICIO
 backHome();
