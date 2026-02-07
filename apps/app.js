@@ -380,82 +380,92 @@ function toggleSection(id){
   }
 }
 
-function calcularPagos(){
-  const start = new Date(document.getElementById("payStart").value);
-  const end = new Date(document.getElementById("payEnd").value);
-  const cont = document.getElementById("payResults");
-  cont.innerHTML = "";
+// ================== CALCULO DE PAGOS ==================
 
-  db.ref("empleados").once("value", empSnap => {
-    empSnap.forEach(emp => {
-      const empID = emp.key;
-      const dataEmp = emp.val();
+async function calcularPagos() {
+  const start = document.getElementById("payStart").value;
+  const end = document.getElementById("payEnd").value;
+  const resultsDiv = document.getElementById("payResults");
 
-      let totalHoras = 0;
-      let bancoHoras = 0;
-      let diasTrabajados = 0;
+  if (!start || !end) {
+    alert("Selecciona el rango de fechas");
+    return;
+  }
 
-      db.ref("marcaciones/"+empID).once("value", marcSnap => {
-        marcSnap.forEach(fechaSnap => {
-          const fecha = new Date(fechaSnap.key);
-          if(fecha < start || fecha > end) return;
+  resultsDiv.innerHTML = "Calculando...";
 
-          const registros = fechaSnap.val();
-          let entrada=null, salida=null, almuerzoOut=null, almuerzoIn=null;
+  const empleadosSnap = await db.ref("empleados").once("value");
+  const empleados = empleadosSnap.val();
 
-          Object.values(registros).forEach(r=>{
-            if(r.tipo==="entrada") entrada=r.timestamp;
-            if(r.tipo==="salida") salida=r.timestamp;
-            if(r.tipo==="almuerzo_salida") almuerzoOut=r.timestamp;
-            if(r.tipo==="almuerzo_regreso") almuerzoIn=r.timestamp;
-          });
+  let html = "";
 
-          if(entrada && salida){
-            let horas = (salida - entrada)/3600000;
+  const filtro = document.getElementById("empleadoFiltro").value;
 
-            if(almuerzoOut && almuerzoIn){
-              horas -= (almuerzoIn - almuerzoOut)/3600000;
-            }
+for (const empId in empleados) {
+  if (filtro !== "todos" && filtro !== empId) continue;
+    const nombre = empleados[empId].nombre;
+    const valorHora = empleados[empId].valorHora || 0;
 
-            totalHoras += horas;
-            diasTrabajados++;
+    const marcacionesSnap = await db.ref("marcaciones/" + empId).once("value");
+    const marcaciones = marcacionesSnap.val();
 
-            if(horas > 8){
-              bancoHoras += (horas - 8);
-            }
+    let totalMinutos = 0;
+
+    for (const fecha in marcaciones) {
+      if (fecha >= start && fecha <= end) {
+        const dia = marcaciones[fecha];
+
+        if (dia.entrada && dia.salida) {
+          const entrada = new Date(dia.entrada);
+          const salida = new Date(dia.salida);
+
+          let minutos = (salida - entrada) / 60000;
+
+          // Restar almuerzo si existe
+          if (dia.almuerzo_salida && dia.almuerzo_regreso) {
+            const a1 = new Date(dia.almuerzo_salida);
+            const a2 = new Date(dia.almuerzo_regreso);
+            minutos -= (a2 - a1) / 60000;
           }
-        });
 
-        let pago = 0;
-
-        if(dataEmp.tipoSalario === "diario"){
-          pago = diasTrabajados * dataEmp.salario;
+          totalMinutos += minutos;
         }
+      }
+    }
 
-        if(dataEmp.tipoSalario === "quincenal"){
-          const valorDia = dataEmp.salario / 15;
-          pago = diasTrabajados * valorDia;
-        }
+    const totalHoras = (totalMinutos / 60).toFixed(2);
+    const totalPagar = (totalHoras * valorHora).toFixed(2);
 
-        if(dataEmp.tipoSalario === "mensual"){
-          const valorDia = dataEmp.salario / 30;
-          pago = diasTrabajados * valorDia;
-        }
+    html += `
+      <div class="card">
+        <strong>${nombre}</strong><br>
+        Horas trabajadas: ${totalHoras} h<br>
+        Valor hora: $${valorHora}<br>
+        <strong>Total a pagar: $${totalPagar}</strong>
+      </div>
+    `;
+  }
 
-        cont.innerHTML += `
-          <div class="empleado">
-            <strong>${dataEmp.nombre}</strong><br>
-            Días trabajados: ${diasTrabajados}<br>
-            Horas trabajadas: ${totalHoras.toFixed(2)}<br>
-            Banco de horas: ${bancoHoras.toFixed(2)}<br>
-            <strong>Total a pagar: $${pago.toFixed(2)}</strong>
-          </div>
-        `;
-      });
-    });
-  });
+  resultsDiv.innerHTML = html;
+                                   
 }
 
+// Cargar empleados en el selector
+async function cargarEmpleadosFiltro() {
+  const select = document.getElementById("empleadoFiltro");
+  const snap = await db.ref("empleados").once("value");
+  const empleados = snap.val();
+
+  for (const id in empleados) {
+    const option = document.createElement("option");
+    option.value = id;
+    option.textContent = empleados[id].nombre;
+    select.appendChild(option);
+  }
+}
+
+// Ejecutar cuando abre el panel admin
+document.addEventListener("DOMContentLoaded", cargarEmpleadosFiltro);
 
 // 🔹 INICIO
 backHome();
