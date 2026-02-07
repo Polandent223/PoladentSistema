@@ -99,6 +99,36 @@
 
     <canvas id="horasChart" width="400" height="200"></canvas>
 
+    <!-- ================= BLOQUE CÁLCULO DE PAGOS ================= -->
+<hr style="margin:20px 0; border-color:#007bff;">
+<div id="calculoPagos" style="padding:10px; background:#f0f8ff; border-radius:10px; box-shadow:0 2px 6px rgba(0,0,0,0.1)">
+
+  <h2 style="color:#007bff; margin-bottom:10px;">💰 Calcular Pagos de Empleados</h2>
+
+  <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:10px;">
+    <label for="empleadoFiltro"><strong>Empleado:</strong></label>
+    <select id="empleadoFiltro" style="padding:5px; border-radius:5px; border:1px solid #ccc;">
+      <option value="todos">Todos</option>
+      <!-- Aquí se pueden agregar dinámicamente los empleados si quieres -->
+    </select>
+
+    <label for="payStart"><strong>Desde:</strong></label>
+    <input type="date" id="payStart" style="padding:5px; border-radius:5px; border:1px solid #ccc;">
+
+    <label for="payEnd"><strong>Hasta:</strong></label>
+    <input type="date" id="payEnd" style="padding:5px; border-radius:5px; border:1px solid #ccc;">
+
+    <button onclick="calcularPagos()" style="background:#007bff; color:white; border:none; border-radius:5px; padding:5px 10px; cursor:pointer;">
+      Calcular
+    </button>
+  </div>
+
+  <div id="payResults" style="margin-top:15px; display:flex; flex-direction:column; gap:10px;">
+    <!-- Aquí aparecerán las tarjetas de resultados -->
+  </div>
+
+</div>
+
     <div class="card">
   <h4>💰 Cálculo de pago por período</h4>
   <label>Desde: <input type="date" id="payStart"></label>
