@@ -105,25 +105,21 @@ function borrarEmpleado(id) {
     db.ref("marcaciones/" + id).remove();
   }
 }
-
 function asignarSalario(empID) {
   const salario = prompt("Ingresa el salario:");
   if (!salario) return;
- const valorHora = 
-   document.getElementById("valorHoraEmpleado").value) || 0;
 
-db.ref("empleados/"+id).set({
-  nombre,
-  pin,
-  valorHora,
-  creado: Date.now(),
-  salario: 0,
-  tipoSalario: "diario"
-});
+  const valorHora = prompt("Valor hora del empleado ($):", "0");
+  db.ref("empleados/" + empID).update({
+    salario: parseFloat(salario),
+    valorHora: parseFloat(valorHora)
+  });
 
-// 🔹 OLERITE PDF
+  loadEmpleados();
+}
+
 function generarOlerite(empID) {
-  db.ref("empleados/" + "value", snap => {
+  db.ref("empleados/" + empID).once("value", snap => {
     const emp = snap.val();
     if (!emp) return;
     const { jsPDF } = window.jspdf;
@@ -132,10 +128,11 @@ function generarOlerite(empID) {
     doc.setFontSize(14);
     doc.text(`Empleado: ${emp.nombre}`, 20, 40);
     doc.text(`Salario: ${emp.salario} (${emp.tipoSalario})`, 20, 50);
-    doc.text(`Fecha: ${new Date().toLocaleDateString()}`, 20, 60);
+    doc.text(`Valor hora: $${emp.valorHora || 0}`, 20, 60);
+    doc.text(`Fecha: ${new Date().toLocaleDateString()}`, 20, 70);
     doc.save(`Olerite_${emp.nombre}.pdf`);
   });
-}
+      }
 
 // 🔹 EMPLEADO PIN + BOTONES DINÁMICOS
 let empleadoActual = null;
