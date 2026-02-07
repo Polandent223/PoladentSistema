@@ -102,6 +102,11 @@
   <h4>💰 Cálculo de pago por período</h4>
   <label>Desde: <input type="date" id="payStart"></label>
   <label>Hasta: <input type="date" id="payEnd"></label>
+      
+      <select id="empleadoFiltro">
+  <option value="todos">Todos los empleados</option>
+</select>
+      
   <button onclick="calcularPagos()">Calcular pagos</button>
   <div id="payResults"></div>
 </div>
