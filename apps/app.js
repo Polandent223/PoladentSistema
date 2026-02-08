@@ -549,6 +549,102 @@ function loadEmpleados() {
   llenarSelectEmpleados();
 }
 
+// ================== CÁLCULO DE PAGOS CON BANCO DE HORAS ==================
+
+async function cargarEmpleadoFiltro() {
+  const select = document.getElementById("empleadoFiltro");
+  const snap = await db.ref("empleados").once("value");
+  const empleados = snap.val();
+  if (!empleados) return;
+
+  select.innerHTML = '<option value="todos">Todos</option>';
+  for (const empId in empleados) {
+    const emp = empleados[empId];
+    const option = document.createElement("option");
+    option.value = empId;
+    option.textContent = emp.nombre;
+    select.appendChild(option);
+  }
+}
+
+// Llamamos al iniciar
+cargarEmpleadoFiltro();
+
+// Botón de calcular pagos
+document.getElementById("calcularPagosBtn").addEventListener("click", calcularPagos);
+
+async function calcularPagos() {
+  const start = document.getElementById("payStart").value;
+  const end = document.getElementById("payEnd").value;
+  const resultsDiv = document.getElementById("payResults");
+  const filtro = document.getElementById("empleadoFiltro").value;
+
+  if (!start || !end) {
+    alert("Selecciona un rango de fechas");
+    return;
+  }
+
+  resultsDiv.innerHTML = "Calculando...";
+
+  const empleadosSnap = await db.ref("empleados").once("value");
+  const empleados = empleadosSnap.val();
+  let html = "";
+
+  for (const empId in empleados) {
+    if (filtro !== "todos" && filtro !== empId) continue;
+
+    const emp = empleados[empId];
+    const nombre = emp.nombre;
+    const valorHora = emp.valorHora || 0;
+
+    const marcSnap = await db.ref("marcaciones/" + empId).once("value");
+    const marcaciones = marcSnap.val();
+    if (!marcaciones) continue;
+
+    let totalMinutos = 0;
+    let bancoMinutos = 0;
+
+    for (const fecha in marcaciones) {
+      if (fecha >= start && fecha <= end) {
+        const dia = marcaciones[fecha];
+
+        if (dia.entrada?.timestamp && dia.salida?.timestamp) {
+          let entrada = dia.entrada.timestamp;
+          let salida = dia.salida.timestamp;
+          let minutosTrabajados = (salida - entrada) / 60000;
+
+          // Descontar almuerzo
+          if (dia.almuerzo_salida?.timestamp && dia.almuerzo_regreso?.timestamp) {
+            minutosTrabajados -= (dia.almuerzo_regreso.timestamp - dia.almuerzo_salida.timestamp) / 60000;
+          }
+
+          totalMinutos += minutosTrabajados;
+
+          // Banco de horas: lo que exceda 8 horas/día
+          if ((minutosTrabajados / 60) > 8) {
+            bancoMinutos += ((minutosTrabajados / 60) - 8) * 60;
+          }
+        }
+      }
+    }
+
+    const totalHoras = (totalMinutos / 60).toFixed(2);
+    const bancoHoras = (bancoMinutos / 60).toFixed(2);
+    const totalPagar = (totalHoras * valorHora).toFixed(2);
+
+    html += `
+      <div class="card" style="margin-bottom:10px; padding:10px; border:1px solid #ddd; border-radius:6px;">
+        <strong>${nombre}</strong><br>
+        Horas trabajadas: ${totalHoras} h<br>
+        Banco de horas: ${bancoHoras} h<br>
+        Valor hora: $${valorHora}<br>
+        <strong>Total a pagar: $${totalPagar}</strong>
+      </div>
+    `;
+  }
+
+  resultsDiv.innerHTML = html;
+}
 // 🔹 INICIO
 backHome();
 setDefaultDate();
