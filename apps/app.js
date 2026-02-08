@@ -216,9 +216,14 @@ function loadMarcaciones() {
 function renderAdminList(dateFilter) {
   const cont = document.getElementById("adminList");
   const notif = document.getElementById("notificaciones");
-  cont.innerHTML = ""; notif.innerHTML = ""; excelRows = []; excelSalarial = []; renderPagos();
+
+  cont.innerHTML = "";
+  notif.innerHTML = "";
+  excelRows = [];
+  excelSalarial = [];
 
   const periodo = document.getElementById("periodoResumen").value;
+
   const empIDs = Object.keys(allMarcaciones).sort((a,b)=>{
     const nameA = Object.values(allMarcaciones[a])[0]? Object.values(Object.values(allMarcaciones[a])[0])[0].nombre:'';
     const nameB = Object.values(allMarcaciones[b])[0]? Object.values(Object.values(allMarcaciones[b])[0])[0].nombre:'';
@@ -227,22 +232,36 @@ function renderAdminList(dateFilter) {
 
   empIDs.forEach(empID => {
     const fechas = allMarcaciones[empID];
+
     Object.keys(fechas).sort().forEach(fecha => {
       if(dateFilter && !fecha.startsWith(dateFilter.substring(0,7)) && periodo!=="diario") return;
       if(periodo==="diario" && dateFilter && fecha!==dateFilter) return;
+
       const tipos = fechas[fecha];
+
       Object.keys(tipos).sort().forEach(tipo => {
         const data = tipos[tipo];
         if(!data.nombre) data.nombre="Sin nombre";
+
         cont.innerHTML += `<p><b>${data.nombre}</b> | ${data.tipo} | ${fecha} | ${data.hora}</p>`;
+
         excelRows.push([data.nombre, fecha, data.tipo, data.hora]);
-        excelSalarial.push({ nombre:data.nombre, fecha:data.fecha, tipo:data.tipo, timestamp:data.timestamp });
+
+        excelSalarial.push({
+          nombre:data.nombre,
+          fecha:fecha,
+          tipo:data.tipo,
+          timestamp:data.timestamp
+        });
+
         notif.innerHTML += `<div class="notif">${data.nombre} marcó ${data.tipo} a las ${data.hora}</div>`;
       });
     });
   });
-}
 
+  // ✅ ESTA LÍNEA VA AQUÍ ABAJO DE TODO
+  renderPagos();
+}
 // 🔹 EXPORTACIÓN EXCEL
 function exportExcelFiltro() {
   const fecha = document.getElementById("filterDate").value;
