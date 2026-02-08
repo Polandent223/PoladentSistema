@@ -5,106 +5,82 @@
 <title>Poladent – Sistema Completo</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<!-- CSS -->
 <link rel="stylesheet" href="css/styles.css">
-<style>
-.hidden { display: none; }
-.card { margin:15px 0; padding:15px; border-radius:8px; background:#fff; box-shadow:0 2px 6px rgba(0,0,0,0.1); }
-.panel { padding:10px; }
-</style>
-  
-<!-- Firebase -->
+
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
-<!-- Librerías -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-<!-- Config y App -->
-<script src="firebase/config.js" defer></script>
+<script src="firebase/config.js"></script>
 <script src="apps/app.js" defer></script>
+</head>
 
 <body>
 
 <h1>🦷 Poladent 🦷</h1>
 
-<!-- ================= HOME ================= -->
 <div id="home" class="card">
   <button id="btnAdmin">Administrador</button>
   <button id="btnEmployee">Empleado</button>
 </div>
 
-<!-- ================= LOGIN ADMIN ================= -->
 <div id="adminLogin" class="card hidden">
   <h3>Administrador</h3>
   <input id="adminEmail" placeholder="Correo">
   <input id="adminPass" type="password" placeholder="Contraseña">
-  <br>
   <button id="loginBtn">Entrar</button>
   <button id="backHomeBtn1">Volver</button>
 </div>
 
-<!-- ================= PANEL ADMIN ================= -->
 <div id="adminPanel" class="panel hidden">
 
   <h3>Panel Administrador</h3>
 
-  <!-- Agregar empleado -->
   <div class="card">
     <h4>Agregar empleado</h4>
     <input id="nombreEmpleado" placeholder="Nombre del empleado">
     <input id="pinEmpleado" placeholder="PIN del empleado">
-    <input id="valorHoraEmpleado" type="number" placeholder="Valor hora ($)" min="0">
+    <input id="valorHoraEmpleado" type="number" placeholder="Valor hora ($)">
     <button id="guardarEmpleadoBtn">Guardar empleado</button>
   </div>
 
-  <!-- Empleados -->
   <div class="card">
-    <h4 onclick="toggleSection('listaEmpleados')" style="cursor:pointer;">
-      👥 Empleados registrados ▼
-    </h4>
-    <div id="listaEmpleados" style="max-height:300px; overflow:auto;"></div>
+    <h4 onclick="toggleSection('listaEmpleados')">👥 Empleados registrados ▼</h4>
+    <div id="listaEmpleados"></div>
   </div>
 
-  <!-- Resumen marcaciones -->
   <div class="card">
-    <h4 onclick="toggleSection('adminList')" style="cursor:pointer;">
-      Resumen de marcaciones ▼
-    </h4>
+    <h4 onclick="toggleSection('adminList')">Resumen de marcaciones ▼</h4>
     <input type="date" id="filterDate">
     <select id="periodoResumen">
       <option value="diario">Diario</option>
       <option value="quincenal">Quincenal</option>
       <option value="mensual">Mensual</option>
     </select>
-    <div id="adminList" style="max-height:300px; overflow:auto;"></div>
+    <div id="adminList"></div>
   </div>
 
-  <!-- Notificaciones -->
   <div class="card">
-    <h4 onclick="toggleSection('notificaciones')" style="cursor:pointer;">
-      Notificaciones ▼
-    </h4>
-    <div id="notificaciones" style="max-height:200px; overflow:auto;"></div>
+    <h4 onclick="toggleSection('notificaciones')">Notificaciones ▼</h4>
+    <div id="notificaciones"></div>
     <button id="exportMarcBtn">Exportar Marcaciones</button>
     <button id="exportSalarioBtn">Exportar Salario</button>
   </div>
 
-  <!-- Gráfico -->
   <div class="card">
     <label>Desde: <input type="date" id="chartStart"></label>
     <label>Hasta: <input type="date" id="chartEnd"></label>
     <canvas id="horasChart"></canvas>
   </div>
 
-  <!-- ✅ ÚNICO BLOQUE CÁLCULO DE PAGOS -->
+  <!-- ✅ ÚNICO BLOQUE DE PAGOS -->
   <div class="card">
     <h4>💰 Cálculo de pago por período</h4>
 
-    <label>Empleado:</label>
     <select id="empleadoFiltro">
       <option value="todos">Todos</option>
     </select>
@@ -123,10 +99,8 @@
   <button id="logoutBtn">Salir</button>
 </div>
 
-<!-- ================= PANEL EMPLEADO ================= -->
 <div id="employeePanel" class="card hidden">
-  <div class="nombreGrande" id="empNombreGrande"></div>
-
+  <div id="empNombreGrande"></div>
   <input id="empPin" type="password" placeholder="Ingresa tu PIN">
 
   <div id="employeeButtons" class="hidden">
@@ -136,7 +110,7 @@
     <button id="salidaBtn">Salida</button>
   </div>
 
-  <div id="empMsg" class="notice"></div>
+  <div id="empMsg"></div>
   <button id="backHomeBtn2">Volver</button>
 </div>
 
