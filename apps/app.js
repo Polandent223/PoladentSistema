@@ -216,7 +216,7 @@ function loadMarcaciones() {
 function renderAdminList(dateFilter) {
   const cont = document.getElementById("adminList");
   const notif = document.getElementById("notificaciones");
-  cont.innerHTML = ""; notif.innerHTML = ""; excelRows = []; excelSalarial = [];
+  cont.innerHTML = ""; notif.innerHTML = ""; excelRows = []; excelSalarial = []; renderPagos();
 
   const periodo = document.getElementById("periodoResumen").value;
   const empIDs = Object.keys(allMarcaciones).sort((a,b)=>{
@@ -278,24 +278,47 @@ function exportExcelSalarialFiltro() {
     if(m.tipo==="salida") resumen[m.nombre].dias[mFecha].salida = m.timestamp;
   }
 
-  const wsData = [["Nombre","Fecha","Horas trabajadas","Horas extra","Banco de horas"]];
-  for(const emp in resumen){
-    let bancoTotal = 0;
-    for(const dia in resumen[emp].dias){
-      const ent = resumen[emp].dias[dia].entrada;
-      const sal = resumen[emp].dias[dia].salida;
-      if(!ent || !sal) continue;
-      let hrs = (sal-ent)/3600000;
-      let extra = Math.max(0, hrs-8);
-      let normales = Math.min(8, hrs);
-      bancoTotal += extra;
-      wsData.push([emp, dia, normales.toFixed(2), extra.toFixed(2), bancoTotal.toFixed(2)]);
-    }
-  }
+  const wsData = [["Nombre","Fecha","Horas trabajadas","Horas extra","Banco de horas","Pago del día"]];
+  const pagosTotales = {};
 
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(wsData), "Salario");
-  XLSX.writeFile(wb,"Poladent_Salario_Filtro.xlsx");
+  const empleadosKeys = Object.keys(resumen);
+
+  let promesas = empleadosKeys.map(empNombre=>{
+    return db.ref("empleados").orderByChild("nombre").equalTo(empNombre).once("value").then(snap=>{
+      const empData = Object.values(snap.val())[0]; // Primer coincidencia
+      const salario = empData?.salario || 0;
+      const tipoSalario = empData?.tipoSalario || "diario";
+      let bancoTotal = 0;
+      let totalPagar = 0;
+
+      for(const dia in resumen[empNombre].dias){
+        const ent = resumen[empNombre].dias[dia].entrada;
+        const sal = resumen[empNombre].dias[dia].salida;
+        if(!ent || !sal) continue;
+        let hrs = (sal-ent)/3600000;
+        let extra = Math.max(0, hrs-8);
+        let normales = Math.min(8, hrs);
+        bancoTotal += extra;
+
+        let pagoDia = 0;
+        if(tipoSalario==="diario") pagoDia = normales * (salario/8);
+        else if(tipoSalario==="quincenal") pagoDia = normales * (salario/15/8);
+        else if(tipoSalario==="mensual") pagoDia = normales * (salario/30/8);
+
+        totalPagar += pagoDia;
+        wsData.push([empNombre, dia, normales.toFixed(2), extra.toFixed(2), bancoTotal.toFixed(2), pagoDia.toFixed(2)]);
+      }
+
+      wsData.push([empNombre,"TOTAL","","",bancoTotal.toFixed(2), totalPagar.toFixed(2)]);
+      pagosTotales[empNombre] = {totalPagar, bancoTotal};
+    });
+  });
+
+  Promise.all(promesas).then(()=>{
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(wsData), "Salario");
+    XLSX.writeFile(wb,"Poladent_Salario_Filtro.xlsx");
+  });
 }
 
 // 🔹 CALENDARIO
@@ -378,6 +401,53 @@ function toggleSection(id){
     el.style.display = 'none';
     header.innerHTML = header.innerHTML.replace('▼','▲');
   }
+}
+
+function renderPagos() {
+  const cont = document.getElementById("resumenPagos");
+  cont.innerHTML = "<h4>💰 Resumen de pagos y banco de horas</h4>";
+
+  const resumen = {};
+  for(const m of excelSalarial){
+    const mFecha = m.fecha;
+    if(!resumen[m.nombre]) resumen[m.nombre] = {dias:{}};
+    if(!resumen[m.nombre].dias[mFecha]) resumen[m.nombre].dias[mFecha] = {entrada:null,salida:null};
+    if(m.tipo==="entrada") resumen[m.nombre].dias[mFecha].entrada = m.timestamp;
+    if(m.tipo==="salida") resumen[m.nombre].dias[mFecha].salida = m.timestamp;
+  }
+
+  const empleadosKeys = Object.keys(resumen);
+
+  empleadosKeys.forEach(empNombre=>{
+    db.ref("empleados").orderByChild("nombre").equalTo(empNombre).once("value").then(snap=>{
+      const empData = Object.values(snap.val())[0];
+      const salario = empData?.salario || 0;
+      const tipoSalario = empData?.tipoSalario || "diario";
+      let bancoTotal = 0;
+      let totalPagar = 0;
+
+      for(const dia in resumen[empNombre].dias){
+        const ent = resumen[empNombre].dias[dia].entrada;
+        const sal = resumen[empNombre].dias[dia].salida;
+        if(!ent || !sal) continue;
+        let hrs = (sal-ent)/3600000;
+        let extra = Math.max(0, hrs-8);
+        let normales = Math.min(8, hrs);
+        bancoTotal += extra;
+
+        let pagoDia = 0;
+        if(tipoSalario==="diario") pagoDia = normales * (salario/8);
+        else if(tipoSalario==="quincenal") pagoDia = normales * (salario/15/8);
+        else if(tipoSalario==="mensual") pagoDia = normales * (salario/30/8);
+
+        totalPagar += pagoDia;
+      }
+
+      let texto = `<p><b>${empData.nombre}</b> - Total a pagar: $${totalPagar.toFixed(2)} - Banco de horas: ${bancoTotal.toFixed(2)}</p>`;
+      if(bancoTotal >= 8) texto += `<p style="color:green;">Puede tomar un día libre</p>`;
+      cont.innerHTML += texto;
+    });
+  });
 }
 
 // 🔹 INICIO
