@@ -103,3 +103,39 @@ canvas{
   background:#f8fbff;
   padding:10px;
 }
+
+/* 🔹 PANEL EMPLEADO - ESTILO MÓVIL */
+#employeePanel {
+  max-width: 400px;
+  margin: auto;
+  font-size: 16px;
+  padding: 10px;
+}
+
+#employeeButtons button {
+  padding: 12px;
+  margin: 6px 0;
+  width: 100%;
+  font-size: 16px;
+}
+
+#empNombreGrande {
+  font-size: 20px;
+  text-align: center;
+}
+
+/* Ajustes adicionales para móviles muy pequeños */
+@media (max-width: 500px) {
+  #employeePanel {
+    padding: 8px;
+  }
+
+  #empNombreGrande {
+    font-size: 18px;
+  }
+
+  #employeeButtons button {
+    font-size: 14px;
+    padding: 10px;
+  }
+}
