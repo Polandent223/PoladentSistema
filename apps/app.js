@@ -431,16 +431,76 @@ function renderChart(startDate='', endDate=''){
   });
 }
 
-function updateChart(){
-  const start = document.getElementById("chartStart").value;
-  const end = document.getElementById("chartEnd").value;
-  renderChart(start, end);
+// 🔹 UPDATE CHART REFACTORED + FILTRO POR PERIODO
+function updateChart() {
+    const start = fechaDesde.value || '';
+    const end = fechaHasta.value || '';
+    const periodo = periodoResumen.value;
+    const filtroFecha = filterDate.value;
+
+    renderChart(start, end, periodo, filtroFecha);
 }
 
-const filtroInicio = fechaDesde.value ? new Date(fechaDesde.value) :
-                     (startDate ? new Date(startDate) : null);
-const filtroFin = fechaHasta.value ? new Date(fechaHasta.value) :
-                  (endDate ? new Date(endDate) : null);
+// 🔹 RENDER CHART REFACTORED
+function renderChart(startDate = '', endDate = '', periodo = 'diario', dateFilter = '') {
+    const ctx = document.getElementById("horasChart").getContext("2d");
+    let chartData = {
+        labels: [],
+        datasets: [{
+            label: 'Horas trabajadas',
+            data: [],
+            backgroundColor: 'rgba(0,123,255,0.5)'
+        }]
+    };
+
+    const filtroInicio = startDate ? new Date(startDate) : null;
+    const filtroFin = endDate ? new Date(endDate) : null;
+
+    const resumenHoras = {};
+
+    for (const empID in allMarcaciones) {
+        const fechas = allMarcaciones[empID];
+        for (const fecha in fechas) {
+            const fechaObj = new Date(fecha);
+
+            // 🔹 Filtro por rango de fechas
+            if (filtroInicio && fechaObj < filtroInicio) continue;
+            if (filtroFin && fechaObj > filtroFin) continue;
+
+            // 🔹 Filtro por periodo si no hay rango
+            if (!filtroInicio && !filtroFin) {
+                if (periodo === "diario" && dateFilter && fecha !== dateFilter) continue;
+                if (periodo === "quincenal" && dateFilter && !fecha.startsWith(dateFilter.substring(0,7))) continue;
+                if (periodo === "mensual" && dateFilter && !fecha.startsWith(dateFilter.substring(0,4) + "-" + dateFilter.substring(5,7))) continue;
+            }
+
+            const tipos = fechas[fecha];
+            let entrada = null, salida = null;
+            Object.values(tipos).forEach(m => {
+                if (m.tipo === 'entrada') entrada = m.timestamp;
+                if (m.tipo === 'salida') salida = m.timestamp;
+            });
+            if (!entrada || !salida) continue;
+
+            const nombre = Object.values(tipos)[0].nombre || 'Sin nombre';
+            if (!resumenHoras[nombre]) resumenHoras[nombre] = 0;
+            resumenHoras[nombre] += (salida - entrada) / 3600000;
+        }
+    }
+
+    chartData.labels = Object.keys(resumenHoras);
+    chartData.datasets[0].data = Object.values(resumenHoras);
+
+    if (window.horasChartInstance) window.horasChartInstance.destroy();
+    window.horasChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: chartData,
+        options: {
+            responsive: true,
+            plugins: { legend: { display: false } }
+        }
+    });
+}
 
 // 🔽 MINIMIZAR/EXPANDIR SECCIONES
 function toggleSection(id){
@@ -552,6 +612,7 @@ fechaHasta.addEventListener("change", () => {
 // 🔹 INICIO
 backHome();
 setDefaultDate();
+periodoResumen.value = "diario"; // 🔹 inicializa el select de periodo
 loadEmpleados();
 loadMarcaciones();
 updateChart();
