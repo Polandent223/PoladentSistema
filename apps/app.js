@@ -67,13 +67,26 @@ function logout() { auth.signOut(); backHome(); }
 function agregarEmpleado() {
   const nombre = document.getElementById("nombreEmpleado").value.trim();
   const pin = document.getElementById("pinEmpleado").value.trim();
-  if (!nombre || !pin) { alert("Completa todos los campos"); return; }
+  const valorHora = parseFloat(document.getElementById("valorHoraEmpleado").value) || 0;
+
+  if (!nombre || !pin) { 
+    alert("Completa todos los campos"); 
+    return; 
+  }
 
   const id = db.ref("empleados").push().key;
-  db.ref("empleados/" + id).set({ nombre, pin, creado: Date.now(), salario: 0, tipoSalario: "diario" });
+  db.ref("empleados/" + id).set({ 
+    nombre, 
+    pin, 
+    creado: Date.now(), 
+    salario: 0, 
+    tipoSalario: "diario",
+    valorHora: valorHora
+  });
 
   document.getElementById("nombreEmpleado").value = "";
   document.getElementById("pinEmpleado").value = "";
+  document.getElementById("valorHoraEmpleado").value = "";
 }
 
 function cargarEmpleados() {
