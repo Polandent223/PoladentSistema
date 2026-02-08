@@ -288,33 +288,51 @@ function exportExcelSalarialFiltro() {
 
   for(const m of excelSalarial){
     const mFecha = m.fecha;
+
     if(periodo==="diario" && mFecha!==fecha) continue;
     if(periodo==="quincenal" && !mFecha.startsWith(fecha.substring(0,7))) continue;
     if(periodo==="mensual" && !mFecha.startsWith(fecha.substring(0,4)+"-"+fecha.substring(5,7))) continue;
+
     if(!resumen[m.nombre]) resumen[m.nombre] = {dias:{}};
-    if(!resumen[m.nombre].dias[mFecha]) resumen[m.nombre].dias[mFecha] = {entrada:null,salida:null};
+
+    if(!resumen[m.nombre].dias[mFecha]) 
+      resumen[m.nombre].dias[mFecha] = {
+        entrada:null,
+        salida:null,
+        almuerzo_salida:null,
+        almuerzo_regreso:null
+      };
+
     if(m.tipo==="entrada") resumen[m.nombre].dias[mFecha].entrada = m.timestamp;
     if(m.tipo==="salida") resumen[m.nombre].dias[mFecha].salida = m.timestamp;
+    if(m.tipo==="almuerzo_salida") resumen[m.nombre].dias[mFecha].almuerzo_salida = m.timestamp;
+    if(m.tipo==="almuerzo_regreso") resumen[m.nombre].dias[mFecha].almuerzo_regreso = m.timestamp;
   }
 
   const wsData = [["Nombre","Fecha","Horas trabajadas","Horas extra","Banco de horas","Pago del día"]];
-  const pagosTotales = {};
 
   const empleadosKeys = Object.keys(resumen);
 
   let promesas = empleadosKeys.map(empNombre=>{
     return db.ref("empleados").orderByChild("nombre").equalTo(empNombre).once("value").then(snap=>{
-      const empData = Object.values(snap.val())[0]; // Primer coincidencia
+      const empData = Object.values(snap.val())[0];
       const salario = empData?.salario || 0;
       const tipoSalario = empData?.tipoSalario || "diario";
+
       let bancoTotal = 0;
       let totalPagar = 0;
 
       for(const dia in resumen[empNombre].dias){
-        const ent = resumen[empNombre].dias[dia].entrada;
-        const sal = resumen[empNombre].dias[dia].salida;
-        if(!ent || !sal) continue;
-        let hrs = (sal-ent)/3600000;
+        const d = resumen[empNombre].dias[dia];
+        if(!d.entrada || !d.salida) continue;
+
+        let almuerzo = 0;
+        if(d.almuerzo_salida && d.almuerzo_regreso){
+          almuerzo = (d.almuerzo_regreso - d.almuerzo_salida)/3600000;
+        }
+
+        let hrs = ((d.salida - d.entrada)/3600000) - almuerzo;
+
         let extra = Math.max(0, hrs-8);
         let normales = Math.min(8, hrs);
         bancoTotal += extra;
@@ -325,11 +343,11 @@ function exportExcelSalarialFiltro() {
         else if(tipoSalario==="mensual") pagoDia = normales * (salario/30/8);
 
         totalPagar += pagoDia;
+
         wsData.push([empNombre, dia, normales.toFixed(2), extra.toFixed(2), bancoTotal.toFixed(2), pagoDia.toFixed(2)]);
       }
 
       wsData.push([empNombre,"TOTAL","","",bancoTotal.toFixed(2), totalPagar.toFixed(2)]);
-      pagosTotales[empNombre] = {totalPagar, bancoTotal};
     });
   });
 
@@ -427,12 +445,24 @@ function renderPagos() {
   cont.innerHTML = "<h4>💰 Resumen de pagos y banco de horas</h4>";
 
   const resumen = {};
+
   for(const m of excelSalarial){
     const mFecha = m.fecha;
+
     if(!resumen[m.nombre]) resumen[m.nombre] = {dias:{}};
-    if(!resumen[m.nombre].dias[mFecha]) resumen[m.nombre].dias[mFecha] = {entrada:null,salida:null};
+
+    if(!resumen[m.nombre].dias[mFecha]) 
+      resumen[m.nombre].dias[mFecha] = {
+        entrada:null,
+        salida:null,
+        almuerzo_salida:null,
+        almuerzo_regreso:null
+      };
+
     if(m.tipo==="entrada") resumen[m.nombre].dias[mFecha].entrada = m.timestamp;
     if(m.tipo==="salida") resumen[m.nombre].dias[mFecha].salida = m.timestamp;
+    if(m.tipo==="almuerzo_salida") resumen[m.nombre].dias[mFecha].almuerzo_salida = m.timestamp;
+    if(m.tipo==="almuerzo_regreso") resumen[m.nombre].dias[mFecha].almuerzo_regreso = m.timestamp;
   }
 
   const empleadosKeys = Object.keys(resumen);
@@ -442,14 +472,21 @@ function renderPagos() {
       const empData = Object.values(snap.val())[0];
       const salario = empData?.salario || 0;
       const tipoSalario = empData?.tipoSalario || "diario";
+
       let bancoTotal = 0;
       let totalPagar = 0;
 
       for(const dia in resumen[empNombre].dias){
-        const ent = resumen[empNombre].dias[dia].entrada;
-        const sal = resumen[empNombre].dias[dia].salida;
-        if(!ent || !sal) continue;
-        let hrs = (sal-ent)/3600000;
+        const d = resumen[empNombre].dias[dia];
+        if(!d.entrada || !d.salida) continue;
+
+        let almuerzo = 0;
+        if(d.almuerzo_salida && d.almuerzo_regreso){
+          almuerzo = (d.almuerzo_regreso - d.almuerzo_salida)/3600000;
+        }
+
+        let hrs = ((d.salida - d.entrada)/3600000) - almuerzo;
+
         let extra = Math.max(0, hrs-8);
         let normales = Math.min(8, hrs);
         bancoTotal += extra;
@@ -468,7 +505,6 @@ function renderPagos() {
     });
   });
 }
-
 // 🔹 INICIO
 backHome();
 setDefaultDate();
