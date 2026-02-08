@@ -1,1 +1,138 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Poladent – Sistema Completo</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+<!-- CSS -->
+<link rel="stylesheet" href="css/styles.css">
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+<!-- Librerías -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<!-- Firebase Config -->
+<script src="firebase/config.js"></script>
+
+<!-- JS principal -->
+<script src="apps/app.js" defer></script>
+
+</head>
+<body>
+
+<h1>🦷 Poladent 🦷</h1>
+
+<!-- ================= HOME ================= -->
+<div id="home" class="card">
+  <button id="btnAdmin">Administrador</button>
+  <button id="btnEmployee">Empleado</button>
+</div>
+
+<!-- ================= LOGIN ADMIN ================= -->
+<div id="adminLogin" class="card hidden">
+  <h3>Administrador</h3>
+  <input id="adminEmail" placeholder="Correo">
+  <input id="adminPass" type="password" placeholder="Contraseña">
+  <br>
+  <button id="loginBtn">Entrar</button>
+  <button id="backHomeBtn1">Volver</button>
+</div>
+
+<!-- ================= PANEL ADMIN ================= -->
+<div id="adminPanel" class="panel hidden">
+
+  <h3>Panel Administrador</h3>
+
+  <!-- Agregar empleado -->
+  <div class="card">
+    <h4>Agregar empleado</h4>
+    <input id="nombreEmpleado" placeholder="Nombre del empleado">
+    <input id="pinEmpleado" placeholder="PIN del empleado">
+    <input id="valorHoraEmpleado" type="number" placeholder="Valor hora ($)" min="0">
+    <button id="guardarEmpleadoBtn">Guardar empleado</button>
+  </div>
+
+  <!-- Empleados registrados -->
+  <div class="card">
+    <h4 style="cursor:pointer;" onclick="toggleSection('listaEmpleados')">
+      👥 Empleados registrados ▼
+    </h4>
+    <div id="listaEmpleados" style="max-height:300px; overflow:auto;"></div>
+  </div>
+
+  <!-- Resumen marcaciones -->
+  <div class="card">
+    <h4 style="cursor:pointer;" onclick="toggleSection('adminList')">
+      Resumen de marcaciones ▼
+    </h4>
+    <input type="date" id="filterDate">
+    <select id="periodoResumen">
+      <option value="diario">Diario</option>
+      <option value="quincenal">Quincenal</option>
+      <option value="mensual">Mensual</option>
+    </select>
+    <div id="adminList" style="max-height:300px; overflow:auto;"></div>
+  </div>
+
+  <!-- Notificaciones -->
+  <div class="card">
+    <h4 style="cursor:pointer;" onclick="toggleSection('notificaciones')">
+      Notificaciones ▼
+    </h4>
+    <div id="notificaciones" style="max-height:200px; overflow:auto;"></div>
+    <button id="exportMarcBtn">Exportar Marcaciones</button>
+    <button id="exportSalarioBtn">Exportar Salario</button>
+  </div>
+
+  <!-- Gráfico horas trabajadas -->
+  <div class="card">
+    <label>Desde: <input type="date" id="chartStart"></label>
+    <label>Hasta: <input type="date" id="chartEnd"></label>
+    <canvas id="horasChart" width="400" height="200"></canvas>
+  </div>
+
+  <!-- Cálculo de pagos -->
+  <div class="card">
+    <h4>💰 Cálculo de pago por período</h4>
+    <label>Empleado:</label>
+    <select id="empleadoFiltro">
+      <option value="todos">Todos</option>
+    </select>
+    <label>Desde:</label>
+    <input type="date" id="payStart">
+    <label>Hasta:</label>
+    <input type="date" id="payEnd">
+    <button id="calcularPagosBtn">Calcular pagos</button>
+    <div id="payResults"></div>
+  </div>
+
+  <button id="logoutBtn">Salir</button>
+</div>
+
+<!-- ================= PANEL EMPLEADO ================= -->
+<div id="employeePanel" class="card hidden">
+  <div class="nombreGrande" id="empNombreGrande"></div>
+
+  <input id="empPin" type="password" placeholder="Ingresa tu PIN">
+  <br>
+
+  <div id="employeeButtons" class="hidden">
+    <button id="entradaBtn">Entrada</button>
+    <button id="almuerzoSalidaBtn">Salida Almuerzo</button>
+    <button id="almuerzoRegresoBtn">Regreso Almuerzo</button>
+    <button id="salidaBtn">Salida</button>
+  </div>
+
+  <div id="empMsg" class="notice"></div>
+  <button id="backHomeBtn2">Volver</button>
+</div>
+
+</body>
+</html>
