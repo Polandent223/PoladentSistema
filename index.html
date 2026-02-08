@@ -165,6 +165,37 @@
   <div id="empMsg" class="notice"></div>
   <button id="backHomeBtn2">Volver</button>
 </div>
+  
+<!-- ================= CALCULO DE PAGOS ================= -->
+<section id="pagoPanel" style="padding:20px; background:#fff; border-radius:8px; box-shadow:0 2px 6px rgba(0,0,0,0.1); margin-top:20px;">
+  <h2 style="margin-bottom:12px;">Cálculo de Pagos</h2>
 
+  <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:12px;">
+    <div>
+      <label for="payStart">Fecha inicio:</label><br>
+      <input type="date" id="payStart">
+    </div>
+    <div>
+      <label for="payEnd">Fecha fin:</label><br>
+      <input type="date" id="payEnd">
+    </div>
+    <div>
+      <label for="empleadoFiltro">Empleado:</label><br>
+      <select id="empleadoFiltro">
+        <option value="todos">Todos</option>
+      </select>
+    </div>
+    <div style="align-self:flex-end;">
+      <button id="calcularPagosBtn" style="padding:6px 12px; background:#007bff; color:#fff; border:none; border-radius:4px; cursor:pointer;">
+        Calcular
+      </button>
+    </div>
+  </div>
+
+  <div id="payResults" style="margin-top:16px;">
+    <!-- Aquí aparecerán las tarjetas de cada empleado con horas trabajadas, banco de horas y total a pagar -->
+  </div>
+  
+</section>
 </body>
 </html>
