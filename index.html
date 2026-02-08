@@ -7,7 +7,12 @@
 
 <!-- CSS -->
 <link rel="stylesheet" href="css/styles.css">
-
+<style>
+.hidden { display: none; }
+.card { margin:15px 0; padding:15px; border-radius:8px; background:#fff; box-shadow:0 2px 6px rgba(0,0,0,0.1); }
+.panel { padding:10px; }
+</style>
+  
 <!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
@@ -19,9 +24,8 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <!-- Config y App -->
-<script src="firebase/config.js"></script>
+<script src="firebase/config.js" defer></script>
 <script src="apps/app.js" defer></script>
-</head>
 
 <body>
 
