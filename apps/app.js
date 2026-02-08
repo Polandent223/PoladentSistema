@@ -523,6 +523,32 @@ const hasta = document.getElementById("fechaHasta").value;
     });
   });
 }
+// 🔹 LISTENERS PARA FILTRO DE FECHAS Y PERIODO
+const filterDate = document.getElementById("filterDate");
+const periodoResumen = document.getElementById("periodoResumen");
+
+// Cuando cambia la fecha de filtro diario
+filterDate.addEventListener("change", () => {
+    renderAdminList(filterDate.value);
+    updateChart();
+});
+
+// Cuando cambia el periodo (diario, quincenal, mensual)
+periodoResumen.addEventListener("change", () => {
+    renderAdminList(filterDate.value);
+    updateChart();
+});
+
+// Cuando cambian las fechas de rango (fechaDesde y fechaHasta)
+fechaDesde.addEventListener("change", () => {
+    renderAdminList(filterDate.value);
+    updateChart();
+});
+
+fechaHasta.addEventListener("change", () => {
+    renderAdminList(filterDate.value);
+    updateChart();
+});
 // 🔹 INICIO
 backHome();
 setDefaultDate();
