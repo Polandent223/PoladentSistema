@@ -282,8 +282,8 @@ function exportExcelFiltro() {
 }
 
 function exportExcelSalarialFiltro() {
-  const fecha = document.getElementById("filterDate").value;
-  const periodo = document.getElementById("periodoResumen").value;
+  const desde = document.getElementById("fechaDesde").value;
+  const hasta = document.getElementById("fechaHasta").value;
   const resumen = {};
 
   for(const m of excelSalarial){
@@ -322,9 +322,10 @@ function exportExcelSalarialFiltro() {
       let bancoTotal = 0;
       let totalPagar = 0;
 
-      for(const dia in resumen[empNombre].dias){
-        const d = resumen[empNombre].dias[dia];
-        if(!d.entrada || !d.salida) continue;
+      for(const m of excelSalarial){
+  const mFecha = m.fecha;
+
+  if(!estaEnRango(mFecha, desde, hasta)) continue;;
 
         let almuerzo = 0;
         if(d.almuerzo_salida && d.almuerzo_regreso){
@@ -443,11 +444,14 @@ function toggleSection(id){
 function renderPagos() {
   const cont = document.getElementById("resumenPagos");
   cont.innerHTML = "<h4>💰 Resumen de pagos y banco de horas</h4>";
+  const desde = document.getElementById("fechaDesde").value;
+const hasta = document.getElementById("fechaHasta").value;
 
   const resumen = {};
 
   for(const m of excelSalarial){
     const mFecha = m.fecha;
+    if(!estaEnRango(mFecha, desde, hasta)) continue;
 
     if(!resumen[m.nombre]) resumen[m.nombre] = {dias:{}};
 
