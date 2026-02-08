@@ -3,6 +3,8 @@ const home = document.getElementById("home");
 const adminLogin = document.getElementById("adminLogin");
 const adminPanel = document.getElementById("adminPanel");
 const employeePanel = document.getElementById("employeePanel");
+const fechaDesde = document.getElementById("fechaDesde");
+const fechaHasta = document.getElementById("fechaHasta");
 
 // 🔹 BOTONES
 document.getElementById("btnAdmin").onclick = () => goAdmin();
@@ -234,9 +236,19 @@ function renderAdminList(dateFilter) {
     const fechas = allMarcaciones[empID];
 
     Object.keys(fechas).sort().forEach(fecha => {
-      if(dateFilter && !fecha.startsWith(dateFilter.substring(0,7)) && periodo!=="diario") return;
-      if(periodo==="diario" && dateFilter && fecha!==dateFilter) return;
+      let fechaObj = new Date(fecha);
+let desde = fechaDesde.value ? new Date(fechaDesde.value) : null;
+let hasta = fechaHasta.value ? new Date(fechaHasta.value) : null;
 
+// Filtro por rango de fechas si hay fechas desde/hasta
+if(desde && fechaObj < desde) return;
+if(hasta && fechaObj > hasta) return;
+
+// Filtro por periodo actual si no se usa rango
+if(!desde && !hasta){
+    if(dateFilter && !fecha.startsWith(dateFilter.substring(0,7)) && periodo!=="diario") return;
+    if(periodo==="diario" && dateFilter && fecha!==dateFilter) return;
+}
       const tipos = fechas[fecha];
 
       Object.keys(tipos).sort().forEach(tipo => {
@@ -425,8 +437,10 @@ function updateChart(){
   renderChart(start, end);
 }
 
-document.getElementById("chartStart").addEventListener("change", updateChart);
-document.getElementById("chartEnd").addEventListener("change", updateChart);
+const filtroInicio = fechaDesde.value ? new Date(fechaDesde.value) :
+                     (startDate ? new Date(startDate) : null);
+const filtroFin = fechaHasta.value ? new Date(fechaHasta.value) :
+                  (endDate ? new Date(endDate) : null);
 
 // 🔽 MINIMIZAR/EXPANDIR SECCIONES
 function toggleSection(id){
