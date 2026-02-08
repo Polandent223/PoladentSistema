@@ -1,3 +1,4 @@
+document.addEventListener("DOMContentLoaded", function() {
 // 🔹 ELEMENTOS PRINCIPALES
 const home = document.getElementById("home");
 const adminLogin = document.getElementById("adminLogin");
@@ -363,3 +364,4 @@ setDefaultDate();
 loadEmpleados();
 loadMarcaciones();
 updateChart();
+});
