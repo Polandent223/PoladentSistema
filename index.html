@@ -29,13 +29,13 @@
 
 <h1>🦷 Poladent 🦷</h1>
 
-<!-- ================= HOME ================= -->
+<!-- HOME -->
 <div id="home" class="card">
   <button id="btnAdmin">Administrador</button>
   <button id="btnEmployee">Empleado</button>
 </div>
 
-<!-- ================= LOGIN ADMIN ================= -->
+<!-- ADMIN LOGIN -->
 <div id="adminLogin" class="card hidden">
   <h3>Administrador</h3>
   <input id="adminEmail" placeholder="Correo">
@@ -45,17 +45,17 @@
   <button id="backHomeBtn1">Volver</button>
 </div>
 
-<!-- ================= PANEL ADMIN ================= -->
+<!-- ADMIN PANEL -->
 <div id="adminPanel" class="panel hidden">
-
-  <h3>Panel Administrador</h3>
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;margin-top:20px;">
+    <h3>Panel Administrador</h3>
+  </div>
 
   <!-- Agregar empleado -->
   <div class="card">
     <h4>Agregar empleado</h4>
     <input id="nombreEmpleado" placeholder="Nombre del empleado">
     <input id="pinEmpleado" placeholder="PIN del empleado">
-    <input id="valorHoraEmpleado" type="number" placeholder="Valor hora ($)" min="0">
     <button id="guardarEmpleadoBtn">Guardar empleado</button>
   </div>
 
@@ -95,28 +95,16 @@
   <div class="card">
     <label>Desde: <input type="date" id="chartStart"></label>
     <label>Hasta: <input type="date" id="chartEnd"></label>
-    <canvas id="horasChart" width="400" height="200"></canvas>
-  </div>
 
-  <!-- Cálculo de pagos -->
-  <div class="card">
-    <h4>💰 Cálculo de pago por período</h4>
-    <label>Empleado:</label>
-    <select id="empleadoFiltro">
-      <option value="todos">Todos</option>
-    </select>
-    <label>Desde:</label>
-    <input type="date" id="payStart">
-    <label>Hasta:</label>
-    <input type="date" id="payEnd">
-    <button id="calcularPagosBtn">Calcular pagos</button>
-    <div id="payResults"></div>
+    <canvas id="horasChart" width="400" height="200"></canvas>
+
+    <h4 style="margin-top:15px;">📊 Gráfico de horas trabajadas por empleado</h4>
   </div>
 
   <button id="logoutBtn">Salir</button>
 </div>
 
-<!-- ================= PANEL EMPLEADO ================= -->
+<!-- EMPLEADO PANEL -->
 <div id="employeePanel" class="card hidden">
   <div class="nombreGrande" id="empNombreGrande"></div>
 
