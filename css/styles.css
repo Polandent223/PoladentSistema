@@ -4,11 +4,12 @@ body{
   background:#f4f7fb;
   padding:20px;
   margin:0;
-  color:#333;
+  color:#333; /* Texto general oscuro para legibilidad */
 }
-h1{margin-bottom:25px;}
-h3{margin-bottom:15px;}
+h1{margin-bottom:25px; color:#1e4f8a;} /* Azul oscuro más visible */
+h3{margin-bottom:15px; color:#1e4f8a;} /* Ajustado para paneles claros */
 
+/* Panel y tarjetas */
 .panel{
   max-width:1100px;
   margin:auto;
@@ -21,6 +22,7 @@ h3{margin-bottom:15px;}
   margin:18px 0;
   box-shadow:0 8px 18px rgba(0,0,0,0.08);
   text-align:left;
+  color:#333; /* Asegura que todo el texto sea legible */
 }
 
 .card h4{
@@ -29,20 +31,23 @@ h3{margin-bottom:15px;}
   font-size:18px;
   border-bottom:1px solid #eee;
   padding-bottom:8px;
+  color:#1e4f8a; /* Títulos de sección azul para resaltar */
 }
 
+/* Inputs y botones */
 input,select,button{
   padding:10px;
   margin:6px 0;
   font-size:14px;
   border-radius:6px;
   border:1px solid #ccc;
+  color:#333; /* Texto oscuro dentro de inputs */
 }
 
 button{
   cursor:pointer;
   background: linear-gradient(135deg,#2b7de9,#1e4f8a);
-  color:white;
+  color:white; /* Texto en blanco sobre botones */
   font-weight:600;
   letter-spacing:0.5px;
   border:none;
@@ -59,6 +64,7 @@ button:hover{
 
 button.danger{
   background:#dc3545;
+  color:white;
 }
 
 .hidden{display:none;}
@@ -68,6 +74,7 @@ button.danger{
   padding:10px;
   border-radius:6px;
   margin-top:10px;
+  color:#333;
 }
 
 .empleado{
@@ -76,6 +83,7 @@ button.danger{
   padding:12px;
   border-radius:8px;
   margin-bottom:10px;
+  color:#333;
 }
 
 .empActions{
@@ -90,6 +98,7 @@ button.danger{
   font-weight:bold;
   margin-bottom:12px;
   text-align:center;
+  color:#1e4f8a; /* Ajustado para legibilidad */
 }
 
 .notif{
@@ -98,6 +107,7 @@ button.danger{
   padding:8px;
   border-radius:6px;
   margin-bottom:6px;
+  color:#333;
 }
 
 canvas{
@@ -124,12 +134,14 @@ canvas{
   font-size:38px;
   letter-spacing:1px;
   font-weight:800;
+  color:white;
 }
 
 .appHeader p{
   margin:6px 0 0 0;
   opacity:0.9;
   font-size:15px;
+  color:white;
 }
 
 /* ====== CARD PRINCIPAL HOME ====== */
@@ -141,6 +153,7 @@ canvas{
   padding:35px 25px;
   box-shadow:0 10px 30px rgba(0,0,0,0.12);
   text-align:center;
+  color:#333;
 }
 
 /* ====== BOTONES TIPO APP ====== */
@@ -161,6 +174,7 @@ canvas{
   font-weight:600;
   box-shadow:0 6px 18px rgba(13,110,253,0.35);
   transition:0.2s;
+  color:white;
 }
 
 .homeBtns button:hover{
@@ -177,12 +191,14 @@ canvas{
   background:white;
   border-radius:20px;
   box-shadow:0 10px 30px rgba(0,0,0,0.2);
+  color:#333;
 }
 
 #empNombreGrande {
   font-size:24px;
   text-align:center;
   margin-bottom:15px;
+  color:#1e4f8a;
 }
 
 #empPin{
@@ -191,6 +207,7 @@ canvas{
   font-size:18px;
   border-radius:10px;
   margin-bottom:15px;
+  color:#333;
 }
 
 #employeeButtons{
@@ -204,6 +221,7 @@ canvas{
   padding:16px;
   font-size:16px;
   border-radius:12px;
+  color:white;
 }
 
 /* ====== RESPONSIVE EMPLEADO PARA CELULAR ====== */
@@ -235,11 +253,13 @@ canvas{
     width:100%;
     box-sizing:border-box;
     margin-top:8px;
+    color:#333;
   }
 
   #adminPanel label{
     display:block;
     margin-top:10px;
+    color:#1e4f8a;
   }
 }
 
@@ -247,6 +267,7 @@ canvas{
 .card{
   border-radius:16px;
   box-shadow:0 8px 18px rgba(0,0,0,0.08);
+  color:#333;
 }
 
 /* ====== LOGO Y MARCA ====== */
@@ -274,4 +295,10 @@ canvas{
   font-size:14px;
   color:#6c757d;
   letter-spacing:2px;
+}
+
+/* ====== COLOR TÍTULO ADMINISTRADOR ====== */
+.adminTitle{
+  color:#0d6efd; /* Azul Poladent */
+  font-weight:700;
 }
