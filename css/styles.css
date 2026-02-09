@@ -320,3 +320,43 @@ canvas{
   font-size:14px;
   margin:4px 0;
 }
+/* ====== AJUSTE TIPOGRAFÍA PANEL ADMIN: COLOR Y TAMAÑO ====== */
+
+/* Texto dentro de la lista de empleados */
+#listaEmpleados p,
+#adminList p {
+  font-size: 14px;
+  color: #1e1e1e; /* negro suave para que se vea */
+  margin: 4px 0;
+}
+
+/* Campos de fecha y select */
+#adminPanel input[type="date"],
+#adminPanel select {
+  font-size: 14px;
+  color: #1e1e1e; /* negro suave */
+  padding: 8px;
+  background: #fff; /* aseguramos contraste con fondo */
+  border: 1px solid #ccc;
+}
+
+/* Labels de calendario y filtros */
+#adminPanel label {
+  font-size: 13px;
+  font-weight: 500;
+  color: #333; /* más oscuro para visibilidad */
+}
+
+/* Títulos de secciones dentro del panel */
+#adminPanel h4 {
+  font-size: 16px;
+  color: #1e1e1e; /* títulos visibles */
+}
+
+/* Texto de resumen de pagos y notificaciones */
+#resumenPagos p,
+#notificaciones p {
+  font-size: 14px;
+  color: #1e1e1e;
+  margin: 4px 0;
+}
