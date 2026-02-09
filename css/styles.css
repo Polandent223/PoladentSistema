@@ -6,6 +6,7 @@ body{
   margin:0;
   color:#333;
 }
+
 h1{margin-bottom:25px;}
 h3{margin-bottom:15px;}
 
@@ -26,9 +27,10 @@ h3{margin-bottom:15px;}
 .card h4{
   margin-top:0;
   margin-bottom:15px;
-  font-size:18px;
+  font-size:16px;
   border-bottom:1px solid #eee;
   padding-bottom:8px;
+  color:#1e1e1e;
 }
 
 input,select,button{
@@ -68,6 +70,7 @@ button.danger{
   padding:10px;
   border-radius:6px;
   margin-top:10px;
+  color:#1e1e1e;
 }
 
 .empleado{
@@ -90,6 +93,7 @@ button.danger{
   font-weight:bold;
   margin-bottom:12px;
   text-align:center;
+  color:#1e1e1e;
 }
 
 .notif{
@@ -98,6 +102,7 @@ button.danger{
   padding:8px;
   border-radius:6px;
   margin-bottom:6px;
+  color:#1e1e1e;
 }
 
 canvas{
@@ -183,14 +188,16 @@ canvas{
   font-size:24px;
   text-align:center;
   margin-bottom:15px;
+  color:#1e1e1e;
 }
 
 #empPin{
   width:100%;
   padding:14px;
-  font-size:18px;
+  font-size:16px;
   border-radius:10px;
   margin-bottom:15px;
+  color:#1e1e1e;
 }
 
 #employeeButtons{
@@ -228,7 +235,14 @@ canvas{
   }
 }
 
-/* ====== RESPONSIVE ADMIN PANEL ====== */
+/* ====== PANEL ADMIN - TIPOGRAFÍA LEGIBLE ====== */
+#adminPanel h3 {
+  color: #0d6efd; /* azul destacado */
+  font-weight:700;
+  font-size:22px;
+  margin-bottom:15px;
+}
+
 #adminPanel input,
 #adminPanel select,
 #adminPanel label,
@@ -236,15 +250,56 @@ canvas{
 #adminList p,
 #listaEmpleados p,
 #resumenPagos p,
+#notificaciones p,
 #chartStart,
 #chartEnd{
-  font-size:14px;  /* Letras más compactas */
+  font-size:14px;
+  color:#1e1e1e; /* negro suave */
 }
 
 #adminPanel button{
   font-size:14px;
   padding:8px 12px;
   min-width:auto;
+}
+
+/* Nombres de empleados y listas */
+#listaEmpleados p,
+#adminList p {
+  font-size: 14px;
+  color: #1e1e1e;
+  margin: 4px 0;
+}
+
+/* Campos de fecha y select */
+#adminPanel input[type="date"],
+#adminPanel select {
+  font-size: 14px;
+  color: #1e1e1e;
+  padding: 8px;
+  background: #fff;
+  border: 1px solid #ccc;
+}
+
+/* Labels de calendario y filtros */
+#adminPanel label {
+  font-size: 13px;
+  font-weight: 500;
+  color: #333;
+}
+
+/* Títulos de secciones dentro del panel */
+#adminPanel h4 {
+  font-size: 16px;
+  color: #1e1e1e;
+}
+
+/* Texto de resumen de pagos y notificaciones */
+#resumenPagos p,
+#notificaciones p {
+  font-size: 14px;
+  color: #1e1e1e;
+  margin: 4px 0;
 }
 
 /* ====== TARJETAS MÁS PREMIUM ====== */
@@ -278,85 +333,4 @@ canvas{
   font-size:14px;
   color:#6c757d;
   letter-spacing:2px;
-}
-
-/* ====== TITULO ADMIN DESTACADO ====== */
-#adminPanel h3 {
-  color: #0d6efd; /* Azul destacado */
-  font-weight:700;
-  font-size:22px;
-  margin-bottom:15px;
-}
-/* ====== AJUSTE TIPOGRAFÍA PANEL ADMIN ====== */
-
-/* Nombres de empleados en la lista */
-#listaEmpleados p,
-#adminList p {
-  font-size: 14px; /* antes era más grande */
-  margin: 4px 0;
-}
-
-/* Campos de fecha y select en filtros */
-#adminPanel input[type="date"],
-#adminPanel select {
-  font-size: 14px; /* moderado, legible pero no gigante */
-  padding: 8px;
-}
-
-/* Labels del calendario y filtros */
-#adminPanel label {
-  font-size: 13px; /* más discreto */
-  font-weight:500;
-}
-
-/* Ajuste de títulos de secciones dentro del panel */
-#adminPanel h4 {
-  font-size:16px; /* más proporcional al contenido */
-}
-
-/* Ajuste de las notificaciones y resumen de pagos */
-#resumenPagos p,
-#notificaciones p {
-  font-size:14px;
-  margin:4px 0;
-}
-/* ====== AJUSTE TIPOGRAFÍA PANEL ADMIN: COLOR Y TAMAÑO ====== */
-
-/* Texto dentro de la lista de empleados */
-#listaEmpleados p,
-#adminList p {
-  font-size: 14px;
-  color: #1e1e1e; /* negro suave para que se vea */
-  margin: 4px 0;
-}
-
-/* Campos de fecha y select */
-#adminPanel input[type="date"],
-#adminPanel select {
-  font-size: 14px;
-  color: #1e1e1e; /* negro suave */
-  padding: 8px;
-  background: #fff; /* aseguramos contraste con fondo */
-  border: 1px solid #ccc;
-}
-
-/* Labels de calendario y filtros */
-#adminPanel label {
-  font-size: 13px;
-  font-weight: 500;
-  color: #333; /* más oscuro para visibilidad */
-}
-
-/* Títulos de secciones dentro del panel */
-#adminPanel h4 {
-  font-size: 16px;
-  color: #1e1e1e; /* títulos visibles */
-}
-
-/* Texto de resumen de pagos y notificaciones */
-#resumenPagos p,
-#notificaciones p {
-  font-size: 14px;
-  color: #1e1e1e;
-  margin: 4px 0;
 }
