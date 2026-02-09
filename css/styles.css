@@ -287,3 +287,36 @@ canvas{
   font-size:22px;
   margin-bottom:15px;
 }
+/* ====== AJUSTE TIPOGRAFÍA PANEL ADMIN ====== */
+
+/* Nombres de empleados en la lista */
+#listaEmpleados p,
+#adminList p {
+  font-size: 14px; /* antes era más grande */
+  margin: 4px 0;
+}
+
+/* Campos de fecha y select en filtros */
+#adminPanel input[type="date"],
+#adminPanel select {
+  font-size: 14px; /* moderado, legible pero no gigante */
+  padding: 8px;
+}
+
+/* Labels del calendario y filtros */
+#adminPanel label {
+  font-size: 13px; /* más discreto */
+  font-weight:500;
+}
+
+/* Ajuste de títulos de secciones dentro del panel */
+#adminPanel h4 {
+  font-size:16px; /* más proporcional al contenido */
+}
+
+/* Ajuste de las notificaciones y resumen de pagos */
+#resumenPagos p,
+#notificaciones p {
+  font-size:14px;
+  margin:4px 0;
+}
