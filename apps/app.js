@@ -131,76 +131,104 @@ function generarOlerite(empID) {
   });
 }
 
-// 🔹 EMPLEADO PIN + BOTONES DINÁMICOS
+// 🔹 EMPLEADO PIN + BOTONES DINÁMICOS OPTIMIZADO
 let empleadoActual = null;
 const etapas = ['entrada', 'almuerzo_salida', 'almuerzo_regreso', 'salida'];
 
 function pinInputHandler() {
   const pin = document.getElementById("empPin").value.trim();
+  const empMsg = document.getElementById("empMsg");
+  const employeeButtons = document.getElementById("employeeButtons");
+
   if (!pin) {
-    document.getElementById("employeeButtons").classList.add("hidden");
+    employeeButtons.classList.add("hidden");
     document.getElementById("empNombreGrande").innerHTML = "";
+    empMsg.innerHTML = "";
+    empleadoActual = null;
     return;
   }
 
-  db.ref("empleados").orderByChild("pin").equalTo(pin).once("value", snap => {
+  db.ref("empleados").orderByChild("pin").equalTo(pin).once("value").then(snap => {
     if (!snap.exists()) {
-      document.getElementById("employeeButtons").classList.add("hidden");
+      employeeButtons.classList.add("hidden");
       document.getElementById("empNombreGrande").innerHTML = "";
-      document.getElementById("empMsg").innerHTML = "⚠️ PIN no encontrado";
+      empMsg.innerHTML = "⚠️ PIN no encontrado";
+      empleadoActual = null;
       return;
     }
 
     snap.forEach(empSnap => {
       empleadoActual = { id: empSnap.key, nombre: empSnap.val().nombre };
       document.getElementById("empNombreGrande").innerHTML = empleadoActual.nombre;
-      document.getElementById("employeeButtons").classList.remove("hidden");
-      document.getElementById("empMsg").innerHTML = "";
+      employeeButtons.classList.remove("hidden");
+      empMsg.innerHTML = "";
     });
   });
 }
 
-// 🔹 FUNCIONES MARCACIÓN
+// 🔹 FUNCIONES MARCACIÓN OPTIMIZADA
 function mark(tipo) {
   if (!empleadoActual) return;
+
+  const empMsg = document.getElementById("empMsg");
+  empMsg.innerText = "Registrando...";
 
   const now = new Date();
   const yyyy = now.getFullYear(), mm = now.getMonth() + 1, dd = now.getDate();
   const fecha = `${yyyy}-${mm < 10 ? '0'+mm:mm}-${dd < 10 ? '0'+dd:dd}`;
   const ref = db.ref("marcaciones/" + empleadoActual.id + "/" + fecha);
 
-  ref.once("value", snap => {
-    const marc = snap.val() ? snap.val() : {};
-    let lastEtapa = null, lastTime = 0;
-    Object.values(marc).forEach(m => {
-      if (m.timestamp && m.timestamp > lastTime) { lastTime = m.timestamp; lastEtapa = m.tipo; }
-    });
-
+  // Consultar solo el día del empleado
+  ref.once("value").then(snap => {
+    const marc = snap.val() || {};
+    const lastEtapa = Object.keys(marc).pop(); // última acción
     const lastIndex = lastEtapa ? etapas.indexOf(lastEtapa) : -1;
+
     if (lastIndex === -1 && tipo !== 'entrada') {
-      document.getElementById("empMsg").innerHTML = "⚠️ Debes iniciar con Entrada"; return;
+      empMsg.innerText = "⚠️ Debes iniciar con Entrada";
+      return;
     }
     if (lastIndex !== -1 && etapas.indexOf(tipo) !== lastIndex + 1) {
-      document.getElementById("empMsg").innerHTML = "⚠️ Debes seguir el orden de marcación"; return;
+      empMsg.innerText = "⚠️ Debes seguir el orden de marcación";
+      return;
     }
 
+    // Registrar con geolocalización
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(pos => {
         const lat = pos.coords.latitude, lon = pos.coords.longitude;
-        const hora = now.toLocaleTimeString(), timestamp = now.getTime();
-        ref.child(tipo).set({ nombre: empleadoActual.nombre, tipo, fecha, hora, timestamp, lat, lon });
-        let frase = "";
-        if (tipo === "entrada") frase = "¡Que tengas un buen inicio de jornada!";
-        if (tipo === "almuerzo_salida") frase = "Buen provecho 🍽️";
-        if (tipo === "almuerzo_regreso") frase = "Bienvenido de vuelta 👋";
-        if (tipo === "salida") frase = "¡Buen trabajo!";
-        document.getElementById("empMsg").innerHTML = `${empleadoActual.nombre} | ${frase} (${hora})`;
-        mostrarNotificacion(`${empleadoActual.nombre} marcó ${tipo} a las ${hora}`);
-        setTimeout(backHome, 2000);
-        loadMarcaciones();
-        updateChart();
-      }, () => alert("No se pudo obtener ubicación GPS"));
-    } else alert("GPS no disponible");
+        const hora = now.toLocaleTimeString();
+        const timestamp = now.getTime();
+
+        // Actualizamos solo el tipo marcado
+        ref.update({ [tipo]: { nombre: empleadoActual.nombre, tipo, fecha, hora, timestamp, lat, lon } })
+          .then(() => {
+            let frase = "";
+            if (tipo === "entrada") frase = "¡Que tengas un buen inicio de jornada!";
+            if (tipo === "almuerzo_salida") frase = "Buen provecho 🍽️";
+            if (tipo === "almuerzo_regreso") frase = "Bienvenido de vuelta 👋";
+            if (tipo === "salida") frase = "¡Buen trabajo!";
+
+            empMsg.innerHTML = `${empleadoActual.nombre} | ${frase} (${hora})`;
+            mostrarNotificacion(`${empleadoActual.nombre} marcó ${tipo} a las ${hora}`);
+
+            // Ocultar panel automáticamente
+            setTimeout(backHome, 2000);
+
+            // Actualizar lista y gráfico sin esperar
+            loadMarcaciones();
+            updateChart();
+          })
+          .catch(err => {
+            console.error(err);
+            empMsg.innerText = "❌ Error al registrar";
+          });
+      }, () => {
+        empMsg.innerText = "❌ No se pudo obtener ubicación GPS";
+      });
+    } else {
+      empMsg.innerText = "❌ GPS no disponible";
+    }
   });
 }
 
@@ -396,15 +424,14 @@ function renderChart(startDate = '', endDate = '', periodo = 'diario', dateFilte
 
       const tipos = fechas[fecha];
       let entrada = null, salida = null;
-      Object.values(tipos).forEach(m => {
-        if (m.tipo === 'entrada') entrada = m.timestamp;
+      Object.values(tipos).forEach(m => {if (m.tipo === 'entrada') entrada = m.timestamp;
         if (m.tipo === 'salida') salida = m.timestamp;
       });
       if (!entrada || !salida) continue;
 
       const nombre = Object.values(tipos)[0].nombre || 'Sin nombre';
       if (!resumenHoras[nombre]) resumenHoras[nombre] = 0;
-      resumenHoras[nombre] += (salida - entrada) / 3600000;
+      resumenHoras[nombre] += (salida - entrada) / 3600000; // horas trabajadas
     }
   }
 
@@ -417,7 +444,10 @@ function renderChart(startDate = '', endDate = '', periodo = 'diario', dateFilte
     data: chartData,
     options: {
       responsive: true,
-      plugins: { legend: { display: false } }
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { beginAtZero: true }
+      }
     }
   });
 }
