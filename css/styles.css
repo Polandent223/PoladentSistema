@@ -279,3 +279,11 @@ canvas{
   color:#6c757d;
   letter-spacing:2px;
 }
+
+/* ====== TITULO ADMIN DESTACADO ====== */
+#adminPanel h3 {
+  color: #0d6efd; /* Azul destacado */
+  font-weight:700;
+  font-size:22px;
+  margin-bottom:15px;
+}
