@@ -1,3 +1,4 @@
+/* ====== ESTILO GLOBAL ====== */
 body{
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   background:#f4f7fb;
@@ -5,12 +6,8 @@ body{
   margin:0;
   color:#333;
 }
-h1{
-  margin-bottom:25px;
-}
-h3{
-  margin-bottom:15px;
-}
+h1{margin-bottom:25px;}
+h3{margin-bottom:15px;}
 
 .panel{
   max-width:1100px;
@@ -20,9 +17,9 @@ h3{
 .card{
   background:white;
   padding:20px;
-  border-radius:12px;
+  border-radius:16px;
   margin:18px 0;
-  box-shadow:0 4px 12px rgba(0,0,0,0.08);
+  box-shadow:0 8px 18px rgba(0,0,0,0.08);
   text-align:left;
 }
 
@@ -44,14 +41,20 @@ input,select,button{
 
 button{
   cursor:pointer;
-  background:#007bff;
+  background: linear-gradient(135deg,#2b7de9,#1e4f8a);
   color:white;
+  font-weight:600;
+  letter-spacing:0.5px;
   border:none;
   min-width:140px;
+  border-radius:10px;
+  box-shadow:0 4px 10px rgba(0,0,0,0.15);
+  transition:0.2s;
 }
 
 button:hover{
-  opacity:0.9;
+  opacity:0.95;
+  transform:translateY(-2px);
 }
 
 button.danger{
@@ -104,54 +107,6 @@ canvas{
   padding:10px;
 }
 
-/* 🔹 PANEL EMPLEADO - ESTILO MÓVIL */
-#employeePanel {
-  max-width: 400px;
-  margin: auto;
-  font-size: 16px;
-  padding: 10px;
-}
-
-#employeeButtons button {
-  padding: 12px;
-  margin: 6px 0;
-  width: 100%;
-  font-size: 16px;
-}
-
-#empNombreGrande {
-  font-size: 20px;
-  text-align: center;
-}
-
-/* Ajustes adicionales para móviles muy pequeños */
-@media (max-width: 500px) {
-  #employeePanel {
-    padding: 8px;
-  }
-
-  #empNombreGrande {
-    font-size: 18px;
-  }
-
-  #employeeButtons button {
-    font-size: 14px;
-    padding: 10px;
-  }
-}
-/* 🔹 ADMIN RESPONSIVE SOLO PARA FILTROS EN CELULAR */
-@media (max-width: 768px) {
-  #adminPanel input,
-  #adminPanel select {
-    width: 100%;
-    box-sizing: border-box;
-  }
-
-  #adminPanel label {
-    display: block;
-    margin-top: 10px;
-  }
-  }
 /* ====== HEADER PROFESIONAL ====== */
 .appHeader{
   max-width:1100px;
@@ -199,8 +154,6 @@ canvas{
 
 .homeBtns button{
   background:linear-gradient(135deg,#0d6efd,#0a58ca);
-  border:none;
-  color:white;
   font-size:18px;
   padding:16px 28px;
   border-radius:12px;
@@ -215,27 +168,89 @@ canvas{
   box-shadow:0 10px 22px rgba(13,110,253,0.45);
 }
 
-/* ====== MODO EMPLEADO TIPO TELEFONO ====== */
-@media (min-width:768px){
+/* ====== PANEL EMPLEADO - MÓVIL ====== */
+#employeePanel {
+  max-width: 400px;
+  margin: auto;
+  font-size: 16px;
+  padding: 20px;
+  background:white;
+  border-radius:20px;
+  box-shadow:0 10px 30px rgba(0,0,0,0.2);
+}
+
+#empNombreGrande {
+  font-size:24px;
+  text-align:center;
+  margin-bottom:15px;
+}
+
+#empPin{
+  width:100%;
+  padding:14px;
+  font-size:18px;
+  border-radius:10px;
+  margin-bottom:15px;
+}
+
+#employeeButtons{
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+}
+
+#employeeButtons button{
+  width:100%;
+  padding:16px;
+  font-size:16px;
+  border-radius:12px;
+}
+
+/* ====== RESPONSIVE EMPLEADO PARA CELULAR ====== */
+@media (max-width:768px){
   #employeePanel{
-    max-width:420px;
-    margin:40px auto;
-    border-radius:20px;
-    box-shadow:0 10px 30px rgba(0,0,0,0.2);
-    padding:30px 20px;
-  }
-
-  #employeePanel button{
+    position:fixed;
+    inset:0;
     width:100%;
-    margin:10px 0;
-    font-size:18px;
-    padding:14px;
-    border-radius:12px;
+    height:100%;
+    border-radius:0;
+    padding:25px;
+    overflow:auto;
   }
-/* ===== MARCA POLADENT ===== */
 
+  .nombreGrande{
+    font-size:28px;
+  }
+
+  #employeeButtons button{
+    font-size:18px;
+    padding:18px;
+  }
+}
+
+/* ====== RESPONSIVE ADMIN SOLO FILTROS ====== */
+@media (max-width:768px){
+  #adminPanel input,
+  #adminPanel select{
+    width:100%;
+    box-sizing:border-box;
+    margin-top:8px;
+  }
+
+  #adminPanel label{
+    display:block;
+    margin-top:10px;
+  }
+}
+
+/* ====== TARJETAS MÁS PREMIUM ====== */
+.card{
+  border-radius:16px;
+  box-shadow:0 8px 18px rgba(0,0,0,0.08);
+}
+
+/* ====== LOGO Y MARCA ====== */
 .headerBrand{
-  aware: 100%;
   display:flex;
   align-items:center;
   justify-content:center;
@@ -259,55 +274,4 @@ canvas{
   font-size:14px;
   color:#6c757d;
   letter-spacing:2px;
-}
-
-/* Botones con identidad */
-button{
-  background: linear-gradient(135deg,#2b7de9,#1e4f8a);
-  font-weight:600;
-  letter-spacing:0.5px;
-  border-radius:10px;
-  box-shadow:0 4px 10px rgba(0,0,0,0.15);
-}
-
-/* Tarjetas más premium */
-.card{
-  border-radius:16px;
-  box-shadow:0 8px 18px rgba(0,0,0,0.08);
-}
-
-/* ===== MODO TELÉFONO SOLO EMPLEADO ===== */
-@media (max-width:768px){
-  #employeePanel{
-    position:fixed;
-    inset:0;
-    width:100%;
-    height:100%;
-    border-radius:0;
-    padding:25px;
-    overflow:auto;
-  }
-
-  #employeeButtons{
-    display:flex;
-    flex-direction:column;
-    gap:15px;
-  }
-
-  #employeeButtons button{
-    width:100%;
-    font-size:18px;
-    padding:18px;
-  }
-
-  .nombreGrande{
-    font-size:30px;
-  }
-}
-  #empPin{
-    width:100%;
-    padding:14px;
-    font-size:18px;
-    border-radius:10px;
-  }
 }
