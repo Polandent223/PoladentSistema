@@ -132,76 +132,30 @@ function generarOlerite(empID) {
 // 🔹 EMPLEADO PIN + BOTONES DINÁMICOS
 let empleadoActual = null;
 const etapas = ['entrada', 'almuerzo_salida', 'almuerzo_regreso', 'salida'];
-
-function pinInputHandler() {
+async function pinInputHandler() {
   const pin = document.getElementById("empPin").value.trim();
-  if (!pin) {
+  if (!pin) return;
+
+  const snap = await db.ref("empleados")
+    .orderByChild("pin")
+    .equalTo(pin)
+    .limitToFirst(1)
+    .once("value");
+
+  if (!snap.exists()) {
     document.getElementById("employeeButtons").classList.add("hidden");
     document.getElementById("empNombreGrande").innerHTML = "";
+    document.getElementById("empMsg").innerHTML = "⚠️ PIN no encontrado";
     return;
   }
 
-  db.ref("empleados").orderByChild("pin").equalTo(pin).once("value", snap => {
-    if (!snap.exists()) {
-      document.getElementById("employeeButtons").classList.add("hidden");
-      document.getElementById("empNombreGrande").innerHTML = "";
-      document.getElementById("empMsg").innerHTML = "⚠️ PIN no encontrado";
-      return;
-    }
+  const emp = Object.entries(snap.val())[0];
+  empleadoActual = { id: emp[0], nombre: emp[1].nombre };
 
-    snap.forEach(empSnap => {
-      empleadoActual = { id: empSnap.key, nombre: empSnap.val().nombre };
-      document.getElementById("empNombreGrande").innerHTML = empleadoActual.nombre;
-      document.getElementById("employeeButtons").classList.remove("hidden");
-      document.getElementById("empMsg").innerHTML = "";
-    });
-  });
+  document.getElementById("empNombreGrande").innerHTML = empleadoActual.nombre;
+  document.getElementById("employeeButtons").classList.remove("hidden");
+  document.getElementById("empMsg").innerHTML = "";
 }
-
-// 🔹 FUNCIONES MARCACIÓN
-function mark(tipo) {
-  if (!empleadoActual) return;
-
-  const now = new Date();
-  const yyyy = now.getFullYear(), mm = now.getMonth() + 1, dd = now.getDate();
-  const fecha = `${yyyy}-${mm < 10 ? '0'+mm:mm}-${dd < 10 ? '0'+dd:dd}`;
-  const ref = db.ref("marcaciones/" + empleadoActual.id + "/" + fecha);
-
-  ref.once("value", snap => {
-    const marc = snap.val() ? snap.val() : {};
-    let lastEtapa = null, lastTime = 0;
-    Object.values(marc).forEach(m => {
-      if (m.timestamp && m.timestamp > lastTime) { lastTime = m.timestamp; lastEtapa = m.tipo; }
-    });
-
-    const lastIndex = lastEtapa ? etapas.indexOf(lastEtapa) : -1;
-    if (lastIndex === -1 && tipo !== 'entrada') {
-      document.getElementById("empMsg").innerHTML = "⚠️ Debes iniciar con Entrada"; return;
-    }
-    if (lastIndex !== -1 && etapas.indexOf(tipo) !== lastIndex + 1) {
-      document.getElementById("empMsg").innerHTML = "⚠️ Debes seguir el orden de marcación"; return;
-    }
-
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(pos => {
-        const lat = pos.coords.latitude, lon = pos.coords.longitude;
-        const hora = now.toLocaleTimeString(), timestamp = now.getTime();
-        ref.child(tipo).set({ nombre: empleadoActual.nombre, tipo, fecha, hora, timestamp, lat, lon });
-        let frase = "";
-        if (tipo === "entrada") frase = "¡Que tengas un buen inicio de jornada!";
-        if (tipo === "almuerzo_salida") frase = "Buen provecho 🍽️";
-        if (tipo === "almuerzo_regreso") frase = "Bienvenido de vuelta 👋";
-        if (tipo === "salida") frase = "¡Buen trabajo!";
-        document.getElementById("empMsg").innerHTML = `${empleadoActual.nombre} | ${frase} (${hora})`;
-        mostrarNotificacion(`${empleadoActual.nombre} marcó ${tipo} a las ${hora}`);
-        setTimeout(backHome, 2000);
-        loadMarcaciones();
-        updateChart();
-      }, () => alert("No se pudo obtener ubicación GPS"));
-    } else alert("GPS no disponible");
-  });
-}
-
 // 🔹 ADMIN – RESUMEN MARCACIONES
 let excelRows = [], excelSalarial = [], allMarcaciones = {};
 
