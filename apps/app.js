@@ -3,6 +3,8 @@ const home = document.getElementById("home");
 const adminLogin = document.getElementById("adminLogin");
 const adminPanel = document.getElementById("adminPanel");
 const employeePanel = document.getElementById("employeePanel");
+const fechaDesde = document.getElementById("fechaDesde");
+const fechaHasta = document.getElementById("fechaHasta");
 
 // 🔹 BOTONES
 document.getElementById("btnAdmin").onclick = () => goAdmin();
@@ -234,8 +236,17 @@ function renderAdminList(dateFilter) {
     const fechas = allMarcaciones[empID];
 
     Object.keys(fechas).sort().forEach(fecha => {
-      if(dateFilter && !fecha.startsWith(dateFilter.substring(0,7)) && periodo!=="diario") return;
-      if(periodo==="diario" && dateFilter && fecha!==dateFilter) return;
+      let fechaObj = new Date(fecha);
+      let desde = fechaDesde.value ? new Date(fechaDesde.value) : null;
+      let hasta = fechaHasta.value ? new Date(fechaHasta.value) : null;
+
+      if(desde && fechaObj < desde) return;
+      if(hasta && fechaObj > hasta) return;
+
+      if(!desde && !hasta){
+        if(dateFilter && !fecha.startsWith(dateFilter.substring(0,7)) && periodo!=="diario") return;
+        if(periodo==="diario" && dateFilter && fecha!==dateFilter) return;
+      }
 
       const tipos = fechas[fecha];
 
@@ -244,9 +255,7 @@ function renderAdminList(dateFilter) {
         if(!data.nombre) data.nombre="Sin nombre";
 
         cont.innerHTML += `<p><b>${data.nombre}</b> | ${data.tipo} | ${fecha} | ${data.hora}</p>`;
-
         excelRows.push([data.nombre, fecha, data.tipo, data.hora]);
-
         excelSalarial.push({
           nombre:data.nombre,
           fecha:fecha,
@@ -259,9 +268,9 @@ function renderAdminList(dateFilter) {
     });
   });
 
-  // ✅ ESTA LÍNEA VA AQUÍ ABAJO DE TODO
   renderPagos();
 }
+
 // 🔹 EXPORTACIÓN EXCEL
 function exportExcelFiltro() {
   const fecha = document.getElementById("filterDate").value;
@@ -282,31 +291,15 @@ function exportExcelFiltro() {
 }
 
 function exportExcelSalarialFiltro() {
-  const fecha = document.getElementById("filterDate").value;
-  const periodo = document.getElementById("periodoResumen").value;
+  const desde = fechaDesde.value;
+  const hasta = fechaHasta.value;
   const resumen = {};
 
   for(const m of excelSalarial){
-    const mFecha = m.fecha;
-
-    if(periodo==="diario" && mFecha!==fecha) continue;
-    if(periodo==="quincenal" && !mFecha.startsWith(fecha.substring(0,7))) continue;
-    if(periodo==="mensual" && !mFecha.startsWith(fecha.substring(0,4)+"-"+fecha.substring(5,7))) continue;
-
+    if(!estaEnRango(m.fecha, desde, hasta)) continue;
     if(!resumen[m.nombre]) resumen[m.nombre] = {dias:{}};
-
-    if(!resumen[m.nombre].dias[mFecha]) 
-      resumen[m.nombre].dias[mFecha] = {
-        entrada:null,
-        salida:null,
-        almuerzo_salida:null,
-        almuerzo_regreso:null
-      };
-
-    if(m.tipo==="entrada") resumen[m.nombre].dias[mFecha].entrada = m.timestamp;
-    if(m.tipo==="salida") resumen[m.nombre].dias[mFecha].salida = m.timestamp;
-    if(m.tipo==="almuerzo_salida") resumen[m.nombre].dias[mFecha].almuerzo_salida = m.timestamp;
-    if(m.tipo==="almuerzo_regreso") resumen[m.nombre].dias[mFecha].almuerzo_regreso = m.timestamp;
+    if(!resumen[m.nombre].dias[m.fecha]) resumen[m.nombre].dias[m.fecha] = {entrada:null,salida:null,almuerzo_salida:null,almuerzo_regreso:null};
+    resumen[m.nombre].dias[m.fecha][m.tipo] = m.timestamp;
   }
 
   const wsData = [["Nombre","Fecha","Horas trabajadas","Horas extra","Banco de horas","Pago del día"]];
@@ -332,7 +325,6 @@ function exportExcelSalarialFiltro() {
         }
 
         let hrs = ((d.salida - d.entrada)/3600000) - almuerzo;
-
         let extra = Math.max(0, hrs-8);
         let normales = Math.min(8, hrs);
         bancoTotal += extra;
@@ -380,52 +372,63 @@ function mostrarNotificacion(text){
 }
 
 // 🔹 GRÁFICO HORAS
-function renderChart(startDate='', endDate=''){
+function renderChart(startDate = '', endDate = '', periodo = 'diario', dateFilter = '') {
   const ctx = document.getElementById("horasChart").getContext("2d");
-  let chartData = {labels:[], datasets:[{label:'Horas trabajadas', data:[], backgroundColor:'rgba(0,123,255,0.5)'}]};
+  let chartData = {
+    labels: [],
+    datasets: [{
+      label: 'Horas trabajadas',
+      data: [],
+      backgroundColor: 'rgba(0,123,255,0.5)'
+    }]
+  };
+
   const filtroInicio = startDate ? new Date(startDate) : null;
   const filtroFin = endDate ? new Date(endDate) : null;
   const resumenHoras = {};
 
-  for(const empID in allMarcaciones){
+  for (const empID in allMarcaciones) {
     const fechas = allMarcaciones[empID];
-    for(const fecha in fechas){
+    for (const fecha in fechas) {
       const fechaObj = new Date(fecha);
-      if(filtroInicio && fechaObj < filtroInicio) continue;
-      if(filtroFin && fechaObj > filtroFin) continue;
+      if (filtroInicio && fechaObj < filtroInicio) continue;
+      if (filtroFin && fechaObj > filtroFin) continue;
 
       const tipos = fechas[fecha];
-      let entrada=null, salida=null;
+      let entrada = null, salida = null;
       Object.values(tipos).forEach(m => {
-        if(m.tipo==='entrada') entrada=m.timestamp;
-        if(m.tipo==='salida') salida=m.timestamp;
+        if (m.tipo === 'entrada') entrada = m.timestamp;
+        if (m.tipo === 'salida') salida = m.timestamp;
       });
-      if(!entrada || !salida) continue;
+      if (!entrada || !salida) continue;
+
       const nombre = Object.values(tipos)[0].nombre || 'Sin nombre';
-      if(!resumenHoras[nombre]) resumenHoras[nombre] = 0;
-      resumenHoras[nombre] += (salida-entrada)/3600000;
+      if (!resumenHoras[nombre]) resumenHoras[nombre] = 0;
+      resumenHoras[nombre] += (salida - entrada) / 3600000;
     }
   }
 
   chartData.labels = Object.keys(resumenHoras);
   chartData.datasets[0].data = Object.values(resumenHoras);
 
-  if(window.horasChartInstance) window.horasChartInstance.destroy();
-  window.horasChartInstance = new Chart(ctx,{
-    type:'bar',
-    data:chartData,
-    options:{responsive:true, plugins:{legend:{display:false}}}
+  if (window.horasChartInstance) window.horasChartInstance.destroy();
+  window.horasChartInstance = new Chart(ctx, {
+    type: 'bar',
+    data: chartData,
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } }
+    }
   });
 }
 
-function updateChart(){
-  const start = document.getElementById("chartStart").value;
-  const end = document.getElementById("chartEnd").value;
-  renderChart(start, end);
+function updateChart() {
+  const start = fechaDesde.value || '';
+  const end = fechaHasta.value || '';
+  const periodo = periodoResumen.value;
+  const filtroFecha = filterDate.value;
+  renderChart(start, end, periodo, filtroFecha);
 }
-
-document.getElementById("chartStart").addEventListener("change", updateChart);
-document.getElementById("chartEnd").addEventListener("change", updateChart);
 
 // 🔽 MINIMIZAR/EXPANDIR SECCIONES
 function toggleSection(id){
@@ -440,29 +443,31 @@ function toggleSection(id){
   }
 }
 
+// 🔹 RESUMEN DE PAGOS Y BANCO DE HORAS
+function estaEnRango(fecha, desde, hasta) {
+  const f = new Date(fecha);
+  const d = desde ? new Date(desde) : null;
+  const h = hasta ? new Date(hasta) : null;
+  if(d && f < d) return false;
+  if(h && f > h) return false;
+  return true;
+}
+
 function renderPagos() {
   const cont = document.getElementById("resumenPagos");
   cont.innerHTML = "<h4>💰 Resumen de pagos y banco de horas</h4>";
+  const desde = fechaDesde.value;
+  const hasta = fechaHasta.value;
 
   const resumen = {};
 
   for(const m of excelSalarial){
-    const mFecha = m.fecha;
-
+    if(!estaEnRango(m.fecha, desde, hasta)) continue;
     if(!resumen[m.nombre]) resumen[m.nombre] = {dias:{}};
-
-    if(!resumen[m.nombre].dias[mFecha]) 
-      resumen[m.nombre].dias[mFecha] = {
-        entrada:null,
-        salida:null,
-        almuerzo_salida:null,
-        almuerzo_regreso:null
-      };
-
-    if(m.tipo==="entrada") resumen[m.nombre].dias[mFecha].entrada = m.timestamp;
-    if(m.tipo==="salida") resumen[m.nombre].dias[mFecha].salida = m.timestamp;
-    if(m.tipo==="almuerzo_salida") resumen[m.nombre].dias[mFecha].almuerzo_salida = m.timestamp;
-    if(m.tipo==="almuerzo_regreso") resumen[m.nombre].dias[mFecha].almuerzo_regreso = m.timestamp;
+    if(!resumen[m.nombre].dias[m.fecha]) resumen[m.nombre].dias[m.fecha] = {
+      entrada:null, salida:null, almuerzo_salida:null, almuerzo_regreso:null
+    };
+    resumen[m.nombre].dias[m.fecha][m.tipo] = m.timestamp;
   }
 
   const empleadosKeys = Object.keys(resumen);
@@ -486,7 +491,6 @@ function renderPagos() {
         }
 
         let hrs = ((d.salida - d.entrada)/3600000) - almuerzo;
-
         let extra = Math.max(0, hrs-8);
         let normales = Math.min(8, hrs);
         bancoTotal += extra;
@@ -505,9 +509,20 @@ function renderPagos() {
     });
   });
 }
+
+// 🔹 LISTENERS PARA FILTRO DE FECHAS Y PERIODO
+const filterDate = document.getElementById("filterDate");
+const periodoResumen = document.getElementById("periodoResumen");
+
+filterDate.addEventListener("change", () => { renderAdminList(filterDate.value); updateChart(); });
+periodoResumen.addEventListener("change", () => { renderAdminList(filterDate.value); updateChart(); });
+fechaDesde.addEventListener("change", () => { renderAdminList(filterDate.value); updateChart(); });
+fechaHasta.addEventListener("change", () => { renderAdminList(filterDate.value); updateChart(); });
+
 // 🔹 INICIO
 backHome();
 setDefaultDate();
+periodoResumen.value = "diario"; 
 loadEmpleados();
 loadMarcaciones();
 updateChart();
