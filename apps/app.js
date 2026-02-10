@@ -334,7 +334,7 @@ function toggleSection(id){
   }
 }
 
-// 🔹 FUNCIÓN MARCAR (ARREGLADA COMPLETA)
+/// 🔹 FUNCIÓN MARCAR CON MENSAJES HUMANOS
 async function mark(tipo) {
   if (!empleadoActual) return;
 
@@ -343,27 +343,29 @@ async function mark(tipo) {
   const hora = hoy.toLocaleTimeString();
 
   const ref = db.ref(`marcaciones/${empleadoActual.id}/${fecha}`);
-
   const snap = await ref.once("value");
   const marcacionesHoy = snap.val() || {};
 
   const orden = ['entrada', 'almuerzo_salida', 'almuerzo_regreso', 'salida'];
   const indexActual = orden.indexOf(tipo);
 
-  // Verificar orden correcto
+  // Validar orden
   for (let i = 0; i < indexActual; i++) {
     if (!Object.values(marcacionesHoy).some(m => m.tipo === orden[i])) {
-      document.getElementById("empMsg").innerHTML = `⚠️ Debe marcar primero: ${orden[i]}`;
+      document.getElementById("empMsg").innerHTML =
+        `⚠️ Primero debes marcar: <b>${orden[i].replace('_',' ')}</b>`;
       return;
     }
   }
 
-  // Evitar doble marcación
+  // Evitar repetir
   if (Object.values(marcacionesHoy).some(m => m.tipo === tipo)) {
-    document.getElementById("empMsg").innerHTML = `⚠️ Ya marcaste ${tipo}`;
+    document.getElementById("empMsg").innerHTML =
+      `⚠️ Ya registraste esta marcación hoy`;
     return;
   }
 
+  // Guardar marcación
   const newRef = ref.push();
   await newRef.set({
     tipo,
@@ -373,7 +375,26 @@ async function mark(tipo) {
     nombre: empleadoActual.nombre
   });
 
-  document.getElementById("empMsg").innerHTML = `✅ ${tipo} registrada`;
+  // 🔹 MENSAJES HUMANOS SEGÚN ACCIÓN
+  let mensaje = "";
+
+  if (tipo === "entrada") {
+    mensaje = `👋 Buenos días <b>${empleadoActual.nombre}</b><br>¡Que tengas una excelente jornada laboral!`;
+  }
+
+  if (tipo === "almuerzo_salida") {
+    mensaje = `🍽️ Buen provecho <b>${empleadoActual.nombre}</b><br>Disfruta tu almuerzo`;
+  }
+
+  if (tipo === "almuerzo_regreso") {
+    mensaje = `💪 Bienvenido de nuevo <b>${empleadoActual.nombre}</b><br>¡Seguimos con todo!`;
+  }
+
+  if (tipo === "salida") {
+    mensaje = `🏁 Buen trabajo <b>${empleadoActual.nombre}</b><br>Nos vemos mañana`;
+  }
+
+  document.getElementById("empMsg").innerHTML = mensaje;
 }
 // 🔹 INICIO
 backHome();
