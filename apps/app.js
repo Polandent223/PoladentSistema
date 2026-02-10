@@ -178,20 +178,33 @@ function mark(tipo) {
   const fecha = `${yyyy}-${mm < 10 ? '0'+mm:mm}-${dd < 10 ? '0'+dd:dd}`;
   const ref = db.ref("marcaciones/" + empleadoActual.id + "/" + fecha);
 
-  // Consultar solo el día del empleado
-  ref.once("value").then(snap => {
-    const marc = snap.val() || {};
-    const lastEtapa = Object.keys(marc).pop(); // última acción
-    const lastIndex = lastEtapa ? etapas.indexOf(lastEtapa) : -1;
+  const marc = snap.val() || {};
 
-    if (lastIndex === -1 && tipo !== 'entrada') {
-      empMsg.innerText = "⚠️ Debes iniciar con Entrada";
-      return;
-    }
-    if (lastIndex !== -1 && etapas.indexOf(tipo) !== lastIndex + 1) {
-      empMsg.innerText = "⚠️ Debes seguir el orden de marcación";
-      return;
-    }
+// 🔒 VALIDACIÓN REAL POR ETAPAS (no por orden de Firebase)
+if (marc.salida) {
+  empMsg.innerText = "✅ Jornada ya finalizada";
+  return;
+}
+
+if (!marc.entrada && tipo !== 'entrada') {
+  empMsg.innerText = "⚠️ Debes iniciar con Entrada";
+  return;
+}
+
+if (marc.entrada && !marc.almuerzo_salida && tipo !== 'almuerzo_salida' && tipo !== 'entrada') {
+  empMsg.innerText = "⚠️ Debes marcar salida a almuerzo";
+  return;
+}
+
+if (marc.almuerzo_salida && !marc.almuerzo_regreso && tipo !== 'almuerzo_regreso') {
+  empMsg.innerText = "⚠️ Debes marcar regreso de almuerzo";
+  return;
+}
+
+if (marc.almuerzo_regreso && !marc.salida && tipo !== 'salida') {
+  empMsg.innerText = "⚠️ Debes marcar la salida final";
+  return;
+}
 
     // Registrar con geolocalización
     if (navigator.geolocation) {
