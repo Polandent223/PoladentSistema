@@ -133,106 +133,73 @@ function generarOlerite(empID) {
 let empleadoActual = null;
 const etapas = ['entrada', 'almuerzo_salida', 'almuerzo_regreso', 'salida'];
 
-async function pinInputHandler() {
-  const pinInput = document.getElementById("empPin");
-  const buttonsContainer = document.getElementById("employeeButtons");
-  const nombreDisplay = document.getElementById("empNombreGrande");
-  const msgDisplay = document.getElementById("empMsg");
-
-  const pin = pinInput.value.trim();
-
-  // OCULTAR BOTONES y limpiar mensajes mientras escribe
-  buttonsContainer.classList.add("hidden");
-  nombreDisplay.innerHTML = "";
-  msgDisplay.innerHTML = "";
-
-  // Si el input está vacío, no buscar
-  if (!pin) return;
-
-  // Buscar empleado con ese PIN
-  const snap = await db.ref("empleados")
-    .orderByChild("pin")
-    .equalTo(pin)
-    .limitToFirst(1)
-    .once("value");
-
-  if (!snap.exists()) {
-    msgDisplay.innerHTML = "⚠️ PIN no encontrado";
+function pinInputHandler() {
+  const pin = document.getElementById("empPin").value.trim();
+  if (!pin) {
+    document.getElementById("employeeButtons").classList.add("hidden");
+    document.getElementById("empNombreGrande").innerHTML = "";
     return;
   }
 
-  // Si se encuentra el empleado, mostrar botones y nombre
-  const emp = Object.entries(snap.val())[0];
-  empleadoActual = { id: emp[0], nombre: emp[1].nombre };
-
-  nombreDisplay.innerHTML = empleadoActual.nombre;
-  buttonsContainer.classList.remove("hidden");
-  msgDisplay.innerHTML = "";
-}
-
-  // MOSTRAR botones al encontrar PIN
-  document.getElementById("empNombreGrande").innerHTML = empleadoActual.nombre;
-  document.getElementById("employeeButtons").classList.remove("hidden");
-}
-
-// 🔹 FUNCIÓN MARCAR CON MENSAJES HUMANOS
-async function mark(tipo) {
-  if (!empleadoActual) return;
-
-  const hoy = new Date();
-  const fecha = hoy.toISOString().split('T')[0];
-  const hora = hoy.toLocaleTimeString();
-
-  const ref = db.ref(`marcaciones/${empleadoActual.id}/${fecha}`);
-  const snap = await ref.once("value");
-  const marcacionesHoy = snap.val() || {};
-
-  const orden = ['entrada', 'almuerzo_salida', 'almuerzo_regreso', 'salida'];
-  const indexActual = orden.indexOf(tipo);
-
-  // Validar orden
-  for (let i = 0; i < indexActual; i++) {
-    if (!Object.values(marcacionesHoy).some(m => m.tipo === orden[i])) {
-      document.getElementById("empMsg").innerHTML =
-        `⚠️ Primero debes marcar: <b>${orden[i].replace('_',' ')}</b>`;
+  db.ref("empleados").orderByChild("pin").equalTo(pin).once("value", snap => {
+    if (!snap.exists()) {
+      document.getElementById("employeeButtons").classList.add("hidden");
+      document.getElementById("empNombreGrande").innerHTML = "";
+      document.getElementById("empMsg").innerHTML = "⚠️ PIN no encontrado";
       return;
     }
-  }
 
-  // Evitar repetir
-  if (Object.values(marcacionesHoy).some(m => m.tipo === tipo)) {
-    document.getElementById("empMsg").innerHTML =
-      `⚠️ Ya registraste esta marcación hoy`;
-    return;
-  }
-
-  // Guardar marcación
-  const newRef = ref.push();
-  await newRef.set({
-    tipo,
-    hora,
-    fecha,
-    timestamp: Date.now(),
-    nombre: empleadoActual.nombre
+    snap.forEach(empSnap => {
+      empleadoActual = { id: empSnap.key, nombre: empSnap.val().nombre };
+      document.getElementById("empNombreGrande").innerHTML = empleadoActual.nombre;
+      document.getElementById("employeeButtons").classList.remove("hidden");
+      document.getElementById("empMsg").innerHTML = "";
+    });
   });
+}
 
-  // 🔹 MENSAJES HUMANOS
-  let mensaje = "";
+// 🔹 FUNCIONES MARCACIÓN
+function mark(tipo) {
+  if (!empleadoActual) return;
 
-  if (tipo === "entrada") {
-    mensaje = `👋 Buenos días <b>${empleadoActual.nombre}</b><br>¡Que tengas una excelente jornada laboral!`;
-  }
-  if (tipo === "almuerzo_salida") {
-    mensaje = `🍽️ Buen provecho <b>${empleadoActual.nombre}</b><br>Disfruta tu almuerzo`;
-  }
-  if (tipo === "almuerzo_regreso") {
-    mensaje = `💪 Bienvenido de nuevo <b>${empleadoActual.nombre}</b><br>¡Seguimos con todo!`;
-  }
-  if (tipo === "salida") {
-    mensaje = `🏁 Buen trabajo <b>${empleadoActual.nombre}</b><br>Nos vemos mañana`;
-  }
+  const now = new Date();
+  const yyyy = now.getFullYear(), mm = now.getMonth() + 1, dd = now.getDate();
+  const fecha = `${yyyy}-${mm < 10 ? '0'+mm:mm}-${dd < 10 ? '0'+dd:dd}`;
+  const ref = db.ref("marcaciones/" + empleadoActual.id + "/" + fecha);
 
-  document.getElementById("empMsg").innerHTML = mensaje;
+  ref.once("value", snap => {
+    const marc = snap.val() ? snap.val() : {};
+    let lastEtapa = null, lastTime = 0;
+    Object.values(marc).forEach(m => {
+      if (m.timestamp && m.timestamp > lastTime) { lastTime = m.timestamp; lastEtapa = m.tipo; }
+    });
+
+    const lastIndex = lastEtapa ? etapas.indexOf(lastEtapa) : -1;
+    if (lastIndex === -1 && tipo !== 'entrada') {
+      document.getElementById("empMsg").innerHTML = "⚠️ Debes iniciar con Entrada"; return;
+    }
+    if (lastIndex !== -1 && etapas.indexOf(tipo) !== lastIndex + 1) {
+      document.getElementById("empMsg").innerHTML = "⚠️ Debes seguir el orden de marcación"; return;
+    }
+
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(pos => {
+        const lat = pos.coords.latitude, lon = pos.coords.longitude;
+        const hora = now.toLocaleTimeString(), timestamp = now.getTime();
+        ref.child(tipo).set({ nombre: empleadoActual.nombre, tipo, fecha, hora, timestamp, lat, lon });
+        let frase = "";
+        if (tipo === "entrada") frase = "¡Que tengas un buen inicio de jornada!";
+        if (tipo === "almuerzo_salida") frase = "Buen provecho 🍽️";
+        if (tipo === "almuerzo_regreso") frase = "Bienvenido de vuelta 👋";
+        if (tipo === "salida") frase = "¡Buen trabajo!";
+        document.getElementById("empMsg").innerHTML = `${empleadoActual.nombre} | ${frase} (${hora})`;
+        mostrarNotificacion(`${empleadoActual.nombre} marcó ${tipo} a las ${hora}`);
+        setTimeout(backHome, 2000);
+        loadMarcaciones();
+        updateChart();
+      }, () => alert("No se pudo obtener ubicación GPS"));
+    } else alert("GPS no disponible");
+  });
 }
 
 // 🔹 ADMIN – RESUMEN MARCACIONES
@@ -413,9 +380,86 @@ function toggleSection(id){
   }
 }
 
+function calcularPagos(){
+  const start = new Date(document.getElementById("payStart").value);
+  const end = new Date(document.getElementById("payEnd").value);
+  const cont = document.getElementById("payResults");
+  cont.innerHTML = "";
+
+  db.ref("empleados").once("value", empSnap => {
+    empSnap.forEach(emp => {
+      const empID = emp.key;
+      const dataEmp = emp.val();
+
+      let totalHoras = 0;
+      let bancoHoras = 0;
+      let diasTrabajados = 0;
+
+      db.ref("marcaciones/"+empID).once("value", marcSnap => {
+        marcSnap.forEach(fechaSnap => {
+          const fecha = new Date(fechaSnap.key);
+          if(fecha < start || fecha > end) return;
+
+          const registros = fechaSnap.val();
+          let entrada=null, salida=null, almuerzoOut=null, almuerzoIn=null;
+
+          Object.values(registros).forEach(r=>{
+            if(r.tipo==="entrada") entrada=r.timestamp;
+            if(r.tipo==="salida") salida=r.timestamp;
+            if(r.tipo==="almuerzo_salida") almuerzoOut=r.timestamp;
+            if(r.tipo==="almuerzo_regreso") almuerzoIn=r.timestamp;
+          });
+
+          if(entrada && salida){
+            let horas = (salida - entrada)/3600000;
+
+            if(almuerzoOut && almuerzoIn){
+              horas -= (almuerzoIn - almuerzoOut)/3600000;
+            }
+
+            totalHoras += horas;
+            diasTrabajados++;
+
+            if(horas > 8){
+              bancoHoras += (horas - 8);
+            }
+          }
+        });
+
+        let pago = 0;
+
+        if(dataEmp.tipoSalario === "diario"){
+          pago = diasTrabajados * dataEmp.salario;
+        }
+
+        if(dataEmp.tipoSalario === "quincenal"){
+          const valorDia = dataEmp.salario / 15;
+          pago = diasTrabajados * valorDia;
+        }
+
+        if(dataEmp.tipoSalario === "mensual"){
+          const valorDia = dataEmp.salario / 30;
+          pago = diasTrabajados * valorDia;
+        }
+
+        cont.innerHTML += `
+          <div class="empleado">
+            <strong>${dataEmp.nombre}</strong><br>
+            Días trabajados: ${diasTrabajados}<br>
+            Horas trabajadas: ${totalHoras.toFixed(2)}<br>
+            Banco de horas: ${bancoHoras.toFixed(2)}<br>
+            <strong>Total a pagar: $${pago.toFixed(2)}</strong>
+          </div>
+        `;
+      });
+    });
+  });
+}
+
+
 // 🔹 INICIO
 backHome();
 setDefaultDate();
 loadEmpleados();
 loadMarcaciones();
-updateChart();
+update
