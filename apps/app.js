@@ -134,15 +134,22 @@ let empleadoActual = null;
 const etapas = ['entrada', 'almuerzo_salida', 'almuerzo_regreso', 'salida'];
 
 async function pinInputHandler() {
-  const pin = document.getElementById("empPin").value.trim();
+  const pinInput = document.getElementById("empPin");
+  const buttonsContainer = document.getElementById("employeeButtons");
+  const nombreDisplay = document.getElementById("empNombreGrande");
+  const msgDisplay = document.getElementById("empMsg");
 
-  // OCULTAR BOTONES mientras escribe
-  document.getElementById("employeeButtons").classList.add("hidden");
-  document.getElementById("empNombreGrande").innerHTML = "";
-  document.getElementById("empMsg").innerHTML = "";
+  const pin = pinInput.value.trim();
 
-  if (pin.length < 3) return;
+  // OCULTAR BOTONES y limpiar mensajes mientras escribe
+  buttonsContainer.classList.add("hidden");
+  nombreDisplay.innerHTML = "";
+  msgDisplay.innerHTML = "";
 
+  // Si el input está vacío, no buscar
+  if (!pin) return;
+
+  // Buscar empleado con ese PIN
   const snap = await db.ref("empleados")
     .orderByChild("pin")
     .equalTo(pin)
@@ -150,12 +157,18 @@ async function pinInputHandler() {
     .once("value");
 
   if (!snap.exists()) {
-    document.getElementById("empMsg").innerHTML = "⚠️ PIN no encontrado";
+    msgDisplay.innerHTML = "⚠️ PIN no encontrado";
     return;
   }
 
+  // Si se encuentra el empleado, mostrar botones y nombre
   const emp = Object.entries(snap.val())[0];
   empleadoActual = { id: emp[0], nombre: emp[1].nombre };
+
+  nombreDisplay.innerHTML = empleadoActual.nombre;
+  buttonsContainer.classList.remove("hidden");
+  msgDisplay.innerHTML = "";
+}
 
   // MOSTRAR botones al encontrar PIN
   document.getElementById("empNombreGrande").innerHTML = empleadoActual.nombre;
