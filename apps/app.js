@@ -334,6 +334,47 @@ function toggleSection(id){
   }
 }
 
+// 🔹 FUNCIÓN MARCAR (ARREGLADA COMPLETA)
+async function mark(tipo) {
+  if (!empleadoActual) return;
+
+  const hoy = new Date();
+  const fecha = hoy.toISOString().split('T')[0];
+  const hora = hoy.toLocaleTimeString();
+
+  const ref = db.ref(`marcaciones/${empleadoActual.id}/${fecha}`);
+
+  const snap = await ref.once("value");
+  const marcacionesHoy = snap.val() || {};
+
+  const orden = ['entrada', 'almuerzo_salida', 'almuerzo_regreso', 'salida'];
+  const indexActual = orden.indexOf(tipo);
+
+  // Verificar orden correcto
+  for (let i = 0; i < indexActual; i++) {
+    if (!Object.values(marcacionesHoy).some(m => m.tipo === orden[i])) {
+      document.getElementById("empMsg").innerHTML = `⚠️ Debe marcar primero: ${orden[i]}`;
+      return;
+    }
+  }
+
+  // Evitar doble marcación
+  if (Object.values(marcacionesHoy).some(m => m.tipo === tipo)) {
+    document.getElementById("empMsg").innerHTML = `⚠️ Ya marcaste ${tipo}`;
+    return;
+  }
+
+  const newRef = ref.push();
+  await newRef.set({
+    tipo,
+    hora,
+    fecha,
+    timestamp: Date.now(),
+    nombre: empleadoActual.nombre
+  });
+
+  document.getElementById("empMsg").innerHTML = `✅ ${tipo} registrada`;
+}
 // 🔹 INICIO
 backHome();
 setDefaultDate();
