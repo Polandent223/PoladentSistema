@@ -89,11 +89,15 @@ function cargarEmpleados() {
         PIN: ${data.pin}<br>
         Salario: ${data.salario} (${data.tipoSalario})
         <div class="empActions">
-  <button onclick="borrarEmpleado('${emp.key}')">Borrar</button>
-  <button onclick="asignarSalario('${emp.key}')">Asignar Salario</button>
-  <button onclick="editarHorario('${emp.key}','${escapeHtml(data.nombre)}')">Editar Horario</button>
-  <button onclick="generarOlerite('${emp.key}')">Olerite PDF</button>
-</div>
+          <button onclick="borrarEmpleado('${emp.key}')">Borrar</button>
+          <button onclick="asignarSalario('${emp.key}')">Asignar Salario</button>
+          <button onclick="editarHorario('${emp.key}','${escapeHtml(data.nombre)}')">Editar Horario</button>
+          <button onclick="generarOlerite('${emp.key}')">Olerite PDF</button>
+        </div>
+      </div>`;
+    });
+  });
+}
 
 function loadEmpleados() { cargarEmpleados(); }
 
