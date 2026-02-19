@@ -1,131 +1,137 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<title>Poladent – Sistema Completo</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <title>Poladent – Sistema Completo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-<link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/styles.css" />
 
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  <!-- Firebase SDK (compat) -->
+  <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Librerías -->
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-<script src="firebase/config.js"></script>
-<script src="apps/app.js" defer></script>
+  <!-- Tu configuración y app (orden IMPORTA) -->
+  <script defer src="firebase/config.js"></script>
+  <script defer src="apps/app.js"></script>
 </head>
 
-<div class="appHeader">
-  <h1><div class="appHeader">
-  <h1>★彡[🦷ᴘᴏʟᴀᴅᴇɴᴛ🦷]彡★</h1>
-  <p>Sistema de control de asistencia y horas laborales</p>
-</div>
+<body>
 
-<div id="home" class="homeCard">
-  <div class="homeBtns">
-    <button id="btnAdmin">Administrador</button>
-    <button id="btnEmployee">Empleado</button>
-  </div>
-</div>
-    
-<!-- ADMIN LOGIN -->
-<div id="adminLogin" class="card hidden">
-  <h3>Administrador</h3>
-  <input id="adminEmail" placeholder="Correo">
-  <input id="adminPass" type="password" placeholder="Contraseña">
-  <br>
-  <button id="loginBtn">Entrar</button>
-  <button id="backHomeBtn1">Volver</button>
-</div>
-
-<!-- ADMIN PANEL -->
-<div id="adminPanel" class="panel hidden">
-  <h3>Panel Administrador</h3
-
-  <!-- Agregar empleado -->
-  <div class="card">
-    <h4>Agregar empleado</h4>
-    <input id="nombreEmpleado" placeholder="Nombre del empleado">
-    <input id="pinEmpleado" placeholder="PIN del empleado">
-    <button id="guardarEmpleadoBtn">Guardar empleado</button>
+  <!-- HEADER -->
+  <div class="appHeader">
+    <h1>★彡[🦷ᴘᴏʟᴀᴅᴇɴᴛ🦷]彡★</h1>
+    <p>Sistema de control de asistencia y horas laborales</p>
   </div>
 
-  <!-- Empleados registrados -->
-  <div class="card">
-    <h4 onclick="toggleSection('listaEmpleados')" style="cursor:pointer;">
-      👥 Empleados registrados ▼
-    </h4>
-    <div id="listaEmpleados" style="max-height:300px; overflow:auto;"></div>
+  <!-- HOME -->
+  <div id="home" class="homeCard">
+    <div class="homeBtns">
+      <button id="btnAdmin">Administrador</button>
+      <button id="btnEmployee">Empleado</button>
+    </div>
   </div>
 
-  <!-- Resumen marcaciones -->
-  <div class="card">
-    <h4 onclick="toggleSection('adminList')" style="cursor:pointer;">
-      Resumen de marcaciones ▼
-    </h4>
-
-    <input type="date" id="filterDate">
-
-    <label>Desde:</label>
-    <input type="date" id="fechaDesde">
-
-    <label>Hasta:</label>
-    <input type="date" id="fechaHasta">
-
-    <label>Periodo:</label>
-    <select id="periodoResumen">
-      <option value="diario">Diario</option>
-      <option value="quincenal">Quincenal</option>
-      <option value="mensual">Mensual</option>
-    </select>
-
-    <div id="adminList" style="max-height:300px; overflow:auto;"></div>
-  </div>
-  
-  <!-- RESUMEN DE PAGOS -->
-  <div id="resumenPagos" style="max-height:200px; overflow:auto; margin-top:15px; background:#f0f8ff; padding:10px; border-radius:8px;">
-    <h4>💰 Resumen de pagos y banco de horas</h4>
+  <!-- ADMIN LOGIN -->
+  <div id="adminLogin" class="card hidden">
+    <h3>Administrador</h3>
+    <input id="adminEmail" placeholder="Correo" />
+    <input id="adminPass" type="password" placeholder="Contraseña" />
+    <br />
+    <button id="loginBtn">Entrar</button>
+    <button id="backHomeBtn1">Volver</button>
   </div>
 
-  <!-- Notificaciones -->
-  <div class="card">
-    <h4 onclick="toggleSection('notificaciones')" style="cursor:pointer;">
-      Notificaciones ▼
-    </h4>
-    <div id="notificaciones" style="max-height:200px; overflow:auto;"></div>
-    <button id="exportMarcBtn">Exportar Marcaciones</button>
-    <button id="exportSalarioBtn">Exportar Salario</button>
+  <!-- ADMIN PANEL -->
+  <div id="adminPanel" class="panel hidden">
+    <h3>Panel Administrador</h3>
+
+    <!-- Agregar empleado -->
+    <div class="card">
+      <h4>Agregar empleado</h4>
+      <input id="nombreEmpleado" placeholder="Nombre del empleado" />
+      <input id="pinEmpleado" placeholder="PIN del empleado" />
+      <button id="guardarEmpleadoBtn">Guardar empleado</button>
+    </div>
+
+    <!-- Empleados registrados -->
+    <div class="card">
+      <h4 onclick="toggleSection('listaEmpleados')" style="cursor:pointer;">
+        👥 Empleados registrados ▼
+      </h4>
+      <div id="listaEmpleados" style="max-height:300px; overflow:auto;"></div>
+    </div>
+
+    <!-- Resumen marcaciones -->
+    <div class="card">
+      <h4 onclick="toggleSection('adminList')" style="cursor:pointer;">
+        Resumen de marcaciones ▼
+      </h4>
+
+      <input type="date" id="filterDate" />
+
+      <label>Desde:</label>
+      <input type="date" id="fechaDesde" />
+
+      <label>Hasta:</label>
+      <input type="date" id="fechaHasta" />
+
+      <label>Periodo:</label>
+      <select id="periodoResumen">
+        <option value="diario">Diario</option>
+        <option value="quincenal">Quincenal</option>
+        <option value="mensual">Mensual</option>
+      </select>
+
+      <div id="adminList" style="max-height:300px; overflow:auto;"></div>
+    </div>
+
+    <!-- RESUMEN DE PAGOS -->
+    <div id="resumenPagos" style="max-height:200px; overflow:auto; margin-top:15px; background:#f0f8ff; padding:10px; border-radius:8px;">
+      <h4>💰 Resumen de pagos y banco de horas</h4>
+    </div>
+
+    <!-- Notificaciones -->
+    <div class="card">
+      <h4 onclick="toggleSection('notificaciones')" style="cursor:pointer;">
+        Notificaciones ▼
+      </h4>
+      <div id="notificaciones" style="max-height:200px; overflow:auto;"></div>
+      <button id="exportMarcBtn">Exportar Marcaciones</button>
+      <button id="exportSalarioBtn">Exportar Salario</button>
+    </div>
+
+    <!-- Gráfico -->
+    <div class="card">
+      <h4>📊 Gráfico de horas trabajadas por empleado</h4>
+      <canvas id="horasChart"></canvas>
+    </div>
+
+    <button id="logoutBtn">Salir</button>
   </div>
 
-  <!-- Gráfico -->
-  <div class="card">
-    <canvas id="horasChart"></canvas>
-    <h4>📊 Gráfico de horas trabajadas por empleado</h4>
+  <!-- EMPLEADO PANEL -->
+  <div id="employeePanel" class="card hidden">
+    <div class="nombreGrande" id="empNombreGrande"></div>
+
+    <input id="empPin" type="password" placeholder="Ingresa tu PIN" />
+
+    <div id="employeeButtons" class="hidden">
+      <button id="entradaBtn">Entrada</button>
+      <button id="almuerzoSalidaBtn">Salida Almuerzo</button>
+      <button id="almuerzoRegresoBtn">Regreso Almuerzo</button>
+      <button id="salidaBtn">Salida</button>
+    </div>
+
+    <div id="empMsg" class="notice"></div>
+    <button id="backHomeBtn2">Volver</button>
   </div>
-
-  <button id="logoutBtn">Salir</button>
-</div>
-
-<!-- EMPLEADO PANEL -->
-<div id="employeePanel" class="card hidden">
-  <div class="nombreGrande" id="empNombreGrande"></div>
-
-  <input id="empPin" type="password" placeholder="Ingresa tu PIN">
-
-  <div id="employeeButtons" class="hidden">
-    <button id="entradaBtn">Entrada</button>
-    <button id="almuerzoSalidaBtn">Salida Almuerzo</button>
-    <button id="almuerzoRegresoBtn">Regreso Almuerzo</button>
-    <button id="salidaBtn">Salida</button>
-  </div>
-
-  <div id="empMsg" class="notice"></div>
-  <button id="backHomeBtn2">Volver</button>
-</div>
 
 </body>
 </html>
