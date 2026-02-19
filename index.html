@@ -68,6 +68,44 @@
       <div id="listaEmpleados" style="max-height:300px; overflow:auto;"></div>
     </div>
 
+    <!-- ===== MODAL: EDITAR HORARIO (ADMIN) ===== -->
+    <!-- (Este modal NO borra historial. Solo es interfaz.) -->
+    <div id="editModalBackdrop" class="modalBackdrop hidden"></div>
+
+    <div id="editModal" class="modal hidden" role="dialog" aria-modal="true">
+      <div class="modalHeader">
+        <div class="modalTitle">🦷 Editar Horario (Administrador)</div>
+        <button type="button" id="editCloseBtn" class="modalClose" aria-label="Cerrar">✕</button>
+      </div>
+
+      <div class="modalBody">
+        <label for="editEmpSelect">Empleado</label>
+        <select id="editEmpSelect"></select>
+
+        <label for="editFecha">Fecha</label>
+        <input type="date" id="editFecha" />
+
+        <label for="editTipo">Tipo de marcación</label>
+        <select id="editTipo">
+          <option value="entrada">Entrada</option>
+          <option value="almuerzo_salida">Salida Almuerzo</option>
+          <option value="almuerzo_regreso">Regreso Almuerzo</option>
+          <option value="salida">Salida</option>
+        </select>
+
+        <label for="editHora">Hora</label>
+        <select id="editHora"></select>
+
+        <div id="editStatus" class="notice" style="display:none;"></div>
+      </div>
+
+      <div class="modalFooter">
+        <button type="button" id="editSaveBtn">💾 Guardar</button>
+        <button type="button" id="editCancelBtn" class="danger">Cancelar</button>
+      </div>
+    </div>
+    <!-- ===== FIN MODAL ===== -->
+
     <!-- Resumen marcaciones -->
     <div class="card">
       <h4 onclick="toggleSection('adminList')" style="cursor:pointer;">
