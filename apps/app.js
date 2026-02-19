@@ -89,14 +89,11 @@ function cargarEmpleados() {
         PIN: ${data.pin}<br>
         Salario: ${data.salario} (${data.tipoSalario})
         <div class="empActions">
-          <button onclick="borrarEmpleado('${emp.key}')">Borrar</button>
-          <button onclick="asignarSalario('${emp.key}')">Asignar Salario</button>
-          <button onclick="generarOlerite('${emp.key}')">Olerite PDF</button>
-        </div>
-      </div>`;
-    });
-  });
-}
+  <button onclick="borrarEmpleado('${emp.key}')">Borrar</button>
+  <button onclick="asignarSalario('${emp.key}')">Asignar Salario</button>
+  <button onclick="editarHorario('${emp.key}','${escapeHtml(data.nombre)}')">Editar Horario</button>
+  <button onclick="generarOlerite('${emp.key}')">Olerite PDF</button>
+</div>
 
 function loadEmpleados() { cargarEmpleados(); }
 
@@ -526,3 +523,127 @@ periodoResumen.value = "diario";
 loadEmpleados();
 loadMarcaciones();
 updateChart();
+
+// ===============================
+// ✅ EDICIÓN MANUAL DE HORARIOS (ADMIN)
+// Guarda auditoría antes de modificar
+// ===============================
+
+// Evita romper HTML si el nombre trae comillas o símbolos
+function escapeHtml(str){
+  return String(str)
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#039;");
+}
+
+// Convierte "HH:MM" en {hour, minute}
+function parseHoraHHMM(hhmm){
+  const m = String(hhmm).trim().match(/^([01]?\d|2[0-3]):([0-5]\d)$/);
+  if(!m) return null;
+  return { hour: parseInt(m[1],10), minute: parseInt(m[2],10) };
+}
+
+// Crea timestamp local basado en fecha YYYY-MM-DD y hora HH:MM
+function buildTimestampLocal(fechaYYYYMMDD, hhmm){
+  const t = parseHoraHHMM(hhmm);
+  if(!t) return null;
+  const [y, m, d] = fechaYYYYMMDD.split("-").map(n=>parseInt(n,10));
+  return new Date(y, m-1, d, t.hour, t.minute, 0, 0).getTime();
+}
+
+/**
+ * Edita o agrega una marcación manualmente:
+ * - No borra historial: guarda el valor anterior en /auditoria_ediciones
+ * - Sobrescribe marcaciones/{empId}/{fecha}/{tipo} con lo nuevo (si existía)
+ */
+async function editarHorario(empId, empNombre){
+  try{
+    const fecha = prompt(`📅 Fecha a editar (YYYY-MM-DD)\nEmpleado: ${empNombre}`);
+    if(!fecha) return;
+
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(fecha.trim())){
+      alert("Formato de fecha inválido. Usa YYYY-MM-DD");
+      return;
+    }
+
+    const tipo = prompt(
+      `🕘 ¿Qué marcación quieres editar/agregar?\nOpciones:\nentrada\nalmuerzo_salida\nalmuerzo_regreso\nsalida`,
+      "entrada"
+    );
+    if(!tipo) return;
+
+    const tipoLimpio = tipo.trim();
+    const permitidos = ["entrada","almuerzo_salida","almuerzo_regreso","salida"];
+    if(!permitidos.includes(tipoLimpio)){
+      alert("Tipo inválido. Usa: entrada / almuerzo_salida / almuerzo_regreso / salida");
+      return;
+    }
+
+    const hora = prompt(`⏰ Hora (HH:MM) 24h\nEj: 08:00`, "08:00");
+    if(!hora) return;
+
+    const hhmm = hora.trim();
+    const ts = buildTimestampLocal(fecha.trim(), hhmm);
+    if(!ts){
+      alert("Hora inválida. Usa HH:MM en formato 24h (Ej: 08:00)");
+      return;
+    }
+
+    const ref = db.ref(`marcaciones/${empId}/${fecha.trim()}/${tipoLimpio}`);
+
+    // 1) Lee valor anterior
+    const prevSnap = await ref.once("value");
+    const prevVal = prevSnap.val();
+
+    // 2) Guarda auditoría ANTES de cambiar (si había algo)
+    const editStamp = Date.now();
+    if(prevVal){
+      await db.ref(`auditoria_ediciones/${empId}/${fecha.trim()}/${tipoLimpio}/${editStamp}`)
+        .set({
+          empleado: empNombre,
+          fecha: fecha.trim(),
+          tipo: tipoLimpio,
+          antes: prevVal,
+          editadoEn: editStamp,
+          editadoPor: "admin"
+        });
+    } else {
+      // también guardamos auditoría como "creación manual"
+      await db.ref(`auditoria_ediciones/${empId}/${fecha.trim()}/${tipoLimpio}/${editStamp}`)
+        .set({
+          empleado: empNombre,
+          fecha: fecha.trim(),
+          tipo: tipoLimpio,
+          antes: null,
+          editadoEn: editStamp,
+          editadoPor: "admin"
+        });
+    }
+
+    // 3) Escribe el nuevo valor (sin GPS: lat/lon null)
+    await ref.set({
+      nombre: empNombre,
+      tipo: tipoLimpio,
+      fecha: fecha.trim(),
+      hora: hhmm,
+      timestamp: ts,
+      lat: null,
+      lon: null,
+      editado: true,
+      editadoEn: editStamp,
+      editadoPor: "admin"
+    });
+
+    alert(`✅ Listo. Se actualizó ${empNombre} | ${tipoLimpio} | ${fecha.trim()} | ${hhmm}`);
+
+    // refresca vistas
+    loadMarcaciones();
+    updateChart();
+  }catch(e){
+    console.error(e);
+    alert("❌ Error al editar horario. Revisa la consola.");
+  }
+            }
