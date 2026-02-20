@@ -18,10 +18,10 @@ document.getElementById("exportSalarioBtn").onclick = () => exportExcelSalarialF
 document.getElementById("logoutBtn").onclick = () => logout();
 
 // Botones empleado
-document.getElementById("entradaBtn").onclick = () => mark('entrada');
-document.getElementById("almuerzoSalidaBtn").onclick = () => mark('almuerzo_salida');
-document.getElementById("almuerzoRegresoBtn").onclick = () => mark('almuerzo_regreso');
-document.getElementById("salidaBtn").onclick = () => mark('salida');
+document.getElementById("entradaBtn").onclick = () => mark("entrada");
+document.getElementById("almuerzoSalidaBtn").onclick = () => mark("almuerzo_salida");
+document.getElementById("almuerzoRegresoBtn").onclick = () => mark("almuerzo_regreso");
+document.getElementById("salidaBtn").onclick = () => mark("salida");
 
 // Input PIN empleado
 document.getElementById("empPin").addEventListener("input", pinInputHandler);
@@ -43,15 +43,22 @@ function backHome() {
   document.getElementById("empMsg").innerHTML = "";
 }
 
-function goAdmin() { hideAll(); adminLogin.classList.remove("hidden"); }
-function goEmployee() { hideAll(); employeePanel.classList.remove("hidden"); }
+function goAdmin() {
+  hideAll();
+  adminLogin.classList.remove("hidden");
+}
+function goEmployee() {
+  hideAll();
+  employeePanel.classList.remove("hidden");
+}
 
 // 🔹 LOGIN ADMIN
 function loginAdmin() {
   const email = document.getElementById("adminEmail").value;
   const pass = document.getElementById("adminPass").value;
 
-  auth.signInWithEmailAndPassword(email, pass)
+  auth
+    .signInWithEmailAndPassword(email, pass)
     .then(() => {
       hideAll();
       adminPanel.classList.remove("hidden");
@@ -63,16 +70,28 @@ function loginAdmin() {
     .catch(() => alert("Error de acceso"));
 }
 
-function logout() { auth.signOut(); backHome(); }
+function logout() {
+  auth.signOut();
+  backHome();
+}
 
 // 🔹 EMPLEADOS
 function agregarEmpleado() {
   const nombre = document.getElementById("nombreEmpleado").value.trim();
   const pin = document.getElementById("pinEmpleado").value.trim();
-  if (!nombre || !pin) { alert("Completa todos los campos"); return; }
+  if (!nombre || !pin) {
+    alert("Completa todos los campos");
+    return;
+  }
 
   const id = db.ref("empleados").push().key;
-  db.ref("empleados/" + id).set({ nombre, pin, creado: Date.now(), salario: 0, tipoSalario: "diario" });
+  db.ref("empleados/" + id).set({
+    nombre,
+    pin,
+    creado: Date.now(),
+    salario: 0,
+    tipoSalario: "diario",
+  });
 
   document.getElementById("nombreEmpleado").value = "";
   document.getElementById("pinEmpleado").value = "";
@@ -80,9 +99,9 @@ function agregarEmpleado() {
 
 function cargarEmpleados() {
   const cont = document.getElementById("listaEmpleados");
-  db.ref("empleados").on("value", snap => {
+  db.ref("empleados").on("value", (snap) => {
     cont.innerHTML = "";
-    snap.forEach(emp => {
+    snap.forEach((emp) => {
       const data = emp.val();
       cont.innerHTML += `<div class="empleado">
         <strong>${data.nombre}</strong><br>
@@ -91,7 +110,7 @@ function cargarEmpleados() {
         <div class="empActions">
           <button onclick="borrarEmpleado('${emp.key}')">Borrar</button>
           <button onclick="asignarSalario('${emp.key}')">Asignar Salario</button>
-          <button onclick="openEditModal('${emp.key}','${escapeHtml(data.nombre)}')">Editar Horario</button>
+          <button onclick="openEditModal('${emp.key}')">Editar Horario</button>
           <button onclick="generarOlerite('${emp.key}')">Olerite PDF</button>
         </div>
       </div>`;
@@ -99,7 +118,9 @@ function cargarEmpleados() {
   });
 }
 
-function loadEmpleados() { cargarEmpleados(); }
+function loadEmpleados() {
+  cargarEmpleados();
+}
 
 function borrarEmpleado(id) {
   if (confirm("¿Seguro que deseas borrar este empleado?")) {
@@ -112,18 +133,22 @@ function asignarSalario(empID) {
   const salario = prompt("Ingresa el salario:");
   if (!salario) return;
   const tipo = prompt("Tipo de salario (diario/quincenal/mensual):", "diario");
-  db.ref("empleados/" + empID).update({ salario: parseFloat(salario), tipoSalario: tipo });
+  db.ref("empleados/" + empID).update({
+    salario: parseFloat(salario),
+    tipoSalario: tipo,
+  });
   loadEmpleados();
 }
 
-// 🔹 OLERITE PDF
+// 🔹 OLERITE PDF (básico)
 function generarOlerite(empID) {
-  db.ref("empleados/" + empID).once("value", snap => {
+  db.ref("empleados/" + empID).once("value", (snap) => {
     const emp = snap.val();
     if (!emp) return;
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
-    doc.setFontSize(20); doc.text("Olerite de Pago", 20, 20);
+    doc.setFontSize(20);
+    doc.text("Olerite de Pago", 20, 20);
     doc.setFontSize(14);
     doc.text(`Empleado: ${emp.nombre}`, 20, 40);
     doc.text(`Salario: ${emp.salario} (${emp.tipoSalario})`, 20, 50);
@@ -134,7 +159,7 @@ function generarOlerite(empID) {
 
 // 🔹 EMPLEADO PIN + BOTONES DINÁMICOS
 let empleadoActual = null;
-const etapas = ['entrada', 'almuerzo_salida', 'almuerzo_regreso', 'salida'];
+const etapas = ["entrada", "almuerzo_salida", "almuerzo_regreso", "salida"];
 
 function pinInputHandler() {
   const pin = document.getElementById("empPin").value.trim();
@@ -144,21 +169,24 @@ function pinInputHandler() {
     return;
   }
 
-  db.ref("empleados").orderByChild("pin").equalTo(pin).once("value", snap => {
-    if (!snap.exists()) {
-      document.getElementById("employeeButtons").classList.add("hidden");
-      document.getElementById("empNombreGrande").innerHTML = "";
-      document.getElementById("empMsg").innerHTML = "⚠️ PIN no encontrado";
-      return;
-    }
+  db.ref("empleados")
+    .orderByChild("pin")
+    .equalTo(pin)
+    .once("value", (snap) => {
+      if (!snap.exists()) {
+        document.getElementById("employeeButtons").classList.add("hidden");
+        document.getElementById("empNombreGrande").innerHTML = "";
+        document.getElementById("empMsg").innerHTML = "⚠️ PIN no encontrado";
+        return;
+      }
 
-    snap.forEach(empSnap => {
-      empleadoActual = { id: empSnap.key, nombre: empSnap.val().nombre };
-      document.getElementById("empNombreGrande").innerHTML = empleadoActual.nombre;
-      document.getElementById("employeeButtons").classList.remove("hidden");
-      document.getElementById("empMsg").innerHTML = "";
+      snap.forEach((empSnap) => {
+        empleadoActual = { id: empSnap.key, nombre: empSnap.val().nombre };
+        document.getElementById("empNombreGrande").innerHTML = empleadoActual.nombre;
+        document.getElementById("employeeButtons").classList.remove("hidden");
+        document.getElementById("empMsg").innerHTML = "";
+      });
     });
-  });
 }
 
 // 🔹 FUNCIONES MARCACIÓN
@@ -166,50 +194,70 @@ function mark(tipo) {
   if (!empleadoActual) return;
 
   const now = new Date();
-  const yyyy = now.getFullYear(), mm = now.getMonth() + 1, dd = now.getDate();
-  const fecha = `${yyyy}-${mm < 10 ? '0'+mm:mm}-${dd < 10 ? '0'+dd:dd}`;
+  const yyyy = now.getFullYear(),
+    mm = now.getMonth() + 1,
+    dd = now.getDate();
+  const fecha = `${yyyy}-${mm < 10 ? "0" + mm : mm}-${dd < 10 ? "0" + dd : dd}`;
   const ref = db.ref("marcaciones/" + empleadoActual.id + "/" + fecha);
 
-  ref.once("value", snap => {
+  ref.once("value", (snap) => {
     const marc = snap.val() ? snap.val() : {};
-    let lastEtapa = null, lastTime = 0;
-    Object.values(marc).forEach(m => {
-      if (m.timestamp && m.timestamp > lastTime) { lastTime = m.timestamp; lastEtapa = m.tipo; }
+    let lastEtapa = null,
+      lastTime = 0;
+
+    Object.values(marc).forEach((m) => {
+      if (m.timestamp && m.timestamp > lastTime) {
+        lastTime = m.timestamp;
+        lastEtapa = m.tipo;
+      }
     });
 
     const lastIndex = lastEtapa ? etapas.indexOf(lastEtapa) : -1;
-    if (lastIndex === -1 && tipo !== 'entrada') {
-      document.getElementById("empMsg").innerHTML = "⚠️ Debes iniciar con Entrada"; return;
+    if (lastIndex === -1 && tipo !== "entrada") {
+      document.getElementById("empMsg").innerHTML = "⚠️ Debes iniciar con Entrada";
+      return;
     }
     if (lastIndex !== -1 && etapas.indexOf(tipo) !== lastIndex + 1) {
-      document.getElementById("empMsg").innerHTML = "⚠️ Debes seguir el orden de marcación"; return;
+      document.getElementById("empMsg").innerHTML = "⚠️ Debes seguir el orden de marcación";
+      return;
     }
 
     if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(pos => {
-        const lat = pos.coords.latitude, lon = pos.coords.longitude;
-        const hora = now.toLocaleTimeString(), timestamp = now.getTime();
-        ref.child(tipo).set({ nombre: empleadoActual.nombre, tipo, fecha, hora, timestamp, lat, lon });
-        let frase = "";
-        if (tipo === "entrada") frase = "¡Que tengas un buen inicio de jornada!";
-        if (tipo === "almuerzo_salida") frase = "Buen provecho 🍽️";
-        if (tipo === "almuerzo_regreso") frase = "Bienvenido de vuelta 👋";
-        if (tipo === "salida") frase = "¡Buen trabajo!";
-        document.getElementById("empMsg").innerHTML = `${empleadoActual.nombre} | ${frase} (${hora})`;
-        mostrarNotificacion(`${empleadoActual.nombre} marcó ${tipo} a las ${hora}`);
-        setTimeout(backHome, 2000);
-        loadMarcaciones();
-        updateChart();
-      }, () => alert("No se pudo obtener ubicación GPS"));
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const lat = pos.coords.latitude,
+            lon = pos.coords.longitude;
+          const hora = now.toLocaleTimeString(),
+            timestamp = now.getTime();
+
+          ref.child(tipo).set({ nombre: empleadoActual.nombre, tipo, fecha, hora, timestamp, lat, lon });
+
+          let frase = "";
+          if (tipo === "entrada") frase = "¡Que tengas un buen inicio de jornada!";
+          if (tipo === "almuerzo_salida") frase = "Buen provecho 🍽️";
+          if (tipo === "almuerzo_regreso") frase = "Bienvenido de vuelta 👋";
+          if (tipo === "salida") frase = "¡Buen trabajo!";
+
+          document.getElementById("empMsg").innerHTML = `${empleadoActual.nombre} | ${frase} (${hora})`;
+          mostrarNotificacion(`${empleadoActual.nombre} marcó ${tipo} a las ${hora}`);
+
+          setTimeout(backHome, 2000);
+          loadMarcaciones();
+          updateChart();
+        },
+        () => alert("No se pudo obtener ubicación GPS")
+      );
     } else alert("GPS no disponible");
   });
 }
 
 // 🔹 ADMIN – RESUMEN MARCACIONES
-let excelRows = [], excelSalarial = [], allMarcaciones = {};
+let excelRows = [],
+  excelSalarial = [],
+  allMarcaciones = {};
 
 function loadMarcaciones() {
-  db.ref("marcaciones").on("value", snap => {
+  db.ref("marcaciones").on("value", (snap) => {
     allMarcaciones = snap.val() || {};
     renderAdminList(document.getElementById("filterDate").value);
     updateChart();
@@ -227,46 +275,54 @@ function renderAdminList(dateFilter) {
 
   const periodo = document.getElementById("periodoResumen").value;
 
-  const empIDs = Object.keys(allMarcaciones).sort((a,b)=>{
-    const nameA = Object.values(allMarcaciones[a])[0]? Object.values(Object.values(allMarcaciones[a])[0])[0].nombre:'';
-    const nameB = Object.values(allMarcaciones[b])[0]? Object.values(Object.values(allMarcaciones[b])[0])[0].nombre:'';
+  const empIDs = Object.keys(allMarcaciones).sort((a, b) => {
+    const nameA = Object.values(allMarcaciones[a])[0]
+      ? Object.values(Object.values(allMarcaciones[a])[0])[0].nombre
+      : "";
+    const nameB = Object.values(allMarcaciones[b])[0]
+      ? Object.values(Object.values(allMarcaciones[b])[0])[0].nombre
+      : "";
     return nameA.localeCompare(nameB);
   });
 
-  empIDs.forEach(empID => {
+  empIDs.forEach((empID) => {
     const fechas = allMarcaciones[empID];
 
-    Object.keys(fechas).sort().forEach(fecha => {
-      let fechaObj = new Date(fecha);
-      let desde = fechaDesde.value ? new Date(fechaDesde.value) : null;
-      let hasta = fechaHasta.value ? new Date(fechaHasta.value) : null;
+    Object.keys(fechas)
+      .sort()
+      .forEach((fecha) => {
+        let fechaObj = new Date(fecha);
+        let desde = fechaDesde.value ? new Date(fechaDesde.value) : null;
+        let hasta = fechaHasta.value ? new Date(fechaHasta.value) : null;
 
-      if(desde && fechaObj < desde) return;
-      if(hasta && fechaObj > hasta) return;
+        if (desde && fechaObj < desde) return;
+        if (hasta && fechaObj > hasta) return;
 
-      if(!desde && !hasta){
-        if(dateFilter && !fecha.startsWith(dateFilter.substring(0,7)) && periodo!=="diario") return;
-        if(periodo==="diario" && dateFilter && fecha!==dateFilter) return;
-      }
+        if (!desde && !hasta) {
+          if (dateFilter && !fecha.startsWith(dateFilter.substring(0, 7)) && periodo !== "diario") return;
+          if (periodo === "diario" && dateFilter && fecha !== dateFilter) return;
+        }
 
-      const tipos = fechas[fecha];
+        const tipos = fechas[fecha];
 
-      Object.keys(tipos).sort().forEach(tipo => {
-        const data = tipos[tipo];
-        if(!data.nombre) data.nombre="Sin nombre";
+        Object.keys(tipos)
+          .sort()
+          .forEach((tipo) => {
+            const data = tipos[tipo];
+            if (!data.nombre) data.nombre = "Sin nombre";
 
-        cont.innerHTML += `<p><b>${data.nombre}</b> | ${data.tipo} | ${fecha} | ${data.hora}</p>`;
-        excelRows.push([data.nombre, fecha, data.tipo, data.hora]);
-        excelSalarial.push({
-          nombre:data.nombre,
-          fecha:fecha,
-          tipo:data.tipo,
-          timestamp:data.timestamp
-        });
+            cont.innerHTML += `<p><b>${data.nombre}</b> | ${data.tipo} | ${fecha} | ${data.hora}</p>`;
+            excelRows.push([data.nombre, fecha, data.tipo, data.hora]);
+            excelSalarial.push({
+              nombre: data.nombre,
+              fecha: fecha,
+              tipo: data.tipo,
+              timestamp: data.timestamp,
+            });
 
-        notif.innerHTML += `<div class="notif">${data.nombre} marcó ${data.tipo} a las ${data.hora}</div>`;
+            notif.innerHTML += `<div class="notif">${data.nombre} marcó ${data.tipo} a las ${data.hora}</div>`;
+          });
       });
-    });
   });
 
   renderPagos();
@@ -276,19 +332,19 @@ function renderAdminList(dateFilter) {
 function exportExcelFiltro() {
   const fecha = document.getElementById("filterDate").value;
   const periodo = document.getElementById("periodoResumen").value;
-  const rows = [["Nombre","Fecha","Tipo","Hora"]];
+  const rows = [["Nombre", "Fecha", "Tipo", "Hora"]];
 
-  for(const m of excelRows){
+  for (const m of excelRows) {
     const mFecha = m[1];
-    if(periodo==="diario" && mFecha!==fecha) continue;
-    if(periodo==="quincenal" && !mFecha.startsWith(fecha.substring(0,7))) continue;
-    if(periodo==="mensual" && !mFecha.startsWith(fecha.substring(0,4)+"-"+fecha.substring(5,7))) continue;
+    if (periodo === "diario" && mFecha !== fecha) continue;
+    if (periodo === "quincenal" && !mFecha.startsWith(fecha.substring(0, 7))) continue;
+    if (periodo === "mensual" && !mFecha.startsWith(fecha.substring(0, 4) + "-" + fecha.substring(5, 7))) continue;
     rows.push(m);
   }
 
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), "Resumen");
-  XLSX.writeFile(wb,"Poladent_Marcaciones_Filtro.xlsx");
+  XLSX.writeFile(wb, "Poladent_Marcaciones_Filtro.xlsx");
 }
 
 function exportExcelSalarialFiltro() {
@@ -296,92 +352,99 @@ function exportExcelSalarialFiltro() {
   const hasta = fechaHasta.value;
   const resumen = {};
 
-  for(const m of excelSalarial){
-    if(!estaEnRango(m.fecha, desde, hasta)) continue;
-    if(!resumen[m.nombre]) resumen[m.nombre] = {dias:{}};
-    if(!resumen[m.nombre].dias[m.fecha]) resumen[m.nombre].dias[m.fecha] = {entrada:null,salida:null,almuerzo_salida:null,almuerzo_regreso:null};
+  for (const m of excelSalarial) {
+    if (!estaEnRango(m.fecha, desde, hasta)) continue;
+    if (!resumen[m.nombre]) resumen[m.nombre] = { dias: {} };
+    if (!resumen[m.nombre].dias[m.fecha])
+      resumen[m.nombre].dias[m.fecha] = { entrada: null, salida: null, almuerzo_salida: null, almuerzo_regreso: null };
     resumen[m.nombre].dias[m.fecha][m.tipo] = m.timestamp;
   }
 
-  const wsData = [["Nombre","Fecha","Horas trabajadas","Horas extra","Banco de horas","Pago del día"]];
+  const wsData = [["Nombre", "Fecha", "Horas trabajadas", "Horas extra", "Banco de horas", "Pago del día"]];
 
   const empleadosKeys = Object.keys(resumen);
 
-  let promesas = empleadosKeys.map(empNombre=>{
-    return db.ref("empleados").orderByChild("nombre").equalTo(empNombre).once("value").then(snap=>{
-      const empData = Object.values(snap.val())[0];
-      const salario = empData?.salario || 0;
-      const tipoSalario = empData?.tipoSalario || "diario";
+  let promesas = empleadosKeys.map((empNombre) => {
+    return db
+      .ref("empleados")
+      .orderByChild("nombre")
+      .equalTo(empNombre)
+      .once("value")
+      .then((snap) => {
+        const empData = Object.values(snap.val() || {})[0] || {};
+        const salario = empData?.salario || 0;
+        const tipoSalario = empData?.tipoSalario || "diario";
 
-      let bancoTotal = 0;
-      let totalPagar = 0;
+        let bancoTotal = 0;
+        let totalPagar = 0;
 
-      for(const dia in resumen[empNombre].dias){
-        const d = resumen[empNombre].dias[dia];
-        if(!d.entrada || !d.salida) continue;
+        for (const dia in resumen[empNombre].dias) {
+          const d = resumen[empNombre].dias[dia];
+          if (!d.entrada || !d.salida) continue;
 
-        let almuerzo = 0;
-        if(d.almuerzo_salida && d.almuerzo_regreso){
-          almuerzo = (d.almuerzo_regreso - d.almuerzo_salida)/3600000;
+          let almuerzo = 0;
+          if (d.almuerzo_salida && d.almuerzo_regreso) {
+            almuerzo = (d.almuerzo_regreso - d.almuerzo_salida) / 3600000;
+          }
+
+          let hrs = (d.salida - d.entrada) / 3600000 - almuerzo;
+          let extra = Math.max(0, hrs - 8);
+          let normales = Math.min(8, hrs);
+          bancoTotal += extra;
+
+          let pagoDia = 0;
+          if (tipoSalario === "diario") pagoDia = normales * (salario / 8);
+          else if (tipoSalario === "quincenal") pagoDia = normales * (salario / 15 / 8);
+          else if (tipoSalario === "mensual") pagoDia = normales * (salario / 30 / 8);
+
+          totalPagar += pagoDia;
+
+          wsData.push([empNombre, dia, normales.toFixed(2), extra.toFixed(2), bancoTotal.toFixed(2), pagoDia.toFixed(2)]);
         }
 
-        let hrs = ((d.salida - d.entrada)/3600000) - almuerzo;
-        let extra = Math.max(0, hrs-8);
-        let normales = Math.min(8, hrs);
-        bancoTotal += extra;
-
-        let pagoDia = 0;
-        if(tipoSalario==="diario") pagoDia = normales * (salario/8);
-        else if(tipoSalario==="quincenal") pagoDia = normales * (salario/15/8);
-        else if(tipoSalario==="mensual") pagoDia = normales * (salario/30/8);
-
-        totalPagar += pagoDia;
-
-        wsData.push([empNombre, dia, normales.toFixed(2), extra.toFixed(2), bancoTotal.toFixed(2), pagoDia.toFixed(2)]);
-      }
-
-      wsData.push([empNombre,"TOTAL","","",bancoTotal.toFixed(2), totalPagar.toFixed(2)]);
-    });
+        wsData.push([empNombre, "TOTAL", "", "", bancoTotal.toFixed(2), totalPagar.toFixed(2)]);
+      });
   });
 
-  Promise.all(promesas).then(()=>{
+  Promise.all(promesas).then(() => {
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(wsData), "Salario");
-    XLSX.writeFile(wb,"Poladent_Salario_Filtro.xlsx");
+    XLSX.writeFile(wb, "Poladent_Salario_Filtro.xlsx");
   });
 }
 
 // 🔹 CALENDARIO
 function setDefaultDate() {
   const today = new Date();
-  let month = today.getMonth()+1; if(month<10) month="0"+month;
-  let day = today.getDate(); if(day<10) day="0"+day;
+  let month = today.getMonth() + 1;
+  if (month < 10) month = "0" + month;
+  let day = today.getDate();
+  if (day < 10) day = "0" + day;
   const yyyy = today.getFullYear();
   document.getElementById("filterDate").value = `${yyyy}-${month}-${day}`;
 }
 
-document.getElementById("filterDate").addEventListener("change", () => { renderAdminList(document.getElementById("filterDate").value); updateChart(); });
-document.getElementById("periodoResumen").addEventListener("change", () => { renderAdminList(document.getElementById("filterDate").value); updateChart(); });
-
 // 🔹 NOTIFICACIONES
-function mostrarNotificacion(text){
-  const notif=document.getElementById("notificaciones");
-  const div=document.createElement("div");
-  div.className="notif";
-  div.innerText=text;
+function mostrarNotificacion(text) {
+  const notif = document.getElementById("notificaciones");
+  const div = document.createElement("div");
+  div.className = "notif";
+  div.innerText = text;
   notif.prepend(div);
 }
 
 // 🔹 GRÁFICO HORAS
-function renderChart(startDate = '', endDate = '', periodo = 'diario', dateFilter = '') {
+function renderChart(startDate = "", endDate = "", periodo = "diario", dateFilter = "") {
   const ctx = document.getElementById("horasChart").getContext("2d");
   let chartData = {
     labels: [],
-    datasets: [{
-      label: 'Horas trabajadas',
-      data: [],
-      backgroundColor: 'rgba(0,123,255,0.5)'
-    }]
+    datasets: [
+      {
+        label: "Horas trabajadas",
+        data: [],
+        backgroundColor: "rgba(0,123,255,0.5)",
+      },
+    ],
   };
 
   const filtroInicio = startDate ? new Date(startDate) : null;
@@ -396,14 +459,15 @@ function renderChart(startDate = '', endDate = '', periodo = 'diario', dateFilte
       if (filtroFin && fechaObj > filtroFin) continue;
 
       const tipos = fechas[fecha];
-      let entrada = null, salida = null;
-      Object.values(tipos).forEach(m => {
-        if (m.tipo === 'entrada') entrada = m.timestamp;
-        if (m.tipo === 'salida') salida = m.timestamp;
+      let entrada = null,
+        salida = null;
+      Object.values(tipos).forEach((m) => {
+        if (m.tipo === "entrada") entrada = m.timestamp;
+        if (m.tipo === "salida") salida = m.timestamp;
       });
       if (!entrada || !salida) continue;
 
-      const nombre = Object.values(tipos)[0].nombre || 'Sin nombre';
+      const nombre = Object.values(tipos)[0].nombre || "Sin nombre";
       if (!resumenHoras[nombre]) resumenHoras[nombre] = 0;
       resumenHoras[nombre] += (salida - entrada) / 3600000;
     }
@@ -414,33 +478,33 @@ function renderChart(startDate = '', endDate = '', periodo = 'diario', dateFilte
 
   if (window.horasChartInstance) window.horasChartInstance.destroy();
   window.horasChartInstance = new Chart(ctx, {
-    type: 'bar',
+    type: "bar",
     data: chartData,
     options: {
       responsive: true,
-      plugins: { legend: { display: false } }
-    }
+      plugins: { legend: { display: false } },
+    },
   });
 }
 
 function updateChart() {
-  const start = fechaDesde.value || '';
-  const end = fechaHasta.value || '';
+  const start = fechaDesde.value || "";
+  const end = fechaHasta.value || "";
   const periodo = periodoResumen.value;
   const filtroFecha = filterDate.value;
   renderChart(start, end, periodo, filtroFecha);
 }
 
 // 🔽 MINIMIZAR/EXPANDIR SECCIONES
-function toggleSection(id){
+function toggleSection(id) {
   const el = document.getElementById(id);
   const header = el.previousElementSibling;
-  if(el.style.display === 'none'){
-    el.style.display = 'block';
-    header.innerHTML = header.innerHTML.replace('▲','▼');
+  if (el.style.display === "none") {
+    el.style.display = "block";
+    header.innerHTML = header.innerHTML.replace("▲", "▼");
   } else {
-    el.style.display = 'none';
-    header.innerHTML = header.innerHTML.replace('▼','▲');
+    el.style.display = "none";
+    header.innerHTML = header.innerHTML.replace("▼", "▲");
   }
 }
 
@@ -449,8 +513,8 @@ function estaEnRango(fecha, desde, hasta) {
   const f = new Date(fecha);
   const d = desde ? new Date(desde) : null;
   const h = hasta ? new Date(hasta) : null;
-  if(d && f < d) return false;
-  if(h && f > h) return false;
+  if (d && f < d) return false;
+  if (h && f > h) return false;
   return true;
 }
 
@@ -462,52 +526,57 @@ function renderPagos() {
 
   const resumen = {};
 
-  for(const m of excelSalarial){
-    if(!estaEnRango(m.fecha, desde, hasta)) continue;
-    if(!resumen[m.nombre]) resumen[m.nombre] = {dias:{}};
-    if(!resumen[m.nombre].dias[m.fecha]) resumen[m.nombre].dias[m.fecha] = {
-      entrada:null, salida:null, almuerzo_salida:null, almuerzo_regreso:null
-    };
+  for (const m of excelSalarial) {
+    if (!estaEnRango(m.fecha, desde, hasta)) continue;
+    if (!resumen[m.nombre]) resumen[m.nombre] = { dias: {} };
+    if (!resumen[m.nombre].dias[m.fecha])
+      resumen[m.nombre].dias[m.fecha] = { entrada: null, salida: null, almuerzo_salida: null, almuerzo_regreso: null };
     resumen[m.nombre].dias[m.fecha][m.tipo] = m.timestamp;
   }
 
   const empleadosKeys = Object.keys(resumen);
 
-  empleadosKeys.forEach(empNombre=>{
-    db.ref("empleados").orderByChild("nombre").equalTo(empNombre).once("value").then(snap=>{
-      const empData = Object.values(snap.val())[0];
-      const salario = empData?.salario || 0;
-      const tipoSalario = empData?.tipoSalario || "diario";
+  empleadosKeys.forEach((empNombre) => {
+    db.ref("empleados")
+      .orderByChild("nombre")
+      .equalTo(empNombre)
+      .once("value")
+      .then((snap) => {
+        const empData = Object.values(snap.val() || {})[0] || {};
+        const salario = empData?.salario || 0;
+        const tipoSalario = empData?.tipoSalario || "diario";
 
-      let bancoTotal = 0;
-      let totalPagar = 0;
+        let bancoTotal = 0;
+        let totalPagar = 0;
 
-      for(const dia in resumen[empNombre].dias){
-        const d = resumen[empNombre].dias[dia];
-        if(!d.entrada || !d.salida) continue;
+        for (const dia in resumen[empNombre].dias) {
+          const d = resumen[empNombre].dias[dia];
+          if (!d.entrada || !d.salida) continue;
 
-        let almuerzo = 0;
-        if(d.almuerzo_salida && d.almuerzo_regreso){
-          almuerzo = (d.almuerzo_regreso - d.almuerzo_salida)/3600000;
+          let almuerzo = 0;
+          if (d.almuerzo_salida && d.almuerzo_regreso) {
+            almuerzo = (d.almuerzo_regreso - d.almuerzo_salida) / 3600000;
+          }
+
+          let hrs = (d.salida - d.entrada) / 3600000 - almuerzo;
+          let extra = Math.max(0, hrs - 8);
+          let normales = Math.min(8, hrs);
+          bancoTotal += extra;
+
+          let pagoDia = 0;
+          if (tipoSalario === "diario") pagoDia = normales * (salario / 8);
+          else if (tipoSalario === "quincenal") pagoDia = normales * (salario / 15 / 8);
+          else if (tipoSalario === "mensual") pagoDia = normales * (salario / 30 / 8);
+
+          totalPagar += pagoDia;
         }
 
-        let hrs = ((d.salida - d.entrada)/3600000) - almuerzo;
-        let extra = Math.max(0, hrs-8);
-        let normales = Math.min(8, hrs);
-        bancoTotal += extra;
-
-        let pagoDia = 0;
-        if(tipoSalario==="diario") pagoDia = normales * (salario/8);
-        else if(tipoSalario==="quincenal") pagoDia = normales * (salario/15/8);
-        else if(tipoSalario==="mensual") pagoDia = normales * (salario/30/8);
-
-        totalPagar += pagoDia;
-      }
-
-      let texto = `<p><b>${empData.nombre}</b> - Total a pagar: $${totalPagar.toFixed(2)} - Banco de horas: ${bancoTotal.toFixed(2)}</p>`;
-      if(bancoTotal >= 8) texto += `<p style="color:green;">Puede tomar un día libre</p>`;
-      cont.innerHTML += texto;
-    });
+        let texto = `<p><b>${empData.nombre || empNombre}</b> - Total a pagar: $${totalPagar.toFixed(
+          2
+        )} - Banco de horas: ${bancoTotal.toFixed(2)}</p>`;
+        if (bancoTotal >= 8) texto += `<p style="color:green;">Puede tomar un día libre</p>`;
+        cont.innerHTML += texto;
+      });
   });
 }
 
@@ -515,10 +584,22 @@ function renderPagos() {
 const filterDate = document.getElementById("filterDate");
 const periodoResumen = document.getElementById("periodoResumen");
 
-filterDate.addEventListener("change", () => { renderAdminList(filterDate.value); updateChart(); });
-periodoResumen.addEventListener("change", () => { renderAdminList(filterDate.value); updateChart(); });
-fechaDesde.addEventListener("change", () => { renderAdminList(filterDate.value); updateChart(); });
-fechaHasta.addEventListener("change", () => { renderAdminList(filterDate.value); updateChart(); });
+filterDate.addEventListener("change", () => {
+  renderAdminList(filterDate.value);
+  updateChart();
+});
+periodoResumen.addEventListener("change", () => {
+  renderAdminList(filterDate.value);
+  updateChart();
+});
+fechaDesde.addEventListener("change", () => {
+  renderAdminList(filterDate.value);
+  updateChart();
+});
+fechaHasta.addEventListener("change", () => {
+  renderAdminList(filterDate.value);
+  updateChart();
+});
 
 // ===============================
 // ✅ MODAL EDITAR HORARIO (ADMIN) - SIN BORRAR HISTORIAL
@@ -526,93 +607,106 @@ fechaHasta.addEventListener("change", () => { renderAdminList(filterDate.value);
 
 let empleadosCache = {}; // {empId: {nombre, pin, salario, tipoSalario}}
 
-// Mantener cache de empleados (sirve para el selector del modal)
-db.ref("empleados").on("value", snap => {
+db.ref("empleados").on("value", (snap) => {
   empleadosCache = {};
-  snap.forEach(emp => {
+  snap.forEach((emp) => {
     empleadosCache[emp.key] = emp.val();
   });
   fillEmployeeSelect();
 });
 
-function fillEmployeeSelect(selectedId = null){
+function fillEmployeeSelect(selectedId = null) {
   const sel = document.getElementById("editEmpSelect");
-  if(!sel) return;
+  if (!sel) return;
 
   const current = selectedId || sel.value || "";
   const ids = Object.keys(empleadosCache);
 
-  sel.innerHTML = ids.map(id=>{
-    const n = empleadosCache[id]?.nombre || "Sin nombre";
-    return `<option value="${id}">${n}</option>`;
-  }).join("");
+  sel.innerHTML = ids
+    .map((id) => {
+      const n = empleadosCache[id]?.nombre || "Sin nombre";
+      return `<option value="${id}">${n}</option>`;
+    })
+    .join("");
 
-  if(current && ids.includes(current)) sel.value = current;
+  if (current && ids.includes(current)) sel.value = current;
 }
 
-function fillHourSelect(){
+function fillHourSelect() {
   const sel = document.getElementById("editHora");
-  if(!sel) return;
+  if (!sel) return;
 
-  // opciones cada 5 minutos (00:00 a 23:55)
   const opts = [];
-  for(let h=0; h<24; h++){
-    for(let m=0; m<60; m+=5){
-      const hh = String(h).padStart(2,"0");
-      const mm = String(m).padStart(2,"0");
+  for (let h = 0; h < 24; h++) {
+    for (let m = 0; m < 60; m += 5) {
+      const hh = String(h).padStart(2, "0");
+      const mm = String(m).padStart(2, "0");
       opts.push(`<option value="${hh}:${mm}">${hh}:${mm}</option>`);
     }
   }
   sel.innerHTML = opts.join("");
 }
 
-function showEditStatus(msg, isError=false){
+function showEditStatus(msg, isError = false) {
   const box = document.getElementById("editStatus");
-  if(!box) return;
+  if (!box) return;
   box.style.display = "block";
   box.innerText = msg;
   box.style.borderColor = isError ? "rgba(220,53,69,.35)" : "rgba(13,110,253,.25)";
   box.style.background = isError ? "rgba(220,53,69,.08)" : "rgba(13,110,253,.08)";
 }
 
-function hideEditStatus(){
+function hideEditStatus() {
   const box = document.getElementById("editStatus");
-  if(!box) return;
+  if (!box) return;
   box.style.display = "none";
   box.innerText = "";
 }
 
-function openEditModal(preselectEmpId=null){
+// Helpers de hora (UNA SOLA VEZ)
+function parseHoraHHMM(hhmm) {
+  const m = String(hhmm).trim().match(/^([01]\d|2[0-3]):([0-5]\d)$/);
+  if (!m) return null;
+  return { hour: parseInt(m[1], 10), minute: parseInt(m[2], 10) };
+}
+
+function buildTimestampLocal(fechaYYYYMMDD, hhmm) {
+  const t = parseHoraHHMM(hhmm);
+  if (!t) return null;
+  const [y, mo, d] = fechaYYYYMMDD.split("-").map((n) => parseInt(n, 10));
+  return new Date(y, mo - 1, d, t.hour, t.minute, 0, 0).getTime();
+}
+
+// Abrir modal (preselecciona empleado)
+function openEditModal(preselectEmpId = null) {
   const modal = document.getElementById("editModal");
   const back = document.getElementById("editModalBackdrop");
-  if(!modal || !back) return;
+  if (!modal || !back) return;
 
   fillEmployeeSelect(preselectEmpId);
   fillHourSelect();
 
-  // fecha por defecto: hoy
   const f = document.getElementById("editFecha");
-  if(f){
+  if (f) {
     const now = new Date();
     const yyyy = now.getFullYear();
-    const mm = String(now.getMonth()+1).padStart(2,"0");
-    const dd = String(now.getDate()).padStart(2,"0");
-    if(!f.value) f.value = `${yyyy}-${mm}-${dd}`;
+    const mm = String(now.getMonth() + 1).padStart(2, "0");
+    const dd = String(now.getDate()).padStart(2, "0");
+    if (!f.value) f.value = `${yyyy}-${mm}-${dd}`;
   }
 
-  // hora por defecto: 08:00
   const h = document.getElementById("editHora");
-  if(h) h.value = h.value || "08:00";
+  if (h && !h.value) h.value = "08:00";
 
   hideEditStatus();
   modal.classList.remove("hidden");
   back.classList.remove("hidden");
 }
 
-function closeEditModal(){
+function closeEditModal() {
   const modal = document.getElementById("editModal");
   const back = document.getElementById("editModalBackdrop");
-  if(!modal || !back) return;
+  if (!modal || !back) return;
 
   modal.classList.add("hidden");
   back.classList.add("hidden");
@@ -625,39 +719,25 @@ document.getElementById("editCloseBtn")?.addEventListener("click", closeEditModa
 document.getElementById("editModalBackdrop")?.addEventListener("click", closeEditModal);
 document.getElementById("editSaveBtn")?.addEventListener("click", saveEditHorario);
 
-// Helpers de hora
-function parseHoraHHMM(hhmm){
-  const m = String(hhmm).trim().match(/^([01]\d|2[0-3]):([0-5]\d)$/);
-  if(!m) return null;
-  return { hour: parseInt(m[1],10), minute: parseInt(m[2],10) };
-}
-
-function buildTimestampLocal(fechaYYYYMMDD, hhmm){
-  const t = parseHoraHHMM(hhmm);
-  if(!t) return null;
-  const [y, m, d] = fechaYYYYMMDD.split("-").map(n=>parseInt(n,10));
-  return new Date(y, m-1, d, t.hour, t.minute, 0, 0).getTime();
-}
-
 // Guardar edición SIN borrar historial
-async function saveEditHorario(){
-  try{
+async function saveEditHorario() {
+  try {
     const empId = document.getElementById("editEmpSelect").value;
     const fecha = document.getElementById("editFecha").value;
     const tipo = document.getElementById("editTipo").value;
     const hora = document.getElementById("editHora").value;
 
-    if(!empId || !empleadosCache[empId]){
+    if (!empId || !empleadosCache[empId]) {
       showEditStatus("⚠️ Selecciona un empleado válido.", true);
       return;
     }
-    if(!fecha){
+    if (!fecha) {
       showEditStatus("⚠️ Selecciona una fecha.", true);
       return;
     }
 
     const ts = buildTimestampLocal(fecha, hora);
-    if(!ts){
+    if (!ts) {
       showEditStatus("⚠️ Hora inválida.", true);
       return;
     }
@@ -665,12 +745,12 @@ async function saveEditHorario(){
     const empNombre = empleadosCache[empId].nombre || "Sin nombre";
     const ref = db.ref(`marcaciones/${empId}/${fecha}/${tipo}`);
 
-    // leer anterior
     const prevSnap = await ref.once("value");
     const prevVal = prevSnap.val();
 
-    // auditoría antes de cambiar (NUNCA BORRA HISTORIAL)
     const editStamp = Date.now();
+
+    // auditoría (NO BORRA NADA)
     await db.ref(`auditoria_ediciones/${empId}/${fecha}/${tipo}/${editStamp}`).set({
       empleado: empNombre,
       fecha,
@@ -678,10 +758,10 @@ async function saveEditHorario(){
       antes: prevVal || null,
       despues: { hora, timestamp: ts },
       editadoEn: editStamp,
-      editadoPor: "admin"
+      editadoPor: "admin",
     });
 
-    // guardar nueva marca
+    // guardar marca editada
     await ref.set({
       nombre: empNombre,
       tipo,
@@ -692,151 +772,25 @@ async function saveEditHorario(){
       lon: null,
       editado: true,
       editadoEn: editStamp,
-      editadoPor: "admin"
+      editadoPor: "admin",
     });
 
     showEditStatus(`✅ Guardado: ${empNombre} | ${tipo} | ${fecha} | ${hora}`, false);
 
-    // refrescar panel
     loadMarcaciones();
     updateChart();
 
     setTimeout(closeEditModal, 700);
-
-  }catch(e){
+  } catch (e) {
     console.error(e);
     showEditStatus("❌ Error al guardar. (Revisa consola)", true);
   }
 }
 
-// 🔹 INICIO
+// 🔹 INICIO (UNA SOLA VEZ)
 backHome();
 setDefaultDate();
-periodoResumen.value = "diario"; 
+periodoResumen.value = "diario";
 loadEmpleados();
 loadMarcaciones();
 updateChart();
-
-// ===============================
-// ✅ EDICIÓN MANUAL DE HORARIOS (ADMIN)
-// Guarda auditoría antes de modificar
-// ===============================
-
-// Evita romper HTML si el nombre trae comillas o símbolos
-function escapeHtml(str){
-  return String(str)
-    .replaceAll("&","&amp;")
-    .replaceAll("<","&lt;")
-    .replaceAll(">","&gt;")
-    .replaceAll('"',"&quot;")
-    .replaceAll("'","&#039;");
-}
-
-// Convierte "HH:MM" en {hour, minute}
-function parseHoraHHMM(hhmm){
-  const m = String(hhmm).trim().match(/^([01]?\d|2[0-3]):([0-5]\d)$/);
-  if(!m) return null;
-  return { hour: parseInt(m[1],10), minute: parseInt(m[2],10) };
-}
-
-// Crea timestamp local basado en fecha YYYY-MM-DD y hora HH:MM
-function buildTimestampLocal(fechaYYYYMMDD, hhmm){
-  const t = parseHoraHHMM(hhmm);
-  if(!t) return null;
-  const [y, m, d] = fechaYYYYMMDD.split("-").map(n=>parseInt(n,10));
-  return new Date(y, m-1, d, t.hour, t.minute, 0, 0).getTime();
-}
-
-/**
- * Edita o agrega una marcación manualmente:
- * - No borra historial: guarda el valor anterior en /auditoria_ediciones
- * - Sobrescribe marcaciones/{empId}/{fecha}/{tipo} con lo nuevo (si existía)
- */
-async function editarHorario(empId, empNombre){
-  try{
-    const fecha = prompt(`📅 Fecha a editar (YYYY-MM-DD)\nEmpleado: ${empNombre}`);
-    if(!fecha) return;
-
-    if(!/^\d{4}-\d{2}-\d{2}$/.test(fecha.trim())){
-      alert("Formato de fecha inválido. Usa YYYY-MM-DD");
-      return;
-    }
-
-    const tipo = prompt(
-      `🕘 ¿Qué marcación quieres editar/agregar?\nOpciones:\nentrada\nalmuerzo_salida\nalmuerzo_regreso\nsalida`,
-      "entrada"
-    );
-    if(!tipo) return;
-
-    const tipoLimpio = tipo.trim();
-    const permitidos = ["entrada","almuerzo_salida","almuerzo_regreso","salida"];
-    if(!permitidos.includes(tipoLimpio)){
-      alert("Tipo inválido. Usa: entrada / almuerzo_salida / almuerzo_regreso / salida");
-      return;
-    }
-
-    const hora = prompt(`⏰ Hora (HH:MM) 24h\nEj: 08:00`, "08:00");
-    if(!hora) return;
-
-    const hhmm = hora.trim();
-    const ts = buildTimestampLocal(fecha.trim(), hhmm);
-    if(!ts){
-      alert("Hora inválida. Usa HH:MM en formato 24h (Ej: 08:00)");
-      return;
-    }
-
-    const ref = db.ref(`marcaciones/${empId}/${fecha.trim()}/${tipoLimpio}`);
-
-    // 1) Lee valor anterior
-    const prevSnap = await ref.once("value");
-    const prevVal = prevSnap.val();
-
-    // 2) Guarda auditoría ANTES de cambiar (si había algo)
-    const editStamp = Date.now();
-    if(prevVal){
-      await db.ref(`auditoria_ediciones/${empId}/${fecha.trim()}/${tipoLimpio}/${editStamp}`)
-        .set({
-          empleado: empNombre,
-          fecha: fecha.trim(),
-          tipo: tipoLimpio,
-          antes: prevVal,
-          editadoEn: editStamp,
-          editadoPor: "admin"
-        });
-    } else {
-      // también guardamos auditoría como "creación manual"
-      await db.ref(`auditoria_ediciones/${empId}/${fecha.trim()}/${tipoLimpio}/${editStamp}`)
-        .set({
-          empleado: empNombre,
-          fecha: fecha.trim(),
-          tipo: tipoLimpio,
-          antes: null,
-          editadoEn: editStamp,
-          editadoPor: "admin"
-        });
-    }
-
-    // 3) Escribe el nuevo valor (sin GPS: lat/lon null)
-    await ref.set({
-      nombre: empNombre,
-      tipo: tipoLimpio,
-      fecha: fecha.trim(),
-      hora: hhmm,
-      timestamp: ts,
-      lat: null,
-      lon: null,
-      editado: true,
-      editadoEn: editStamp,
-      editadoPor: "admin"
-    });
-
-    alert(`✅ Listo. Se actualizó ${empNombre} | ${tipoLimpio} | ${fecha.trim()} | ${hhmm}`);
-
-    // refresca vistas
-    loadMarcaciones();
-    updateChart();
-  }catch(e){
-    console.error(e);
-    alert("❌ Error al editar horario. Revisa la consola.");
-  }
-            }
