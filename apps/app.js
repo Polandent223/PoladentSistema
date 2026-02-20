@@ -520,6 +520,195 @@ periodoResumen.addEventListener("change", () => { renderAdminList(filterDate.val
 fechaDesde.addEventListener("change", () => { renderAdminList(filterDate.value); updateChart(); });
 fechaHasta.addEventListener("change", () => { renderAdminList(filterDate.value); updateChart(); });
 
+// ===============================
+// ✅ MODAL EDITAR HORARIO (ADMIN) - SIN BORRAR HISTORIAL
+// ===============================
+
+let empleadosCache = {}; // {empId: {nombre, pin, salario, tipoSalario}}
+
+// Mantener cache de empleados (sirve para el selector del modal)
+db.ref("empleados").on("value", snap => {
+  empleadosCache = {};
+  snap.forEach(emp => {
+    empleadosCache[emp.key] = emp.val();
+  });
+  fillEmployeeSelect();
+});
+
+function fillEmployeeSelect(selectedId = null){
+  const sel = document.getElementById("editEmpSelect");
+  if(!sel) return;
+
+  const current = selectedId || sel.value || "";
+  const ids = Object.keys(empleadosCache);
+
+  sel.innerHTML = ids.map(id=>{
+    const n = empleadosCache[id]?.nombre || "Sin nombre";
+    return `<option value="${id}">${n}</option>`;
+  }).join("");
+
+  if(current && ids.includes(current)) sel.value = current;
+}
+
+function fillHourSelect(){
+  const sel = document.getElementById("editHora");
+  if(!sel) return;
+
+  // opciones cada 5 minutos (00:00 a 23:55)
+  const opts = [];
+  for(let h=0; h<24; h++){
+    for(let m=0; m<60; m+=5){
+      const hh = String(h).padStart(2,"0");
+      const mm = String(m).padStart(2,"0");
+      opts.push(`<option value="${hh}:${mm}">${hh}:${mm}</option>`);
+    }
+  }
+  sel.innerHTML = opts.join("");
+}
+
+function showEditStatus(msg, isError=false){
+  const box = document.getElementById("editStatus");
+  if(!box) return;
+  box.style.display = "block";
+  box.innerText = msg;
+  box.style.borderColor = isError ? "rgba(220,53,69,.35)" : "rgba(13,110,253,.25)";
+  box.style.background = isError ? "rgba(220,53,69,.08)" : "rgba(13,110,253,.08)";
+}
+
+function hideEditStatus(){
+  const box = document.getElementById("editStatus");
+  if(!box) return;
+  box.style.display = "none";
+  box.innerText = "";
+}
+
+function openEditModal(preselectEmpId=null){
+  const modal = document.getElementById("editModal");
+  const back = document.getElementById("editModalBackdrop");
+  if(!modal || !back) return;
+
+  fillEmployeeSelect(preselectEmpId);
+  fillHourSelect();
+
+  // fecha por defecto: hoy
+  const f = document.getElementById("editFecha");
+  if(f){
+    const now = new Date();
+    const yyyy = now.getFullYear();
+    const mm = String(now.getMonth()+1).padStart(2,"0");
+    const dd = String(now.getDate()).padStart(2,"0");
+    if(!f.value) f.value = `${yyyy}-${mm}-${dd}`;
+  }
+
+  // hora por defecto: 08:00
+  const h = document.getElementById("editHora");
+  if(h) h.value = h.value || "08:00";
+
+  hideEditStatus();
+  modal.classList.remove("hidden");
+  back.classList.remove("hidden");
+}
+
+function closeEditModal(){
+  const modal = document.getElementById("editModal");
+  const back = document.getElementById("editModalBackdrop");
+  if(!modal || !back) return;
+
+  modal.classList.add("hidden");
+  back.classList.add("hidden");
+  hideEditStatus();
+}
+
+// Botones del modal
+document.getElementById("editCancelBtn")?.addEventListener("click", closeEditModal);
+document.getElementById("editCloseBtn")?.addEventListener("click", closeEditModal);
+document.getElementById("editModalBackdrop")?.addEventListener("click", closeEditModal);
+document.getElementById("editSaveBtn")?.addEventListener("click", saveEditHorario);
+
+// Helpers de hora
+function parseHoraHHMM(hhmm){
+  const m = String(hhmm).trim().match(/^([01]\d|2[0-3]):([0-5]\d)$/);
+  if(!m) return null;
+  return { hour: parseInt(m[1],10), minute: parseInt(m[2],10) };
+}
+
+function buildTimestampLocal(fechaYYYYMMDD, hhmm){
+  const t = parseHoraHHMM(hhmm);
+  if(!t) return null;
+  const [y, m, d] = fechaYYYYMMDD.split("-").map(n=>parseInt(n,10));
+  return new Date(y, m-1, d, t.hour, t.minute, 0, 0).getTime();
+}
+
+// Guardar edición SIN borrar historial
+async function saveEditHorario(){
+  try{
+    const empId = document.getElementById("editEmpSelect").value;
+    const fecha = document.getElementById("editFecha").value;
+    const tipo = document.getElementById("editTipo").value;
+    const hora = document.getElementById("editHora").value;
+
+    if(!empId || !empleadosCache[empId]){
+      showEditStatus("⚠️ Selecciona un empleado válido.", true);
+      return;
+    }
+    if(!fecha){
+      showEditStatus("⚠️ Selecciona una fecha.", true);
+      return;
+    }
+
+    const ts = buildTimestampLocal(fecha, hora);
+    if(!ts){
+      showEditStatus("⚠️ Hora inválida.", true);
+      return;
+    }
+
+    const empNombre = empleadosCache[empId].nombre || "Sin nombre";
+    const ref = db.ref(`marcaciones/${empId}/${fecha}/${tipo}`);
+
+    // leer anterior
+    const prevSnap = await ref.once("value");
+    const prevVal = prevSnap.val();
+
+    // auditoría antes de cambiar (NUNCA BORRA HISTORIAL)
+    const editStamp = Date.now();
+    await db.ref(`auditoria_ediciones/${empId}/${fecha}/${tipo}/${editStamp}`).set({
+      empleado: empNombre,
+      fecha,
+      tipo,
+      antes: prevVal || null,
+      despues: { hora, timestamp: ts },
+      editadoEn: editStamp,
+      editadoPor: "admin"
+    });
+
+    // guardar nueva marca
+    await ref.set({
+      nombre: empNombre,
+      tipo,
+      fecha,
+      hora,
+      timestamp: ts,
+      lat: null,
+      lon: null,
+      editado: true,
+      editadoEn: editStamp,
+      editadoPor: "admin"
+    });
+
+    showEditStatus(`✅ Guardado: ${empNombre} | ${tipo} | ${fecha} | ${hora}`, false);
+
+    // refrescar panel
+    loadMarcaciones();
+    updateChart();
+
+    setTimeout(closeEditModal, 700);
+
+  }catch(e){
+    console.error(e);
+    showEditStatus("❌ Error al guardar. (Revisa consola)", true);
+  }
+}
+
 // 🔹 INICIO
 backHome();
 setDefaultDate();
