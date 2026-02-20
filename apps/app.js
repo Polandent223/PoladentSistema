@@ -91,7 +91,7 @@ function cargarEmpleados() {
         <div class="empActions">
           <button onclick="borrarEmpleado('${emp.key}')">Borrar</button>
           <button onclick="asignarSalario('${emp.key}')">Asignar Salario</button>
-          <button onclick="editarHorario('${emp.key}','${escapeHtml(data.nombre)}')">Editar Horario</button>
+          <button onclick="openEditModal('${emp.key}','${escapeHtml(data.nombre)}')">Editar Horario</button>
           <button onclick="generarOlerite('${emp.key}')">Olerite PDF</button>
         </div>
       </div>`;
