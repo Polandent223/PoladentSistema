@@ -788,6 +788,24 @@ async function saveEditHorario() {
 }
 }
 
+// ✅ FIX: si tu código llama closeEditModal pero tu función real se llama closeEditModal / closeEditHorario / etc.
+// Creamos alias seguros para que SIEMPRE exista.
+
+window.closeEditModal = window.closeEditModal || function () {
+  const modal = document.getElementById("editModal");
+  const back = document.getElementById("editModalBackdrop");
+  if (modal) modal.classList.add("hidden");
+  if (back) back.classList.add("hidden");
+
+  const box = document.getElementById("editStatus");
+  if (box) {
+    box.style.display = "none";
+    box.innerText = "";
+  }
+};
+
+window.closeEditHorario = window.closeEditHorario || window.closeEditModal;
+
 // 🔹 INICIO (UNA SOLA VEZ)
 backHome();
 setDefaultDate();
