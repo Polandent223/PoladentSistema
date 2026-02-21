@@ -709,6 +709,19 @@ async function openEditModal(preselectEmpId = null) {
   back.classList.remove("hidden");
 }
 
+function closeEditModal() {
+  const modal = document.getElementById("editModal");
+  const back = document.getElementById("editModalBackdrop");
+  const box = document.getElementById("editStatus");
+
+  if (modal) modal.classList.add("hidden");
+  if (back) back.classList.add("hidden");
+
+  if (box) {
+    box.style.display = "none";
+    box.innerText = "";
+  }
+}
 // Botones del modal
 document.getElementById("editCancelBtn")?.addEventListener("click", closeEditModal);
 document.getElementById("editCloseBtn")?.addEventListener("click", closeEditModal);
