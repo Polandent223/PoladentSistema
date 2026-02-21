@@ -777,10 +777,15 @@ async function saveEditHorario() {
     updateChart();
 
     setTimeout(closeEditModal, 700);
-  } catch (e) {
-    console.error(e);
-    showEditStatus("❌ Error al guardar. (Revisa consola)", true);
-  }
+ } catch (e) {
+  console.error("saveEditHorario error:", e);
+
+  const msg = (e && (e.code || e.message)) 
+    ? `${e.code ? e.code + " - " : ""}${e.message || ""}`
+    : String(e);
+
+  showEditStatus("❌ " + msg, true);
+}
 }
 
 // 🔹 INICIO (UNA SOLA VEZ)
