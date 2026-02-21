@@ -607,13 +607,17 @@ fechaHasta.addEventListener("change", () => {
 
 let empleadosCache = {}; // {empId: {nombre, pin, salario, tipoSalario}}
 
-db.ref("empleados").on("value", (snap) => {
+async function cargarEmpleadosParaModal() {
   empleadosCache = {};
+
+  const snap = await db.ref("empleados").once("value");
+
   snap.forEach((emp) => {
     empleadosCache[emp.key] = emp.val();
   });
+
   fillEmployeeSelect();
-});
+}
 
 function fillEmployeeSelect(selectedId = null) {
   const sel = document.getElementById("editEmpSelect");
@@ -678,10 +682,12 @@ function buildTimestampLocal(fechaYYYYMMDD, hhmm) {
 }
 
 // Abrir modal (preselecciona empleado)
-function openEditModal(preselectEmpId = null) {
+async function openEditModal(preselectEmpId = null) {
   const modal = document.getElementById("editModal");
   const back = document.getElementById("editModalBackdrop");
   if (!modal || !back) return;
+
+  await cargarEmpleadosParaModal();
 
   fillEmployeeSelect(preselectEmpId);
   fillHourSelect();
@@ -701,16 +707,6 @@ function openEditModal(preselectEmpId = null) {
   hideEditStatus();
   modal.classList.remove("hidden");
   back.classList.remove("hidden");
-}
-
-function closeEditModal() {
-  const modal = document.getElementById("editModal");
-  const back = document.getElementById("editModalBackdrop");
-  if (!modal || !back) return;
-
-  modal.classList.add("hidden");
-  back.classList.add("hidden");
-  hideEditStatus();
 }
 
 // Botones del modal
