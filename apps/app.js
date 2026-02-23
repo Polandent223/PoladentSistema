@@ -130,7 +130,8 @@ function borrarEmpleado(id) {
 }
 
 // ==================================================
-// ✅ MODAL ASIGNAR SALARIO (ADMIN) (SIN PROMPTS)
+// ✅ MODAL ASIGNAR SALARIO (ADMIN) - SIN PROMPTS
+// (Requiere que ya tengas el modal en tu HTML)
 // ==================================================
 let salarioEmpIdActual = null;
 
@@ -157,15 +158,16 @@ async function openSalarioModal(empID) {
   const back = document.getElementById("salarioModalBackdrop");
   if (!modal || !back) return;
 
-  // reset
+  // Reset
   document.getElementById("salarioValor").value = "";
   document.getElementById("salarioTipo").value = "diario";
   document.getElementById("salarioEmpNombre").value = "";
   hideSalarioStatus();
 
-  // cargar empleado
+  // Cargar empleado
   const snap = await db.ref("empleados/" + empID).once("value");
   const emp = snap.val();
+
   if (!emp) {
     showSalarioStatus("⚠️ Empleado no encontrado.", true);
   } else {
@@ -206,22 +208,25 @@ async function saveSalarioModal() {
     });
 
     showSalarioStatus("✅ Guardado correctamente.", false);
-
     loadEmpleados();
-    setTimeout(closeSalarioModal, 400);
+    setTimeout(closeSalarioModal, 350);
   } catch (e) {
-    console.error(e);
-    showSalarioStatus("❌ Error al guardar (revisa consola).", true);
+    console.error("saveSalarioModal error:", e);
+    const msg =
+      e && (e.code || e.message)
+        ? `${e.code ? e.code + " - " : ""}${e.message || ""}`
+        : String(e);
+    showSalarioStatus("❌ " + msg, true);
   }
 }
 
-// listeners modal salario
+// Botones modal salario
 document.getElementById("salarioCancelBtn")?.addEventListener("click", closeSalarioModal);
 document.getElementById("salarioCloseBtn")?.addEventListener("click", closeSalarioModal);
 document.getElementById("salarioModalBackdrop")?.addEventListener("click", closeSalarioModal);
 document.getElementById("salarioSaveBtn")?.addEventListener("click", saveSalarioModal);
 
-// ✅ tu botón llama esto:
+// ✅ reemplazo del prompt: ahora abre modal
 function asignarSalario(empID) {
   openSalarioModal(empID);
 }
@@ -374,7 +379,7 @@ function renderAdminList(dateFilter) {
   empIDs.forEach((empID) => {
     const fechas = allMarcaciones[empID];
 
-    Object.keys(fechas)
+    Object.keys(fechas || {})
       .sort()
       .forEach((fecha) => {
         let fechaObj = new Date(fecha);
@@ -389,12 +394,12 @@ function renderAdminList(dateFilter) {
           if (periodo === "diario" && dateFilter && fecha !== dateFilter) return;
         }
 
-        const tipos = fechas[fecha];
+        const tipos = fechas[fecha] || {};
 
         Object.keys(tipos)
           .sort()
           .forEach((tipo) => {
-            const data = tipos[tipo];
+            const data = tipos[tipo] || {};
             if (!data.nombre) data.nombre = "Sin nombre";
 
             cont.innerHTML += `<p><b>${data.nombre}</b> | ${data.tipo} | ${fecha} | ${data.hora}</p>`;
@@ -521,7 +526,10 @@ function mostrarNotificacion(text) {
 
 // 🔹 GRÁFICO HORAS
 function renderChart(startDate = "", endDate = "", periodo = "diario", dateFilter = "") {
-  const ctx = document.getElementById("horasChart").getContext("2d");
+  const canvas = document.getElementById("horasChart");
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
+
   let chartData = {
     labels: [],
     datasets: [
@@ -538,13 +546,13 @@ function renderChart(startDate = "", endDate = "", periodo = "diario", dateFilte
   const resumenHoras = {};
 
   for (const empID in allMarcaciones) {
-    const fechas = allMarcaciones[empID];
+    const fechas = allMarcaciones[empID] || {};
     for (const fecha in fechas) {
       const fechaObj = new Date(fecha);
       if (filtroInicio && fechaObj < filtroInicio) continue;
       if (filtroFin && fechaObj > filtroFin) continue;
 
-      const tipos = fechas[fecha];
+      const tipos = fechas[fecha] || {};
       let entrada = null,
         salida = null;
       Object.values(tipos).forEach((m) => {
@@ -553,7 +561,7 @@ function renderChart(startDate = "", endDate = "", periodo = "diario", dateFilte
       });
       if (!entrada || !salida) continue;
 
-      const nombre = Object.values(tipos)[0].nombre || "Sin nombre";
+      const nombre = Object.values(tipos)[0]?.nombre || "Sin nombre";
       if (!resumenHoras[nombre]) resumenHoras[nombre] = 0;
       resumenHoras[nombre] += (salida - entrada) / 3600000;
     }
@@ -566,25 +574,24 @@ function renderChart(startDate = "", endDate = "", periodo = "diario", dateFilte
   window.horasChartInstance = new Chart(ctx, {
     type: "bar",
     data: chartData,
-    options: {
-      responsive: true,
-      plugins: { legend: { display: false } },
-    },
+    options: { responsive: true, plugins: { legend: { display: false } } },
   });
 }
 
 function updateChart() {
-  const start = fechaDesde.value || "";
-  const end = fechaHasta.value || "";
-  const periodo = periodoResumen.value;
-  const filtroFecha = filterDate.value;
+  const start = fechaDesde?.value || "";
+  const end = fechaHasta?.value || "";
+  const periodo = document.getElementById("periodoResumen")?.value || "diario";
+  const filtroFecha = document.getElementById("filterDate")?.value || "";
   renderChart(start, end, periodo, filtroFecha);
 }
 
 // 🔽 MINIMIZAR/EXPANDIR SECCIONES
 function toggleSection(id) {
   const el = document.getElementById(id);
-  const header = el.previousElementSibling;
+  const header = el?.previousElementSibling;
+  if (!el || !header) return;
+
   if (el.style.display === "none") {
     el.style.display = "block";
     header.innerHTML = header.innerHTML.replace("▲", "▼");
@@ -606,6 +613,8 @@ function estaEnRango(fecha, desde, hasta) {
 
 function renderPagos() {
   const cont = document.getElementById("resumenPagos");
+  if (!cont) return;
+
   cont.innerHTML = "<h4>💰 Resumen de pagos y banco de horas</h4>";
   const desde = fechaDesde.value;
   const hasta = fechaHasta.value;
@@ -670,19 +679,19 @@ function renderPagos() {
 const filterDate = document.getElementById("filterDate");
 const periodoResumen = document.getElementById("periodoResumen");
 
-filterDate.addEventListener("change", () => {
+filterDate?.addEventListener("change", () => {
   renderAdminList(filterDate.value);
   updateChart();
 });
-periodoResumen.addEventListener("change", () => {
+periodoResumen?.addEventListener("change", () => {
   renderAdminList(filterDate.value);
   updateChart();
 });
-fechaDesde.addEventListener("change", () => {
+fechaDesde?.addEventListener("change", () => {
   renderAdminList(filterDate.value);
   updateChart();
 });
-fechaHasta.addEventListener("change", () => {
+fechaHasta?.addEventListener("change", () => {
   renderAdminList(filterDate.value);
   updateChart();
 });
@@ -749,7 +758,6 @@ function hideEditStatus() {
   box.innerText = "";
 }
 
-// Helpers de hora (UNA SOLA VEZ)
 function parseHoraHHMM(hhmm) {
   const m = String(hhmm).trim().match(/^([01]\d|2[0-3]):([0-5]\d)$/);
   if (!m) return null;
@@ -763,14 +771,12 @@ function buildTimestampLocal(fechaYYYYMMDD, hhmm) {
   return new Date(y, mo - 1, d, t.hour, t.minute, 0, 0).getTime();
 }
 
-// Abrir modal (preselecciona empleado)
 async function openEditModal(preselectEmpId = null) {
   const modal = document.getElementById("editModal");
   const back = document.getElementById("editModalBackdrop");
   if (!modal || !back) return;
 
   await cargarEmpleadosParaModal();
-
   fillEmployeeSelect(preselectEmpId);
   fillHourSelect();
 
@@ -798,20 +804,17 @@ function closeEditModal() {
 
   if (modal) modal.classList.add("hidden");
   if (back) back.classList.add("hidden");
-
   if (box) {
     box.style.display = "none";
     box.innerText = "";
   }
 }
 
-// Botones del modal
 document.getElementById("editCancelBtn")?.addEventListener("click", closeEditModal);
 document.getElementById("editCloseBtn")?.addEventListener("click", closeEditModal);
 document.getElementById("editModalBackdrop")?.addEventListener("click", closeEditModal);
 document.getElementById("editSaveBtn")?.addEventListener("click", saveEditHorario);
 
-// Guardar edición SIN borrar historial
 async function saveEditHorario() {
   try {
     const empId = document.getElementById("editEmpSelect").value;
@@ -842,7 +845,6 @@ async function saveEditHorario() {
 
     const editStamp = Date.now();
 
-    // auditoría (NO BORRA NADA)
     await db.ref(`auditoria_ediciones/${empId}/${fecha}/${tipo}/${editStamp}`).set({
       empleado: empNombre,
       fecha,
@@ -853,7 +855,6 @@ async function saveEditHorario() {
       editadoPor: "admin",
     });
 
-    // guardar marca editada
     await ref.set({
       nombre: empNombre,
       tipo,
@@ -871,7 +872,6 @@ async function saveEditHorario() {
 
     loadMarcaciones();
     updateChart();
-
     setTimeout(closeEditModal, 700);
   } catch (e) {
     console.error("saveEditHorario error:", e);
@@ -885,19 +885,8 @@ async function saveEditHorario() {
   }
 }
 
-// ✅ FIX alias
-window.closeEditModal = window.closeEditModal || function () {
-  const modal = document.getElementById("editModal");
-  const back = document.getElementById("editModalBackdrop");
-  if (modal) modal.classList.add("hidden");
-  if (back) back.classList.add("hidden");
-
-  const box = document.getElementById("editStatus");
-  if (box) {
-    box.style.display = "none";
-    box.innerText = "";
-  }
-};
+// ✅ Alias seguros
+window.closeEditModal = window.closeEditModal || closeEditModal;
 window.closeEditHorario = window.closeEditHorario || window.closeEditModal;
 
 // 🔹 INICIO (UNA SOLA VEZ)
