@@ -1,3 +1,8 @@
+// ===============================
+// ✅ POLADENT - APP.JS COMPLETO
+// TODO EN ESPAÑOL + SALARIO USD
+// ===============================
+
 // 🔹 ELEMENTOS PRINCIPALES
 const home = document.getElementById("home");
 const adminLogin = document.getElementById("adminLogin");
@@ -26,7 +31,17 @@ document.getElementById("salidaBtn").onclick = () => mark("salida");
 // Input PIN empleado
 document.getElementById("empPin").addEventListener("input", pinInputHandler);
 
-// 🔹 NAVEGACIÓN
+// ===============================
+// 🔹 UTILIDADES
+// ===============================
+const USD = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
+
+function formatUSD(value) {
+  const num = Number(value);
+  if (!Number.isFinite(num)) return "USD 0.00";
+  return USD.format(num);
+}
+
 function hideAll() {
   home.classList.add("hidden");
   adminLogin.classList.add("hidden");
@@ -52,7 +67,9 @@ function goEmployee() {
   employeePanel.classList.remove("hidden");
 }
 
+// ===============================
 // 🔹 LOGIN ADMIN
+// ===============================
 function loginAdmin() {
   const email = document.getElementById("adminEmail").value;
   const pass = document.getElementById("adminPass").value;
@@ -75,10 +92,13 @@ function logout() {
   backHome();
 }
 
+// ===============================
 // 🔹 EMPLEADOS
+// ===============================
 function agregarEmpleado() {
   const nombre = document.getElementById("nombreEmpleado").value.trim();
   const pin = document.getElementById("pinEmpleado").value.trim();
+
   if (!nombre || !pin) {
     alert("Completa todos los campos");
     return;
@@ -99,19 +119,23 @@ function agregarEmpleado() {
 
 function cargarEmpleados() {
   const cont = document.getElementById("listaEmpleados");
+
   db.ref("empleados").on("value", (snap) => {
     cont.innerHTML = "";
+
     snap.forEach((emp) => {
-      const data = emp.val();
+      const data = emp.val() || {};
+      const salarioTexto = `${formatUSD(data.salario)} (${data.tipoSalario || "diario"})`;
+
       cont.innerHTML += `<div class="empleado">
-        <strong>${data.nombre}</strong><br>
-        PIN: ${data.pin}<br>
-        Salario: ${data.salario} (${data.tipoSalario})
+        <strong>${data.nombre || "Sin nombre"}</strong><br>
+        PIN: ${data.pin || ""}<br>
+        Salario: ${salarioTexto}
         <div class="empActions">
           <button onclick="borrarEmpleado('${emp.key}')">Borrar</button>
-          <button onclick="asignarSalario('${emp.key}')">Asignar Salario</button>
-          <button onclick="openEditModal('${emp.key}')">Editar Horario</button>
-          <button onclick="generarOlerite('${emp.key}')">Olerite PDF</button>
+          <button onclick="asignarSalario('${emp.key}')">Asignar salario</button>
+          <button onclick="openEditModal('${emp.key}')">Editar horario</button>
+          <button onclick="generarOlerite('${emp.key}')">Recibo PDF</button>
         </div>
       </div>`;
     });
@@ -129,10 +153,9 @@ function borrarEmpleado(id) {
   }
 }
 
-// ==================================================
-// ✅ MODAL ASIGNAR SALARIO (ADMIN) - SIN PROMPTS
-// (Requiere que ya tengas el modal en tu HTML)
-// ==================================================
+// ===============================
+// ✅ MODAL ASIGNAR SALARIO (SIN PROMPTS)
+// ===============================
 let salarioEmpIdActual = null;
 
 function showSalarioStatus(msg, isError = false) {
@@ -143,7 +166,6 @@ function showSalarioStatus(msg, isError = false) {
   box.style.borderColor = isError ? "rgba(220,53,69,.35)" : "rgba(13,110,253,.25)";
   box.style.background = isError ? "rgba(220,53,69,.08)" : "rgba(13,110,253,.08)";
 }
-
 function hideSalarioStatus() {
   const box = document.getElementById("salarioStatus");
   if (!box) return;
@@ -198,7 +220,7 @@ async function saveSalarioModal() {
     const tipo = document.getElementById("salarioTipo").value;
 
     if (Number.isNaN(salario) || salario <= 0) {
-      showSalarioStatus("⚠️ Ingresa un salario válido.", true);
+      showSalarioStatus("⚠️ Ingresa un salario válido (ej: 200 o 200.50).", true);
       return;
     }
 
@@ -226,34 +248,40 @@ document.getElementById("salarioCloseBtn")?.addEventListener("click", closeSalar
 document.getElementById("salarioModalBackdrop")?.addEventListener("click", closeSalarioModal);
 document.getElementById("salarioSaveBtn")?.addEventListener("click", saveSalarioModal);
 
-// ✅ reemplazo del prompt: ahora abre modal
+// ✅ reemplazo del prompt
 function asignarSalario(empID) {
   openSalarioModal(empID);
 }
 
-// 🔹 OLERITE PDF (básico)
+// ===============================
+// 🔹 RECIBO PDF (BÁSICO) - USD
+// ===============================
 function generarOlerite(empID) {
   db.ref("empleados/" + empID).once("value", (snap) => {
     const emp = snap.val();
     if (!emp) return;
+
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
     doc.setFontSize(20);
-    doc.text("Olerite de Pago", 20, 20);
+    doc.text("Recibo de Pago", 20, 20);
     doc.setFontSize(14);
     doc.text(`Empleado: ${emp.nombre}`, 20, 40);
-    doc.text(`Salario: ${emp.salario} (${emp.tipoSalario})`, 20, 50);
+    doc.text(`Salario: ${formatUSD(emp.salario)} (${emp.tipoSalario})`, 20, 50);
     doc.text(`Fecha: ${new Date().toLocaleDateString()}`, 20, 60);
-    doc.save(`Olerite_${emp.nombre}.pdf`);
+    doc.save(`Recibo_${emp.nombre}.pdf`);
   });
 }
 
-// 🔹 EMPLEADO PIN + BOTONES DINÁMICOS
+// ===============================
+// 🔹 EMPLEADO PIN + BOTONES
+// ===============================
 let empleadoActual = null;
 const etapas = ["entrada", "almuerzo_salida", "almuerzo_regreso", "salida"];
 
 function pinInputHandler() {
   const pin = document.getElementById("empPin").value.trim();
+
   if (!pin) {
     document.getElementById("employeeButtons").classList.add("hidden");
     document.getElementById("empNombreGrande").innerHTML = "";
@@ -280,7 +308,9 @@ function pinInputHandler() {
     });
 }
 
-// 🔹 FUNCIONES MARCACIÓN
+// ===============================
+// 🔹 MARCACIÓN
+// ===============================
 function mark(tipo) {
   if (!empleadoActual) return;
 
@@ -324,7 +354,7 @@ function mark(tipo) {
           ref.child(tipo).set({ nombre: empleadoActual.nombre, tipo, fecha, hora, timestamp, lat, lon });
 
           let frase = "";
-          if (tipo === "entrada") frase = "¡Que tengas un buen inicio de jornada!";
+          if (tipo === "entrada") frase = "¡Buen inicio de jornada!";
           if (tipo === "almuerzo_salida") frase = "Buen provecho 🍽️";
           if (tipo === "almuerzo_regreso") frase = "Bienvenido de vuelta 👋";
           if (tipo === "salida") frase = "¡Buen trabajo!";
@@ -336,13 +366,15 @@ function mark(tipo) {
           loadMarcaciones();
           updateChart();
         },
-        () => alert("No se pudo obtener ubicación GPS")
+        () => alert("No se pudo obtener la ubicación GPS")
       );
     } else alert("GPS no disponible");
   });
 }
 
+// ===============================
 // 🔹 ADMIN – RESUMEN MARCACIONES
+// ===============================
 let excelRows = [],
   excelSalarial = [],
   allMarcaciones = {};
@@ -377,9 +409,9 @@ function renderAdminList(dateFilter) {
   });
 
   empIDs.forEach((empID) => {
-    const fechas = allMarcaciones[empID];
+    const fechas = allMarcaciones[empID] || {};
 
-    Object.keys(fechas || {})
+    Object.keys(fechas)
       .sort()
       .forEach((fecha) => {
         let fechaObj = new Date(fecha);
@@ -419,7 +451,9 @@ function renderAdminList(dateFilter) {
   renderPagos();
 }
 
+// ===============================
 // 🔹 EXPORTACIÓN EXCEL
+// ===============================
 function exportExcelFiltro() {
   const fecha = document.getElementById("filterDate").value;
   const periodo = document.getElementById("periodoResumen").value;
@@ -451,7 +485,7 @@ function exportExcelSalarialFiltro() {
     resumen[m.nombre].dias[m.fecha][m.tipo] = m.timestamp;
   }
 
-  const wsData = [["Nombre", "Fecha", "Horas trabajadas", "Horas extra", "Banco de horas", "Pago del día"]];
+  const wsData = [["Nombre", "Fecha", "Horas trabajadas", "Horas extra", "Banco de horas", "Pago del día (USD)"]];
 
   const empleadosKeys = Object.keys(resumen);
 
@@ -504,7 +538,9 @@ function exportExcelSalarialFiltro() {
   });
 }
 
+// ===============================
 // 🔹 CALENDARIO
+// ===============================
 function setDefaultDate() {
   const today = new Date();
   let month = today.getMonth() + 1;
@@ -515,7 +551,9 @@ function setDefaultDate() {
   document.getElementById("filterDate").value = `${yyyy}-${month}-${day}`;
 }
 
+// ===============================
 // 🔹 NOTIFICACIONES
+// ===============================
 function mostrarNotificacion(text) {
   const notif = document.getElementById("notificaciones");
   const div = document.createElement("div");
@@ -524,7 +562,9 @@ function mostrarNotificacion(text) {
   notif.prepend(div);
 }
 
+// ===============================
 // 🔹 GRÁFICO HORAS
+// ===============================
 function renderChart(startDate = "", endDate = "", periodo = "diario", dateFilter = "") {
   const canvas = document.getElementById("horasChart");
   if (!canvas) return;
@@ -532,13 +572,7 @@ function renderChart(startDate = "", endDate = "", periodo = "diario", dateFilte
 
   let chartData = {
     labels: [],
-    datasets: [
-      {
-        label: "Horas trabajadas",
-        data: [],
-        backgroundColor: "rgba(0,123,255,0.5)",
-      },
-    ],
+    datasets: [{ label: "Horas trabajadas", data: [], backgroundColor: "rgba(0,123,255,0.5)" }],
   };
 
   const filtroInicio = startDate ? new Date(startDate) : null;
@@ -553,8 +587,7 @@ function renderChart(startDate = "", endDate = "", periodo = "diario", dateFilte
       if (filtroFin && fechaObj > filtroFin) continue;
 
       const tipos = fechas[fecha] || {};
-      let entrada = null,
-        salida = null;
+      let entrada = null, salida = null;
       Object.values(tipos).forEach((m) => {
         if (m.tipo === "entrada") entrada = m.timestamp;
         if (m.tipo === "salida") salida = m.timestamp;
@@ -586,7 +619,9 @@ function updateChart() {
   renderChart(start, end, periodo, filtroFecha);
 }
 
-// 🔽 MINIMIZAR/EXPANDIR SECCIONES
+// ===============================
+// 🔽 MINIMIZAR / EXPANDIR
+// ===============================
 function toggleSection(id) {
   const el = document.getElementById(id);
   const header = el?.previousElementSibling;
@@ -601,7 +636,9 @@ function toggleSection(id) {
   }
 }
 
-// 🔹 RESUMEN DE PAGOS Y BANCO DE HORAS
+// ===============================
+// 🔹 RESUMEN DE PAGOS
+// ===============================
 function estaEnRango(fecha, desde, hasta) {
   const f = new Date(fecha);
   const d = desde ? new Date(desde) : null;
@@ -666,16 +703,16 @@ function renderPagos() {
           totalPagar += pagoDia;
         }
 
-        let texto = `<p><b>${empData.nombre || empNombre}</b> - Total a pagar: $${totalPagar.toFixed(
-          2
-        )} - Banco de horas: ${bancoTotal.toFixed(2)}</p>`;
-        if (bancoTotal >= 8) texto += `<p style="color:green;">Puede tomar un día libre</p>`;
+        let texto = `<p><b>${empData.nombre || empNombre}</b> - Total a pagar: ${formatUSD(totalPagar)} - Banco de horas: ${bancoTotal.toFixed(2)}</p>`;
+        if (bancoTotal >= 8) texto += `<p style="color:green;">✅ Puede tomar un día libre</p>`;
         cont.innerHTML += texto;
       });
   });
 }
 
-// 🔹 LISTENERS PARA FILTRO DE FECHAS Y PERIODO
+// ===============================
+// 🔹 LISTENERS FILTROS
+// ===============================
 const filterDate = document.getElementById("filterDate");
 const periodoResumen = document.getElementById("periodoResumen");
 
@@ -697,9 +734,9 @@ fechaHasta?.addEventListener("change", () => {
 });
 
 // ===============================
-// ✅ MODAL EDITAR HORARIO (ADMIN) - SIN BORRAR HISTORIAL
+// ✅ MODAL EDITAR HORARIO (ADMIN)
 // ===============================
-let empleadosCache = {}; // {empId: {nombre, pin, salario, tipoSalario}}
+let empleadosCache = {};
 
 async function cargarEmpleadosParaModal() {
   empleadosCache = {};
@@ -842,7 +879,6 @@ async function saveEditHorario() {
 
     const prevSnap = await ref.once("value");
     const prevVal = prevSnap.val();
-
     const editStamp = Date.now();
 
     await db.ref(`auditoria_ediciones/${empId}/${fecha}/${tipo}/${editStamp}`).set({
@@ -875,12 +911,10 @@ async function saveEditHorario() {
     setTimeout(closeEditModal, 700);
   } catch (e) {
     console.error("saveEditHorario error:", e);
-
     const msg =
       e && (e.code || e.message)
         ? `${e.code ? e.code + " - " : ""}${e.message || ""}`
         : String(e);
-
     showEditStatus("❌ " + msg, true);
   }
 }
@@ -889,7 +923,9 @@ async function saveEditHorario() {
 window.closeEditModal = window.closeEditModal || closeEditModal;
 window.closeEditHorario = window.closeEditHorario || window.closeEditModal;
 
-// 🔹 INICIO (UNA SOLA VEZ)
+// ===============================
+// 🔹 INICIO
+// ===============================
 backHome();
 setDefaultDate();
 periodoResumen.value = "diario";
