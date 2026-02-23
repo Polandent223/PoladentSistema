@@ -1,8 +1,10 @@
 // ===============================
-// ✅ POLADENT - APP.JS COMPLETO
+// ✅ POLADENT - APP.JS COMPLETO (ARREGLADO)
 // TODO EN ESPAÑOL + SALARIO USD
-// ✅ Resumen de pagos: horas trabajadas, horas NO trabajadas (descuento), banco de horas, total a pagar
-// ✅ PDF detallado con firma (por empleado)
+// ✅ Modal salario (sin prompts)
+// ✅ Resumen de pagos PRO: horas trabajadas, horas NO trabajadas (descuento), banco de horas, total a pagar
+// ✅ PDF detallado con firma (POR ID, sin errores)
+// ✅ Evita crasheos si faltan elementos HTML
 // ===============================
 
 // 🔹 ELEMENTOS PRINCIPALES
@@ -14,27 +16,27 @@ const fechaDesde = document.getElementById("fechaDesde");
 const fechaHasta = document.getElementById("fechaHasta");
 
 // 🔹 BOTONES
-document.getElementById("btnAdmin").onclick = () => goAdmin();
-document.getElementById("btnEmployee").onclick = () => goEmployee();
-document.getElementById("backHomeBtn1").onclick = () => backHome();
-document.getElementById("backHomeBtn2").onclick = () => backHome();
-document.getElementById("loginBtn").onclick = () => loginAdmin();
-document.getElementById("guardarEmpleadoBtn").onclick = () => agregarEmpleado();
-document.getElementById("exportMarcBtn").onclick = () => exportExcelFiltro();
-document.getElementById("exportSalarioBtn").onclick = () => exportExcelSalarialFiltro();
-document.getElementById("logoutBtn").onclick = () => logout();
+document.getElementById("btnAdmin")?.addEventListener("click", goAdmin);
+document.getElementById("btnEmployee")?.addEventListener("click", goEmployee);
+document.getElementById("backHomeBtn1")?.addEventListener("click", backHome);
+document.getElementById("backHomeBtn2")?.addEventListener("click", backHome);
+document.getElementById("loginBtn")?.addEventListener("click", loginAdmin);
+document.getElementById("guardarEmpleadoBtn")?.addEventListener("click", agregarEmpleado);
+document.getElementById("exportMarcBtn")?.addEventListener("click", exportExcelFiltro);
+document.getElementById("exportSalarioBtn")?.addEventListener("click", exportExcelSalarialFiltro);
+document.getElementById("logoutBtn")?.addEventListener("click", logout);
 
 // Botones empleado
-document.getElementById("entradaBtn").onclick = () => mark("entrada");
-document.getElementById("almuerzoSalidaBtn").onclick = () => mark("almuerzo_salida");
-document.getElementById("almuerzoRegresoBtn").onclick = () => mark("almuerzo_regreso");
-document.getElementById("salidaBtn").onclick = () => mark("salida");
+document.getElementById("entradaBtn")?.addEventListener("click", () => mark("entrada"));
+document.getElementById("almuerzoSalidaBtn")?.addEventListener("click", () => mark("almuerzo_salida"));
+document.getElementById("almuerzoRegresoBtn")?.addEventListener("click", () => mark("almuerzo_regreso"));
+document.getElementById("salidaBtn")?.addEventListener("click", () => mark("salida"));
 
 // Input PIN empleado
-document.getElementById("empPin").addEventListener("input", pinInputHandler);
+document.getElementById("empPin")?.addEventListener("input", pinInputHandler);
 
 // ===============================
-// 🔹 UTILIDADES
+// 🔹 UTILIDADES (USD)
 // ===============================
 const USD = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
 
@@ -54,43 +56,62 @@ function tarifaPorHoraUSD(salario, tipoSalario) {
   return s / 8;
 }
 
+// ✅ Notificaciones sin crashear
+function mostrarNotificacion(text) {
+  const notif = document.getElementById("notificaciones");
+  if (!notif) return; // ✅ evita crash si no existe
+  const div = document.createElement("div");
+  div.className = "notif";
+  div.innerText = text;
+  notif.prepend(div);
+}
+
+// ===============================
+// 🔹 NAVEGACIÓN
+// ===============================
 function hideAll() {
-  home.classList.add("hidden");
-  adminLogin.classList.add("hidden");
-  adminPanel.classList.add("hidden");
-  employeePanel.classList.add("hidden");
+  home?.classList.add("hidden");
+  adminLogin?.classList.add("hidden");
+  adminPanel?.classList.add("hidden");
+  employeePanel?.classList.add("hidden");
 }
 
 function backHome() {
   hideAll();
-  home.classList.remove("hidden");
-  document.getElementById("empNombreGrande").innerHTML = "";
-  document.getElementById("empPin").value = "";
-  document.getElementById("employeeButtons").classList.add("hidden");
-  document.getElementById("empMsg").innerHTML = "";
+  home?.classList.remove("hidden");
+
+  const empNombre = document.getElementById("empNombreGrande");
+  const empPin = document.getElementById("empPin");
+  const empBtns = document.getElementById("employeeButtons");
+  const empMsg = document.getElementById("empMsg");
+
+  if (empNombre) empNombre.innerHTML = "";
+  if (empPin) empPin.value = "";
+  empBtns?.classList.add("hidden");
+  if (empMsg) empMsg.innerHTML = "";
 }
 
 function goAdmin() {
   hideAll();
-  adminLogin.classList.remove("hidden");
+  adminLogin?.classList.remove("hidden");
 }
 function goEmployee() {
   hideAll();
-  employeePanel.classList.remove("hidden");
+  employeePanel?.classList.remove("hidden");
 }
 
 // ===============================
 // 🔹 LOGIN ADMIN
 // ===============================
 function loginAdmin() {
-  const email = document.getElementById("adminEmail").value;
-  const pass = document.getElementById("adminPass").value;
+  const email = document.getElementById("adminEmail")?.value || "";
+  const pass = document.getElementById("adminPass")?.value || "";
 
   auth
     .signInWithEmailAndPassword(email, pass)
     .then(() => {
       hideAll();
-      adminPanel.classList.remove("hidden");
+      adminPanel?.classList.remove("hidden");
       setDefaultDate();
       loadEmpleados();
       loadMarcaciones();
@@ -108,8 +129,8 @@ function logout() {
 // 🔹 EMPLEADOS
 // ===============================
 function agregarEmpleado() {
-  const nombre = document.getElementById("nombreEmpleado").value.trim();
-  const pin = document.getElementById("pinEmpleado").value.trim();
+  const nombre = (document.getElementById("nombreEmpleado")?.value || "").trim();
+  const pin = (document.getElementById("pinEmpleado")?.value || "").trim();
 
   if (!nombre || !pin) {
     alert("Completa todos los campos");
@@ -125,31 +146,36 @@ function agregarEmpleado() {
     tipoSalario: "diario",
   });
 
-  document.getElementById("nombreEmpleado").value = "";
-  document.getElementById("pinEmpleado").value = "";
+  const n = document.getElementById("nombreEmpleado");
+  const p = document.getElementById("pinEmpleado");
+  if (n) n.value = "";
+  if (p) p.value = "";
 }
 
 function cargarEmpleados() {
   const cont = document.getElementById("listaEmpleados");
+  if (!cont) return;
 
   db.ref("empleados").on("value", (snap) => {
     cont.innerHTML = "";
 
     snap.forEach((emp) => {
       const data = emp.val() || {};
-      const salarioTexto = `${formatUSD(data.salario)} (${data.tipoSalario || "diario"})`;
+      const salarioTexto = `${formatUSD(data.salario)} (${(data.tipoSalario || "diario").toLowerCase()})`;
 
-      cont.innerHTML += `<div class="empleado">
-        <strong>${data.nombre || "Sin nombre"}</strong><br>
-        PIN: ${data.pin || ""}<br>
-        Salario: ${salarioTexto}
-        <div class="empActions">
-          <button onclick="borrarEmpleado('${emp.key}')">Borrar</button>
-          <button onclick="asignarSalario('${emp.key}')">Asignar salario</button>
-          <button onclick="openEditModal('${emp.key}')">Editar horario</button>
-          <button onclick="generarReciboDetallado('${emp.key}')">Recibo PDF (firma)</button>
+      cont.innerHTML += `
+        <div class="empleado">
+          <strong>${data.nombre || "Sin nombre"}</strong><br>
+          PIN: ${data.pin || ""}<br>
+          Salario: ${salarioTexto}
+          <div class="empActions">
+            <button onclick="borrarEmpleado('${emp.key}')">Borrar</button>
+            <button onclick="asignarSalario('${emp.key}')">Asignar salario</button>
+            <button onclick="openEditModal('${emp.key}')">Editar horario</button>
+            <button onclick="generarReciboDetalladoPorId('${emp.key}')">Recibo PDF (firma)</button>
+          </div>
         </div>
-      </div>`;
+      `;
     });
   });
 }
@@ -193,9 +219,13 @@ async function openSalarioModal(empID) {
   if (!modal || !back) return;
 
   // Reset
-  document.getElementById("salarioValor").value = "";
-  document.getElementById("salarioTipo").value = "diario";
-  document.getElementById("salarioEmpNombre").value = "";
+  const v = document.getElementById("salarioValor");
+  const t = document.getElementById("salarioTipo");
+  const n = document.getElementById("salarioEmpNombre");
+
+  if (v) v.value = "";
+  if (t) t.value = "diario";
+  if (n) n.value = "";
   hideSalarioStatus();
 
   // Cargar empleado
@@ -205,9 +235,9 @@ async function openSalarioModal(empID) {
   if (!emp) {
     showSalarioStatus("⚠️ Empleado no encontrado.", true);
   } else {
-    document.getElementById("salarioEmpNombre").value = emp.nombre || "Sin nombre";
-    if (emp.salario != null) document.getElementById("salarioValor").value = emp.salario;
-    if (emp.tipoSalario) document.getElementById("salarioTipo").value = emp.tipoSalario;
+    if (n) n.value = emp.nombre || "Sin nombre";
+    if (v && emp.salario != null) v.value = emp.salario;
+    if (t && emp.tipoSalario) t.value = emp.tipoSalario;
   }
 
   modal.classList.remove("hidden");
@@ -227,9 +257,9 @@ async function saveSalarioModal() {
   try {
     if (!salarioEmpIdActual) return;
 
-    const salarioRaw = document.getElementById("salarioValor").value;
+    const salarioRaw = document.getElementById("salarioValor")?.value || "";
     const salario = parseFloat(String(salarioRaw).replace(",", "."));
-    const tipo = document.getElementById("salarioTipo").value;
+    const tipo = document.getElementById("salarioTipo")?.value || "diario";
 
     if (Number.isNaN(salario) || salario <= 0) {
       showSalarioStatus("⚠️ Ingresa un salario válido (ej: 200 o 200.50).", true);
@@ -260,7 +290,7 @@ document.getElementById("salarioCloseBtn")?.addEventListener("click", closeSalar
 document.getElementById("salarioModalBackdrop")?.addEventListener("click", closeSalarioModal);
 document.getElementById("salarioSaveBtn")?.addEventListener("click", saveSalarioModal);
 
-// ✅ reemplazo del prompt
+// ✅ Reemplazo del prompt
 function asignarSalario(empID) {
   openSalarioModal(empID);
 }
@@ -272,11 +302,12 @@ let empleadoActual = null;
 const etapas = ["entrada", "almuerzo_salida", "almuerzo_regreso", "salida"];
 
 function pinInputHandler() {
-  const pin = document.getElementById("empPin").value.trim();
+  const pin = (document.getElementById("empPin")?.value || "").trim();
 
   if (!pin) {
-    document.getElementById("employeeButtons").classList.add("hidden");
-    document.getElementById("empNombreGrande").innerHTML = "";
+    document.getElementById("employeeButtons")?.classList.add("hidden");
+    const ng = document.getElementById("empNombreGrande");
+    if (ng) ng.innerHTML = "";
     return;
   }
 
@@ -285,17 +316,22 @@ function pinInputHandler() {
     .equalTo(pin)
     .once("value", (snap) => {
       if (!snap.exists()) {
-        document.getElementById("employeeButtons").classList.add("hidden");
-        document.getElementById("empNombreGrande").innerHTML = "";
-        document.getElementById("empMsg").innerHTML = "⚠️ PIN no encontrado";
+        document.getElementById("employeeButtons")?.classList.add("hidden");
+        const ng = document.getElementById("empNombreGrande");
+        if (ng) ng.innerHTML = "";
+        const msg = document.getElementById("empMsg");
+        if (msg) msg.innerHTML = "⚠️ PIN no encontrado";
+        empleadoActual = null;
         return;
       }
 
       snap.forEach((empSnap) => {
-        empleadoActual = { id: empSnap.key, nombre: empSnap.val().nombre };
-        document.getElementById("empNombreGrande").innerHTML = empleadoActual.nombre;
-        document.getElementById("employeeButtons").classList.remove("hidden");
-        document.getElementById("empMsg").innerHTML = "";
+        empleadoActual = { id: empSnap.key, nombre: empSnap.val()?.nombre || "Sin nombre" };
+        const ng = document.getElementById("empNombreGrande");
+        if (ng) ng.innerHTML = empleadoActual.nombre;
+        document.getElementById("employeeButtons")?.classList.remove("hidden");
+        const msg = document.getElementById("empMsg");
+        if (msg) msg.innerHTML = "";
       });
     });
 }
@@ -307,43 +343,55 @@ function mark(tipo) {
   if (!empleadoActual) return;
 
   const now = new Date();
-  const yyyy = now.getFullYear(),
-    mm = now.getMonth() + 1,
-    dd = now.getDate();
+  const yyyy = now.getFullYear();
+  const mm = now.getMonth() + 1;
+  const dd = now.getDate();
   const fecha = `${yyyy}-${mm < 10 ? "0" + mm : mm}-${dd < 10 ? "0" + dd : dd}`;
   const ref = db.ref("marcaciones/" + empleadoActual.id + "/" + fecha);
 
   ref.once("value", (snap) => {
     const marc = snap.val() ? snap.val() : {};
-    let lastEtapa = null,
-      lastTime = 0;
+    let lastEtapa = null;
+    let lastTime = 0;
 
     Object.values(marc).forEach((m) => {
-      if (m.timestamp && m.timestamp > lastTime) {
+      if (m?.timestamp && m.timestamp > lastTime) {
         lastTime = m.timestamp;
         lastEtapa = m.tipo;
       }
     });
 
     const lastIndex = lastEtapa ? etapas.indexOf(lastEtapa) : -1;
+
     if (lastIndex === -1 && tipo !== "entrada") {
-      document.getElementById("empMsg").innerHTML = "⚠️ Debes iniciar con Entrada";
+      const msg = document.getElementById("empMsg");
+      if (msg) msg.innerHTML = "⚠️ Debes iniciar con Entrada";
       return;
     }
+
     if (lastIndex !== -1 && etapas.indexOf(tipo) !== lastIndex + 1) {
-      document.getElementById("empMsg").innerHTML = "⚠️ Debes seguir el orden de marcación";
+      const msg = document.getElementById("empMsg");
+      if (msg) msg.innerHTML = "⚠️ Debes seguir el orden de marcación";
       return;
     }
 
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (pos) => {
-          const lat = pos.coords.latitude,
-            lon = pos.coords.longitude;
-          const hora = now.toLocaleTimeString(),
-            timestamp = now.getTime();
+          const lat = pos.coords.latitude;
+          const lon = pos.coords.longitude;
+          const hora = now.toLocaleTimeString();
+          const timestamp = now.getTime();
 
-          ref.child(tipo).set({ nombre: empleadoActual.nombre, tipo, fecha, hora, timestamp, lat, lon });
+          ref.child(tipo).set({
+            nombre: empleadoActual.nombre,
+            tipo,
+            fecha,
+            hora,
+            timestamp,
+            lat,
+            lon,
+          });
 
           let frase = "";
           if (tipo === "entrada") frase = "¡Buen inicio de jornada!";
@@ -351,7 +399,9 @@ function mark(tipo) {
           if (tipo === "almuerzo_regreso") frase = "Bienvenido de vuelta 👋";
           if (tipo === "salida") frase = "¡Buen trabajo!";
 
-          document.getElementById("empMsg").innerHTML = `${empleadoActual.nombre} | ${frase} (${hora})`;
+          const msg = document.getElementById("empMsg");
+          if (msg) msg.innerHTML = `${empleadoActual.nombre} | ${frase} (${hora})`;
+
           mostrarNotificacion(`${empleadoActual.nombre} marcó ${tipo} a las ${hora}`);
 
           setTimeout(backHome, 2000);
@@ -360,21 +410,23 @@ function mark(tipo) {
         },
         () => alert("No se pudo obtener la ubicación GPS")
       );
-    } else alert("GPS no disponible");
+    } else {
+      alert("GPS no disponible");
+    }
   });
 }
 
 // ===============================
 // 🔹 ADMIN – RESUMEN MARCACIONES
 // ===============================
-let excelRows = [],
-  excelSalarial = [],
-  allMarcaciones = {};
+let excelRows = [];
+let excelSalarial = [];
+let allMarcaciones = {};
 
 function loadMarcaciones() {
   db.ref("marcaciones").on("value", (snap) => {
     allMarcaciones = snap.val() || {};
-    renderAdminList(document.getElementById("filterDate").value);
+    renderAdminList(document.getElementById("filterDate")?.value || "");
     updateChart();
   });
 }
@@ -382,22 +434,21 @@ function loadMarcaciones() {
 function renderAdminList(dateFilter) {
   const cont = document.getElementById("adminList");
   const notif = document.getElementById("notificaciones");
+  if (!cont || !notif) return;
 
   cont.innerHTML = "";
   notif.innerHTML = "";
   excelRows = [];
   excelSalarial = [];
 
-  const periodo = document.getElementById("periodoResumen").value;
+  const periodo = document.getElementById("periodoResumen")?.value || "diario";
 
   const empIDs = Object.keys(allMarcaciones).sort((a, b) => {
-    const nameA = Object.values(allMarcaciones[a])[0]
-      ? Object.values(Object.values(allMarcaciones[a])[0])[0].nombre
-      : "";
-    const nameB = Object.values(allMarcaciones[b])[0]
-      ? Object.values(Object.values(allMarcaciones[b])[0])[0].nombre
-      : "";
-    return nameA.localeCompare(nameB);
+    const firstA = Object.values(allMarcaciones[a] || {})[0];
+    const firstB = Object.values(allMarcaciones[b] || {})[0];
+    const nameA = firstA ? Object.values(firstA || {})[0]?.nombre || "" : "";
+    const nameB = firstB ? Object.values(firstB || {})[0]?.nombre || "" : "";
+    return String(nameA).localeCompare(String(nameB));
   });
 
   empIDs.forEach((empID) => {
@@ -406,9 +457,9 @@ function renderAdminList(dateFilter) {
     Object.keys(fechas)
       .sort()
       .forEach((fecha) => {
-        let fechaObj = new Date(fecha);
-        let desde = fechaDesde.value ? new Date(fechaDesde.value) : null;
-        let hasta = fechaHasta.value ? new Date(fechaHasta.value) : null;
+        const fechaObj = new Date(fecha);
+        const desde = fechaDesde?.value ? new Date(fechaDesde.value) : null;
+        const hasta = fechaHasta?.value ? new Date(fechaHasta.value) : null;
 
         if (desde && fechaObj < desde) return;
         if (hasta && fechaObj > hasta) return;
@@ -424,38 +475,40 @@ function renderAdminList(dateFilter) {
           .sort()
           .forEach((tipo) => {
             const data = tipos[tipo] || {};
-            if (!data.nombre) data.nombre = "Sin nombre";
+            const nombre = data.nombre || "Sin nombre";
 
-            cont.innerHTML += `<p><b>${data.nombre}</b> | ${data.tipo} | ${fecha} | ${data.hora}</p>`;
-            excelRows.push([data.nombre, fecha, data.tipo, data.hora]);
+            cont.innerHTML += `<p><b>${nombre}</b> | ${data.tipo || tipo} | ${fecha} | ${data.hora || ""}</p>`;
+
+            excelRows.push([nombre, fecha, data.tipo || tipo, data.hora || ""]);
             excelSalarial.push({
-              nombre: data.nombre,
-              fecha: fecha,
-              tipo: data.tipo,
-              timestamp: data.timestamp,
+              empID,
+              nombre,
+              fecha,
+              tipo: data.tipo || tipo,
+              timestamp: data.timestamp || null,
             });
 
-            notif.innerHTML += `<div class="notif">${data.nombre} marcó ${data.tipo} a las ${data.hora}</div>`;
+            notif.innerHTML += `<div class="notif">${nombre} marcó ${data.tipo || tipo} a las ${data.hora || ""}</div>`;
           });
       });
   });
 
-  renderPagos(); // ✅ ahora el resumen es PRO con descuento + firma PDF
+  renderPagos(); // ✅ resumen PRO
 }
 
 // ===============================
-// 🔹 EXPORTACIÓN EXCEL
+// 🔹 EXPORTACIÓN EXCEL (MARCACIONES)
 // ===============================
 function exportExcelFiltro() {
-  const fecha = document.getElementById("filterDate").value;
-  const periodo = document.getElementById("periodoResumen").value;
+  const fecha = document.getElementById("filterDate")?.value || "";
+  const periodo = document.getElementById("periodoResumen")?.value || "diario";
   const rows = [["Nombre", "Fecha", "Tipo", "Hora"]];
 
   for (const m of excelRows) {
     const mFecha = m[1];
-    if (periodo === "diario" && mFecha !== fecha) continue;
-    if (periodo === "quincenal" && !mFecha.startsWith(fecha.substring(0, 7))) continue;
-    if (periodo === "mensual" && !mFecha.startsWith(fecha.substring(0, 4) + "-" + fecha.substring(5, 7))) continue;
+    if (periodo === "diario" && fecha && mFecha !== fecha) continue;
+    if (periodo === "quincenal" && fecha && !mFecha.startsWith(fecha.substring(0, 7))) continue;
+    if (periodo === "mensual" && fecha && !mFecha.startsWith(fecha.substring(0, 4) + "-" + fecha.substring(5, 7))) continue;
     rows.push(m);
   }
 
@@ -464,39 +517,44 @@ function exportExcelFiltro() {
   XLSX.writeFile(wb, "Poladent_Marcaciones_Filtro.xlsx");
 }
 
+// ===============================
+// 🔹 EXPORTACIÓN EXCEL (SALARIO)
+// ===============================
 function exportExcelSalarialFiltro() {
-  const desde = fechaDesde.value;
-  const hasta = fechaHasta.value;
+  const desde = fechaDesde?.value || "";
+  const hasta = fechaHasta?.value || "";
   const resumen = {};
 
   for (const m of excelSalarial) {
     if (!estaEnRango(m.fecha, desde, hasta)) continue;
-    if (!resumen[m.nombre]) resumen[m.nombre] = { dias: {} };
-    if (!resumen[m.nombre].dias[m.fecha])
-      resumen[m.nombre].dias[m.fecha] = { entrada: null, salida: null, almuerzo_salida: null, almuerzo_regreso: null };
-    resumen[m.nombre].dias[m.fecha][m.tipo] = m.timestamp;
+    if (!resumen[m.empID]) resumen[m.empID] = { nombre: m.nombre, dias: {} };
+    if (!resumen[m.empID].dias[m.fecha]) {
+      resumen[m.empID].dias[m.fecha] = { entrada: null, salida: null, almuerzo_salida: null, almuerzo_regreso: null };
+    }
+    resumen[m.empID].dias[m.fecha][m.tipo] = m.timestamp;
   }
 
-  const wsData = [["Nombre", "Fecha", "Horas trabajadas", "Horas extra", "Banco de horas", "Pago del día (USD)"]];
+  const wsData = [["Empleado", "Fecha", "Horas trabajadas", "Horas NO trabajadas", "Banco de horas", "Pago del día (USD)"]];
 
-  const empleadosKeys = Object.keys(resumen);
+  const empIDs = Object.keys(resumen);
 
-  let promesas = empleadosKeys.map((empNombre) => {
+  const promesas = empIDs.map((empID) => {
     return db
-      .ref("empleados")
-      .orderByChild("nombre")
-      .equalTo(empNombre)
+      .ref("empleados/" + empID)
       .once("value")
       .then((snap) => {
-        const empData = Object.values(snap.val() || {})[0] || {};
-        const salario = empData?.salario || 0;
-        const tipoSalario = empData?.tipoSalario || "diario";
+        const empData = snap.val() || {};
+        const empNombre = empData.nombre || resumen[empID].nombre || "Sin nombre";
+
+        const salario = Number(empData.salario || 0);
+        const tipoSalario = empData.tipoSalario || "diario";
+        const tarifaHora = tarifaPorHoraUSD(salario, tipoSalario);
 
         let bancoTotal = 0;
         let totalPagar = 0;
 
-        for (const dia in resumen[empNombre].dias) {
-          const d = resumen[empNombre].dias[dia];
+        for (const dia in resumen[empID].dias) {
+          const d = resumen[empID].dias[dia];
           if (!d.entrada || !d.salida) continue;
 
           let almuerzo = 0;
@@ -504,19 +562,19 @@ function exportExcelSalarialFiltro() {
             almuerzo = (d.almuerzo_regreso - d.almuerzo_salida) / 3600000;
           }
 
-          let hrs = (d.salida - d.entrada) / 3600000 - almuerzo;
-          let extra = Math.max(0, hrs - 8);
-          let normales = Math.min(8, hrs);
+          let horas = (d.salida - d.entrada) / 3600000 - almuerzo;
+          if (!Number.isFinite(horas) || horas < 0) horas = 0;
+
+          const normales = Math.min(8, horas);
+          const extra = Math.max(0, horas - 8);
+          const noTrab = Math.max(0, 8 - normales);
+
           bancoTotal += extra;
 
-          let pagoDia = 0;
-          if (tipoSalario === "diario") pagoDia = normales * (salario / 8);
-          else if (tipoSalario === "quincenal") pagoDia = normales * (salario / 15 / 8);
-          else if (tipoSalario === "mensual") pagoDia = normales * (salario / 30 / 8);
-
+          const pagoDia = normales * tarifaHora;
           totalPagar += pagoDia;
 
-          wsData.push([empNombre, dia, normales.toFixed(2), extra.toFixed(2), bancoTotal.toFixed(2), pagoDia.toFixed(2)]);
+          wsData.push([empNombre, dia, normales.toFixed(2), noTrab.toFixed(2), bancoTotal.toFixed(2), pagoDia.toFixed(2)]);
         }
 
         wsData.push([empNombre, "TOTAL", "", "", bancoTotal.toFixed(2), totalPagar.toFixed(2)]);
@@ -540,18 +598,8 @@ function setDefaultDate() {
   let day = today.getDate();
   if (day < 10) day = "0" + day;
   const yyyy = today.getFullYear();
-  document.getElementById("filterDate").value = `${yyyy}-${month}-${day}`;
-}
-
-// ===============================
-// 🔹 NOTIFICACIONES
-// ===============================
-function mostrarNotificacion(text) {
-  const notif = document.getElementById("notificaciones");
-  const div = document.createElement("div");
-  div.className = "notif";
-  div.innerText = text;
-  notif.prepend(div);
+  const input = document.getElementById("filterDate");
+  if (input) input.value = `${yyyy}-${month}-${day}`;
 }
 
 // ===============================
@@ -562,7 +610,7 @@ function renderChart(startDate = "", endDate = "", periodo = "diario", dateFilte
   if (!canvas) return;
   const ctx = canvas.getContext("2d");
 
-  let chartData = {
+  const chartData = {
     labels: [],
     datasets: [{ label: "Horas trabajadas", data: [], backgroundColor: "rgba(0,123,255,0.5)" }],
   };
@@ -579,12 +627,14 @@ function renderChart(startDate = "", endDate = "", periodo = "diario", dateFilte
       if (filtroFin && fechaObj > filtroFin) continue;
 
       const tipos = fechas[fecha] || {};
-      let entrada = null,
-        salida = null;
+      let entrada = null;
+      let salida = null;
+
       Object.values(tipos).forEach((m) => {
-        if (m.tipo === "entrada") entrada = m.timestamp;
-        if (m.tipo === "salida") salida = m.timestamp;
+        if (m?.tipo === "entrada") entrada = m.timestamp;
+        if (m?.tipo === "salida") salida = m.timestamp;
       });
+
       if (!entrada || !salida) continue;
 
       const nombre = Object.values(tipos)[0]?.nombre || "Sin nombre";
@@ -631,7 +681,7 @@ function toggleSection(id) {
 
 // ===============================
 // 🔹 RESUMEN DE PAGOS (PRO)
-// Horas trabajadas, horas no trabajadas (descuento), banco de horas, total a pagar, botón PDF firma
+// Horas trabajadas, horas NO trabajadas (descuento), banco de horas, total a pagar, botón PDF firma
 // ===============================
 function estaEnRango(fecha, desde, hasta) {
   const f = new Date(fecha);
@@ -648,59 +698,56 @@ function renderPagos() {
 
   cont.innerHTML = "<h4>💰 Resumen de pagos y banco de horas (USD)</h4>";
 
-  const desde = fechaDesde.value;
-  const hasta = fechaHasta.value;
+  const desde = fechaDesde?.value || "";
+  const hasta = fechaHasta?.value || "";
 
-  // Armamos estructura por empleado y por día desde excelSalarial
+  // ✅ armamos por EMPID (más seguro)
   const resumen = {};
   for (const m of excelSalarial) {
     if (!estaEnRango(m.fecha, desde, hasta)) continue;
 
-    if (!resumen[m.nombre]) resumen[m.nombre] = { dias: {} };
-    if (!resumen[m.nombre].dias[m.fecha]) {
-      resumen[m.nombre].dias[m.fecha] = {
+    if (!resumen[m.empID]) resumen[m.empID] = { nombre: m.nombre, dias: {} };
+    if (!resumen[m.empID].dias[m.fecha]) {
+      resumen[m.empID].dias[m.fecha] = {
         entrada: null,
         salida: null,
         almuerzo_salida: null,
         almuerzo_regreso: null,
       };
     }
-    resumen[m.nombre].dias[m.fecha][m.tipo] = m.timestamp;
+    resumen[m.empID].dias[m.fecha][m.tipo] = m.timestamp;
   }
 
-  const empleadosKeys = Object.keys(resumen);
-  if (empleadosKeys.length === 0) {
+  const empIDs = Object.keys(resumen);
+  if (empIDs.length === 0) {
     cont.innerHTML += `<p style="opacity:.8;">No hay datos en el rango seleccionado.</p>`;
     return;
   }
 
-  empleadosKeys.forEach((empNombre) => {
-    db.ref("empleados")
-      .orderByChild("nombre")
-      .equalTo(empNombre)
+  empIDs.forEach((empID) => {
+    db.ref("empleados/" + empID)
       .once("value")
       .then((snap) => {
-        const empData = Object.values(snap.val() || {})[0] || {};
-        const nombreMostrar = empData.nombre || empNombre;
+        const empData = snap.val() || {};
+        const nombreMostrar = empData.nombre || resumen[empID].nombre || "Sin nombre";
 
-        const salario = Number(empData?.salario || 0);
-        const tipoSalario = empData?.tipoSalario || "diario";
-
+        const salario = Number(empData.salario || 0);
+        const tipoSalario = empData.tipoSalario || "diario";
         const tarifaHora = tarifaPorHoraUSD(salario, tipoSalario);
 
-        let horasNormalesTot = 0; // máx 8 por día
-        let horasExtraTot = 0;    // >8 (banco)
-        let horasNoTrabTot = 0;   // faltantes (descuento)
+        let horasNormalesTot = 0;
+        let horasExtraTot = 0;
+        let horasNoTrabTot = 0;
         let totalPagar = 0;
         let totalDescuento = 0;
 
-        const dias = resumen[empNombre].dias;
+        const dias = resumen[empID].dias || {};
         const diasOrdenados = Object.keys(dias).sort();
 
         const detalleDia = [];
 
         diasOrdenados.forEach((dia) => {
-          const d = dias[dia];
+          const d = dias[dia] || {};
           if (!d.entrada || !d.salida) return;
 
           let almuerzo = 0;
@@ -709,8 +756,7 @@ function renderPagos() {
           }
 
           let horas = (d.salida - d.entrada) / 3600000 - almuerzo;
-          if (!Number.isFinite(horas)) return;
-          if (horas < 0) horas = 0;
+          if (!Number.isFinite(horas) || horas < 0) horas = 0;
 
           const normales = Math.min(8, horas);
           const extra = Math.max(0, horas - 8);
@@ -775,7 +821,7 @@ function renderPagos() {
             </div>
 
             <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;">
-              <button onclick="generarReciboDetallado('${empData.__id || ""}', '${nombreMostrar.replace(/'/g, "\\'")}')">
+              <button onclick="generarReciboDetalladoPorId('${empID}')">
                 🧾 Generar recibo PDF (firma)
               </button>
             </div>
@@ -788,26 +834,19 @@ function renderPagos() {
 }
 
 // ===============================
-// 🧾 PDF DETALLADO CON FIRMA (USD)
+// 🧾 PDF DETALLADO CON FIRMA (USD) - POR ID (CORRECTO)
 // ===============================
-// Nota: tu lista viene por nombre (excelSalarial). Aquí buscamos el empleado por nombre,
-// y generamos el PDF en base a marcaciones reales y rango desde/hasta.
+async function generarReciboDetalladoPorId(empID) {
+  const empSnap = await db.ref("empleados/" + empID).once("value");
+  const emp = empSnap.val();
 
-async function generarReciboDetallado(_empIdInutil, nombreEmpleado) {
-  // Buscar empleado por nombre
-  const snap = await db.ref("empleados").orderByChild("nombre").equalTo(nombreEmpleado).once("value");
-  const obj = snap.val();
-
-  if (!obj) {
+  if (!emp) {
     alert("No se encontró el empleado en la base de datos.");
     return;
   }
 
-  const empID = Object.keys(obj)[0];
-  const emp = obj[empID] || {};
-
-  const desde = fechaDesde.value;
-  const hasta = fechaHasta.value;
+  const desde = fechaDesde?.value || "";
+  const hasta = fechaHasta?.value || "";
 
   const marcSnap = await db.ref("marcaciones/" + empID).once("value");
   const marc = marcSnap.val() || {};
@@ -836,7 +875,6 @@ async function generarReciboDetallado(_empIdInutil, nombreEmpleado) {
     const tipos = marc[dia] || {};
     const entrada = tipos.entrada?.timestamp || null;
     const salida = tipos.salida?.timestamp || null;
-
     if (!entrada || !salida) return;
 
     let almuerzo = 0;
@@ -873,7 +911,7 @@ async function generarReciboDetallado(_empIdInutil, nombreEmpleado) {
   y += 10;
 
   doc.setFontSize(11);
-  doc.text(`Empleado: ${emp.nombre || nombreEmpleado || "Sin nombre"}`, 14, y);
+  doc.text(`Empleado: ${emp.nombre || "Sin nombre"}`, 14, y);
   y += 6;
   doc.text(`Periodo: ${desde || "—"}  a  ${hasta || "—"}`, 14, y);
   y += 6;
@@ -889,7 +927,6 @@ async function generarReciboDetallado(_empIdInutil, nombreEmpleado) {
   y += 6;
   doc.text(`Banco de horas (extra): ${horasExtraTot.toFixed(2)}`, 14, y);
   y += 6;
-
   doc.text(`Descuento total: ${formatUSD(totalDescuento)}`, 14, y);
   y += 6;
 
@@ -935,7 +972,7 @@ async function generarReciboDetallado(_empIdInutil, nombreEmpleado) {
   y += 10;
   doc.text("Fecha de firma: ____/____/______", 14, y);
 
-  doc.save(`Recibo_${(emp.nombre || nombreEmpleado || "Empleado").replace(/\s+/g, "_")}.pdf`);
+  doc.save(`Recibo_${String(emp.nombre || "Empleado").replace(/\s+/g, "_")}.pdf`);
 }
 
 // ===============================
@@ -949,20 +986,20 @@ filterDate?.addEventListener("change", () => {
   updateChart();
 });
 periodoResumen?.addEventListener("change", () => {
-  renderAdminList(filterDate.value);
+  renderAdminList(filterDate?.value || "");
   updateChart();
 });
 fechaDesde?.addEventListener("change", () => {
-  renderAdminList(filterDate.value);
+  renderAdminList(filterDate?.value || "");
   updateChart();
 });
 fechaHasta?.addEventListener("change", () => {
-  renderAdminList(filterDate.value);
+  renderAdminList(filterDate?.value || "");
   updateChart();
 });
 
 // ===============================
-// ✅ MODAL EDITAR HORARIO (ADMIN)
+// ✅ MODAL EDITAR HORARIO (ADMIN) - SIN BORRAR HISTORIAL
 // ===============================
 let empleadosCache = {};
 
@@ -1082,10 +1119,10 @@ document.getElementById("editSaveBtn")?.addEventListener("click", saveEditHorari
 
 async function saveEditHorario() {
   try {
-    const empId = document.getElementById("editEmpSelect").value;
-    const fecha = document.getElementById("editFecha").value;
-    const tipo = document.getElementById("editTipo").value;
-    const hora = document.getElementById("editHora").value;
+    const empId = document.getElementById("editEmpSelect")?.value || "";
+    const fecha = document.getElementById("editFecha")?.value || "";
+    const tipo = document.getElementById("editTipo")?.value || "";
+    const hora = document.getElementById("editHora")?.value || "";
 
     if (!empId || !empleadosCache[empId]) {
       showEditStatus("⚠️ Selecciona un empleado válido.", true);
@@ -1156,7 +1193,7 @@ window.closeEditHorario = window.closeEditHorario || window.closeEditModal;
 // ===============================
 backHome();
 setDefaultDate();
-periodoResumen.value = "diario";
+if (periodoResumen) periodoResumen.value = "diario";
 loadEmpleados();
 loadMarcaciones();
 updateChart();
