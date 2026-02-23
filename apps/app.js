@@ -129,15 +129,101 @@ function borrarEmpleado(id) {
   }
 }
 
+// ==================================================
+// ✅ MODAL ASIGNAR SALARIO (ADMIN) (SIN PROMPTS)
+// ==================================================
+let salarioEmpIdActual = null;
+
+function showSalarioStatus(msg, isError = false) {
+  const box = document.getElementById("salarioStatus");
+  if (!box) return;
+  box.style.display = "block";
+  box.innerText = msg;
+  box.style.borderColor = isError ? "rgba(220,53,69,.35)" : "rgba(13,110,253,.25)";
+  box.style.background = isError ? "rgba(220,53,69,.08)" : "rgba(13,110,253,.08)";
+}
+
+function hideSalarioStatus() {
+  const box = document.getElementById("salarioStatus");
+  if (!box) return;
+  box.style.display = "none";
+  box.innerText = "";
+}
+
+async function openSalarioModal(empID) {
+  salarioEmpIdActual = empID;
+
+  const modal = document.getElementById("salarioModal");
+  const back = document.getElementById("salarioModalBackdrop");
+  if (!modal || !back) return;
+
+  // reset
+  document.getElementById("salarioValor").value = "";
+  document.getElementById("salarioTipo").value = "diario";
+  document.getElementById("salarioEmpNombre").value = "";
+  hideSalarioStatus();
+
+  // cargar empleado
+  const snap = await db.ref("empleados/" + empID).once("value");
+  const emp = snap.val();
+  if (!emp) {
+    showSalarioStatus("⚠️ Empleado no encontrado.", true);
+  } else {
+    document.getElementById("salarioEmpNombre").value = emp.nombre || "Sin nombre";
+    if (emp.salario != null) document.getElementById("salarioValor").value = emp.salario;
+    if (emp.tipoSalario) document.getElementById("salarioTipo").value = emp.tipoSalario;
+  }
+
+  modal.classList.remove("hidden");
+  back.classList.remove("hidden");
+}
+
+function closeSalarioModal() {
+  const modal = document.getElementById("salarioModal");
+  const back = document.getElementById("salarioModalBackdrop");
+  if (modal) modal.classList.add("hidden");
+  if (back) back.classList.add("hidden");
+  hideSalarioStatus();
+  salarioEmpIdActual = null;
+}
+
+async function saveSalarioModal() {
+  try {
+    if (!salarioEmpIdActual) return;
+
+    const salarioRaw = document.getElementById("salarioValor").value;
+    const salario = parseFloat(String(salarioRaw).replace(",", "."));
+    const tipo = document.getElementById("salarioTipo").value;
+
+    if (Number.isNaN(salario) || salario <= 0) {
+      showSalarioStatus("⚠️ Ingresa un salario válido.", true);
+      return;
+    }
+
+    await db.ref("empleados/" + salarioEmpIdActual).update({
+      salario,
+      tipoSalario: tipo,
+    });
+
+    showSalarioStatus("✅ Guardado correctamente.", false);
+
+    loadEmpleados();
+    setTimeout(closeSalarioModal, 400);
+  } catch (e) {
+    console.error(e);
+    showSalarioStatus("❌ Error al guardar (revisa consola).", true);
+  }
+}
+
+// listeners modal salario
+document.getElementById("salarioCancelBtn")?.addEventListener("click", closeSalarioModal);
+document.getElementById("salarioCloseBtn")?.addEventListener("click", closeSalarioModal);
+document.getElementById("salarioModalBackdrop")?.addEventListener("click", closeSalarioModal);
+document.getElementById("salarioSaveBtn")?.addEventListener("click", saveSalarioModal);
+
+// ✅ tu botón llama esto:
 function asignarSalario(empID) {
-  const salario = prompt("Ingresa el salario:");
-  if (!salario) return;
-  const tipo = prompt("Tipo de salario (diario/quincenal/mensual):", "diario");
-  db.ref("empleados/" + empID).update({
-    salario: parseFloat(salario),
-    tipoSalario: tipo,
-  });
-  loadEmpleados();
+  openSalarioModal(empID);
 }
 
 // 🔹 OLERITE PDF (básico)
@@ -604,18 +690,14 @@ fechaHasta.addEventListener("change", () => {
 // ===============================
 // ✅ MODAL EDITAR HORARIO (ADMIN) - SIN BORRAR HISTORIAL
 // ===============================
-
 let empleadosCache = {}; // {empId: {nombre, pin, salario, tipoSalario}}
 
 async function cargarEmpleadosParaModal() {
   empleadosCache = {};
-
   const snap = await db.ref("empleados").once("value");
-
   snap.forEach((emp) => {
     empleadosCache[emp.key] = emp.val();
   });
-
   fillEmployeeSelect();
 }
 
@@ -722,6 +804,7 @@ function closeEditModal() {
     box.innerText = "";
   }
 }
+
 // Botones del modal
 document.getElementById("editCancelBtn")?.addEventListener("click", closeEditModal);
 document.getElementById("editCloseBtn")?.addEventListener("click", closeEditModal);
@@ -790,20 +873,19 @@ async function saveEditHorario() {
     updateChart();
 
     setTimeout(closeEditModal, 700);
- } catch (e) {
-  console.error("saveEditHorario error:", e);
+  } catch (e) {
+    console.error("saveEditHorario error:", e);
 
-  const msg = (e && (e.code || e.message)) 
-    ? `${e.code ? e.code + " - " : ""}${e.message || ""}`
-    : String(e);
+    const msg =
+      e && (e.code || e.message)
+        ? `${e.code ? e.code + " - " : ""}${e.message || ""}`
+        : String(e);
 
-  showEditStatus("❌ " + msg, true);
+    showEditStatus("❌ " + msg, true);
+  }
 }
-}
 
-// ✅ FIX: si tu código llama closeEditModal pero tu función real se llama closeEditModal / closeEditHorario / etc.
-// Creamos alias seguros para que SIEMPRE exista.
-
+// ✅ FIX alias
 window.closeEditModal = window.closeEditModal || function () {
   const modal = document.getElementById("editModal");
   const back = document.getElementById("editModalBackdrop");
@@ -816,7 +898,6 @@ window.closeEditModal = window.closeEditModal || function () {
     box.innerText = "";
   }
 };
-
 window.closeEditHorario = window.closeEditHorario || window.closeEditModal;
 
 // 🔹 INICIO (UNA SOLA VEZ)
