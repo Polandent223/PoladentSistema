@@ -26,7 +26,7 @@
 
   <!-- HEADER -->
   <div class="appHeader">
-    <h1>★彡[🦷ᴘᴏʟᴀᴅᴇɴᴛ🦷]彡★</h1>
+    <h1>★彡[🦷 POLADENT 🦷]彡★</h1>
     <p>Sistema de control de asistencia y horas laborales</p>
   </div>
 
@@ -69,7 +69,6 @@
     </div>
 
     <!-- ===== MODAL: EDITAR HORARIO (ADMIN) ===== -->
-    <!-- (Este modal NO borra historial. Solo es interfaz.) -->
     <div id="editModalBackdrop" class="modalBackdrop hidden"></div>
 
     <div id="editModal" class="modal hidden" role="dialog" aria-modal="true">
@@ -104,41 +103,41 @@
         <button type="button" id="editCancelBtn" class="danger">Cancelar</button>
       </div>
     </div>
-    <!-- ===== FIN MODAL ===== -->
+    <!-- ===== FIN MODAL EDITAR HORARIO ===== -->
 
-   <!-- ===== MODAL: ASIGNAR SALARIO (ADMIN) ===== -->
-<div id="salarioModalBackdrop" class="modalBackdrop hidden"></div>
+    <!-- ===== MODAL: ASIGNAR SALARIO (ADMIN) ===== -->
+    <div id="salarioModalBackdrop" class="modalBackdrop hidden"></div>
 
-<div id="salarioModal" class="modal hidden" role="dialog" aria-modal="true">
-  <div class="modalHeader">
-    <div class="modalTitle">💰 Asignar Salario</div>
-    <button type="button" id="salarioCloseBtn" class="modalClose" aria-label="Cerrar">✕</button>
-  </div>
+    <div id="salarioModal" class="modal hidden" role="dialog" aria-modal="true">
+      <div class="modalHeader">
+        <div class="modalTitle">💰 Asignar Salario (USD)</div>
+        <button type="button" id="salarioCloseBtn" class="modalClose" aria-label="Cerrar">✕</button>
+      </div>
 
-  <div class="modalBody">
-    <label for="salarioEmpNombre">Empleado</label>
-    <input id="salarioEmpNombre" type="text" disabled />
+      <div class="modalBody">
+        <label for="salarioEmpNombre">Empleado</label>
+        <input id="salarioEmpNombre" type="text" disabled />
 
-    <label for="salarioValor">Salario</label>
-    <input id="salarioValor" type="number" step="0.01" placeholder="Ej: 100" />
+        <label for="salarioValor">Salario (USD)</label>
+        <input id="salarioValor" type="number" step="0.01" placeholder="Ej: 200 o 200.50" />
 
-    <label for="salarioTipo">Tipo de salario</label>
-    <select id="salarioTipo">
-      <option value="diario">Diario</option>
-      <option value="quincenal">Quincenal</option>
-      <option value="mensual">Mensual</option>
-    </select>
+        <label for="salarioTipo">Tipo de salario</label>
+        <select id="salarioTipo">
+          <option value="diario">Diario</option>
+          <option value="quincenal">Quincenal</option>
+          <option value="mensual">Mensual</option>
+        </select>
 
-    <div id="salarioStatus" class="notice" style="display:none;"></div>
-  </div>
+        <div id="salarioStatus" class="notice" style="display:none;"></div>
+      </div>
 
-  <div class="modalFooter">
-    <button type="button" id="salarioSaveBtn">💾 Guardar</button>
-    <button type="button" id="salarioCancelBtn" class="danger">Cancelar</button>
-  </div>
-</div>
-<!-- ===== FIN MODAL SALARIO ===== -->
-    
+      <div class="modalFooter">
+        <button type="button" id="salarioSaveBtn">💾 Guardar</button>
+        <button type="button" id="salarioCancelBtn" class="danger">Cancelar</button>
+      </div>
+    </div>
+    <!-- ===== FIN MODAL SALARIO ===== -->
+
     <!-- Resumen marcaciones -->
     <div class="card">
       <h4 onclick="toggleSection('adminList')" style="cursor:pointer;">
