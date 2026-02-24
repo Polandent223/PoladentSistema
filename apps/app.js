@@ -1422,6 +1422,331 @@ function loadFeriadosGlobal() {
   });
 }
 
+// ==================================================
+// ✅ DÍAS LIBRES PAGADOS POR EMPLEADO (8H)
+// Guarda en: dias_libres_empleado/{empId}/{fecha}
+// ==================================================
+
+function showLibreStatus(msg, isError = false) {
+  const box = document.getElementById("libreStatus");
+  if (!box) return;
+  box.style.display = "block";
+  box.innerText = msg;
+  box.style.borderColor = isError ? "rgba(220,53,69,.35)" : "rgba(13,110,253,.25)";
+  box.style.background = isError ? "rgba(220,53,69,.08)" : "rgba(13,110,253,.08)";
+}
+
+function hideLibreStatus() {
+  const box = document.getElementById("libreStatus");
+  if (!box) return;
+  box.style.display = "none";
+  box.innerText = "";
+}
+
+function fillLibreEmpSelect() {
+  const sel = document.getElementById("libreEmpSelect");
+  if (!sel) return;
+
+  const ids = Object.keys(empleadosCache || {});
+  sel.innerHTML = ids
+    .map((id) => {
+      const n = empleadosCache[id]?.nombre || "Sin nombre";
+      return `<option value="${id}">${n}</option>`;
+    })
+    .join("");
+}
+
+async function cargarLibresEmpleadoLista() {
+  const sel = document.getElementById("libreEmpSelect");
+  const cont = document.getElementById("listaLibresEmpleado");
+  if (!sel || !cont) return;
+
+  const empId = sel.value;
+  if (!empId) {
+    cont.innerHTML = `<p style="opacity:.75;">Selecciona un empleado.</p>`;
+    return;
+  }
+
+  const snap = await db.ref(`dias_libres_empleado/${empId}`).once("value");
+  const obj = snap.val() || {};
+
+  const fechas = Object.keys(obj).sort();
+  if (fechas.length === 0) {
+    cont.innerHTML = `<p style="opacity:.75;">No hay días libres pagados para este empleado.</p>`;
+    return;
+  }
+
+  cont.innerHTML = fechas
+    .map((f) => {
+      const motivo = obj[f]?.motivo ? ` — <span style="opacity:.8;">${obj[f].motivo}</span>` : "";
+      return `
+        <div style="padding:6px 8px; border:1px solid rgba(0,0,0,.08); border-radius:8px; margin-bottom:6px; background:#fff;">
+          <b>${f}</b>${motivo}
+          <button style="float:right;" onclick="borrarDiaLibreEmpleado('${empId}','${f}')">🗑️</button>
+          <div style="clear:both;"></div>
+        </div>
+      `;
+    })
+    .join("");
+}
+
+async function marcarDiaLibreEmpleado() {
+  try {
+    const sel = document.getElementById("libreEmpSelect");
+    const fecha = document.getElementById("libreFecha")?.value || "";
+    const motivo = (document.getElementById("libreMotivo")?.value || "").trim();
+
+    if (!sel || !sel.value) {
+      showLibreStatus("⚠️ Selecciona un empleado.", true);
+      return;
+    }
+    if (!fecha) {
+      showLibreStatus("⚠️ Selecciona una fecha.", true);
+      return;
+    }
+
+    const empId = sel.value;
+
+    await db.ref(`dias_libres_empleado/${empId}/${fecha}`).set({
+      pagado: true,
+      horas: HORAS_JORNADA,
+      motivo: motivo || null,
+      creadoEn: Date.now(),
+      creadoPor: "admin",
+    });
+
+    showLibreStatus("✅ Día libre pagado guardado.", false);
+    await cargarLibresEmpleadoLista();
+
+    // refrescar resumen/pagos y gráfico
+    renderAdminList(document.getElementById("filterDate")?.value || "");
+    updateChart();
+
+    setTimeout(hideLibreStatus, 1200);
+  } catch (e) {
+    console.error(e);
+    showLibreStatus("❌ Error: " + (e.message || e), true);
+  }
+}
+
+async function borrarDiaLibreEmpleado(empId, fecha) {
+  if (!confirm(`¿Borrar día libre pagado ${fecha}?`)) return;
+  await db.ref(`dias_libres_empleado/${empId}/${fecha}`).remove();
+  await cargarLibresEmpleadoLista();
+  renderAdminList(document.getElementById("filterDate")?.value || "");
+  updateChart();
+}
+
+// ✅ Hook de botones/listeners (no rompe si no existe)
+document.getElementById("btnMarcarLibreEmpleado")?.addEventListener("click", marcarDiaLibreEmpleado);
+document.getElementById("libreEmpSelect")?.addEventListener("change", cargarLibresEmpleadoLista);
+
+// ✅ Cuando cargues empleadosCache para el modal, llenamos este select también
+const _cargarEmpleadosParaModalOriginal = cargarEmpleadosParaModal;
+cargarEmpleadosParaModal = async function () {
+  await _cargarEmpleadosParaModalOriginal();
+  fillLibreEmpSelect();
+  // fecha por defecto hoy
+  const f = document.getElementById("libreFecha");
+  if (f && !f.value) {
+    const now = new Date();
+    const yyyy = now.getFullYear();
+    const mm = String(now.getMonth() + 1).padStart(2, "0");
+    const dd = String(now.getDate()).padStart(2, "0");
+    f.value = `${yyyy}-${mm}-${dd}`;
+  }
+  cargarLibresEmpleadoLista();
+};
+
+// ==================================================
+// ✅ INTEGRA AL CÁLCULO: día libre por empleado paga 8h
+// Modifica calcularDia para aceptar "overrideLibre" opcional
+// ==================================================
+
+const _calcularDiaOriginal = calcularDia;
+calcularDia = function (timestampsDia, fechaYYYYMMDD, tarifaHora, overrideLibre = null) {
+  // ✅ Si el admin marcó ese día como libre pagado => paga 8h sí o sí
+  if (overrideLibre && overrideLibre.pagado) {
+    const normales = HORAS_JORNADA;
+    return {
+      normales,
+      extra: 0,
+      noTrab: 0,
+      pagoDia: normales * tarifaHora,
+      descuentoDia: 0,
+      etiqueta: overrideLibre.motivo ? `Libre pagado: ${overrideLibre.motivo}` : "Libre pagado",
+    };
+  }
+
+  // si no hay override, usar la lógica que ya tenías (domingo / descuento / etc.)
+  return _calcularDiaOriginal(timestampsDia, fechaYYYYMMDD, tarifaHora);
+};
+
+// ==================================================
+// ✅ APLICAR overrideLibre en RESUMEN y PDF
+// Reemplazo seguro: envolvemos renderPagos y generarReciboDetalladoPorId
+// ==================================================
+
+const _renderPagosOriginal = renderPagos;
+renderPagos = function () {
+  // llamamos a tu renderPagos actual, pero con override interno:
+  // Para no reescribir todo, hacemos una versión completa:
+  const cont = document.getElementById("resumenPagos");
+  if (!cont) return;
+
+  cont.innerHTML = "<h4>💰 Resumen de pagos y banco de horas (USD)</h4>";
+
+  const desde = (fechaDesde && fechaDesde.value) ? fechaDesde.value : "";
+  const hasta = (fechaHasta && fechaHasta.value) ? fechaHasta.value : "";
+  const fechasRango = rangoFechasIncluye(desde, hasta);
+
+  // resumen desde marcaciones (excelSalarial)
+  const resumen = {};
+  for (const m of excelSalarial) {
+    if (!m || !m.fecha) continue;
+    if (!estaEnRango(m.fecha, desde, hasta)) continue;
+
+    const nombre = m.nombre || "Sin nombre";
+    if (!resumen[nombre]) resumen[nombre] = { empID: m.empID || null, dias: {} };
+
+    if (!resumen[nombre].dias[m.fecha]) {
+      resumen[nombre].dias[m.fecha] = { entrada: null, salida: null, almuerzo_salida: null, almuerzo_regreso: null };
+    }
+    resumen[nombre].dias[m.fecha][m.tipo] = m.timestamp || null;
+  }
+
+  const empleadosKeys = Object.keys(resumen);
+  if (empleadosKeys.length === 0) {
+    cont.innerHTML += `<p style="opacity:.8;">No hay datos en el rango seleccionado.</p>`;
+    return;
+  }
+
+  empleadosKeys.forEach(async (empNombre) => {
+    const empID = resumen[empNombre].empID;
+
+    // traer empleado
+    let empData = {};
+    let empIdFinal = empID || null;
+
+    if (empID) {
+      const snap = await db.ref("empleados/" + empID).once("value");
+      empData = snap.val() || {};
+    } else {
+      const snap = await db.ref("empleados").orderByChild("nombre").equalTo(empNombre).once("value");
+      const obj = snap.val() || {};
+      const keys = Object.keys(obj);
+      if (keys.length > 0) {
+        empIdFinal = keys[0];
+        empData = obj[empIdFinal] || {};
+      }
+    }
+
+    const nombreMostrar = empData.nombre || empNombre;
+    const salario = Number(empData.salario || 0);
+    const tipoSalario = empData.tipoSalario || "diario";
+    const tarifaHora = tarifaPorHoraUSD(salario, tipoSalario);
+
+    // traer días libres del empleado
+    const libresSnap = empIdFinal ? await db.ref(`dias_libres_empleado/${empIdFinal}`).once("value") : null;
+    const libresObj = (libresSnap && libresSnap.val()) ? libresSnap.val() : {};
+
+    let horasTrabTot = 0, horasExtraTot = 0, horasNoTrabTot = 0, totalPagar = 0, totalDescuento = 0;
+    const diasMarc = resumen[empNombre].dias || {};
+    const diasParaCalcular = (fechasRango.length > 0) ? fechasRango : Object.keys(diasMarc).sort();
+    const detalleDia = [];
+
+    diasParaCalcular.forEach((dia) => {
+      const d = diasMarc[dia] || { entrada: null, salida: null, almuerzo_salida: null, almuerzo_regreso: null };
+      const overrideLibre = libresObj[dia] || null;
+
+      const r = calcularDia(d, dia, tarifaHora, overrideLibre);
+
+      horasTrabTot += r.normales;
+      horasExtraTot += r.extra;
+      horasNoTrabTot += r.noTrab;
+      totalPagar += r.pagoDia;
+      totalDescuento += r.descuentoDia;
+
+      detalleDia.push({ dia, ...r });
+    });
+
+    let html = `
+      <div style="background:#ffffff; border-radius:10px; padding:10px; margin:10px 0; box-shadow:0 2px 10px rgba(0,0,0,.06);">
+        <p style="margin:0 0 6px 0;"><b>${nombreMostrar}</b></p>
+
+        <p style="margin:0; opacity:.85;">Periodo: <b>${desde || "—"}</b> a <b>${hasta || "—"}</b></p>
+
+        <p style="margin:6px 0 0 0;">
+          Salario: <b>${formatUSD(salario)}</b> (${tipoSalario}) |
+          Tarifa/hora: <b>${formatUSD(tarifaHora)}</b>
+        </p>
+
+        <p style="margin:6px 0 0 0;">
+          Horas pagadas: <b>${horasTrabTot.toFixed(2)}</b> |
+          Horas NO pagadas (descuento): <b>${horasNoTrabTot.toFixed(2)}</b> |
+          Banco extra: <b>${horasExtraTot.toFixed(2)}</b>
+        </p>
+
+        <p style="margin:6px 0 0 0;">
+          Descuento total: <b>${formatUSD(totalDescuento)}</b> |
+          <span style="font-size:16px;">Total a pagar: <b>${formatUSD(totalPagar)}</b></span>
+        </p>
+
+        <div style="margin-top:8px; padding-top:8px; border-top:1px solid rgba(0,0,0,.08);">
+          <p style="margin:0 0 6px 0; font-weight:600;">Detalle por día</p>
+    `;
+
+    detalleDia.forEach((x) => {
+      const tag = x.etiqueta ? ` <span style="opacity:.75;">(${x.etiqueta})</span>` : "";
+      html += `
+        <p style="margin:3px 0;">
+          📅 ${x.dia}${tag} — Horas: <b>${x.normales.toFixed(2)}</b>,
+          Desc: <b>${x.noTrab.toFixed(2)}</b>,
+          Pago: <b>${formatUSD(x.pagoDia)}</b>
+        </p>
+      `;
+    });
+
+    html += `
+        </div>
+        <div style="margin-top:10px;">
+          <button onclick="generarReciboDetalladoPorId('${empIdFinal || ""}', '${(nombreMostrar || "").replace(/'/g, "\\'")}')">
+            🧾 Generar recibo PDF (firma)
+          </button>
+        </div>
+      </div>
+    `;
+
+    cont.innerHTML += html;
+  });
+};
+
+const _generarPDFOriginal = generarReciboDetalladoPorId;
+generarReciboDetalladoPorId = async function (empID, nombreEmpleado) {
+  // usamos tu función, pero como ya usa calcularDia y ahora calcularDia soporta override,
+  // solo necesitamos asegurarnos que el PDF consulte los días libres del empleado.
+  // Para no romper, hacemos copia completa mínima:
+
+  if (!empID) return _generarPDFOriginal(empID, nombreEmpleado);
+
+  // traer días libres del empleado a un "cache" global simple para que el PDF lo use
+  // (hacemos override temporal usando un wrapper dentro del PDF)
+  const libresSnap = await db.ref(`dias_libres_empleado/${empID}`).once("value");
+  const libresObj = libresSnap.val() || {};
+
+  // wrap temporal: interceptar calcularDia SOLO durante este PDF
+  const old = calcularDia;
+  calcularDia = function (timestampsDia, fechaYYYYMMDD, tarifaHora) {
+    return old(timestampsDia, fechaYYYYMMDD, tarifaHora, libresObj[fechaYYYYMMDD] || null);
+  };
+
+  try {
+    await _generarPDFOriginal(empID, nombreEmpleado);
+  } finally {
+    calcularDia = old;
+  }
+};
+
 function eliminarFeriado(fecha) {
   if (!confirm("¿Eliminar este feriado global?")) return;
   db.ref("feriados_global/" + fecha).remove();
@@ -1441,3 +1766,4 @@ loadEmpleados();
 loadMarcaciones();
 loadFeriadosGlobal(); // ✅ NUEVO (por si entra directo sin login)
 updateChart();
+cargarEmpleadosParaModal(); // ✅ llena empleadosCache y el select de días libres
