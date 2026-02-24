@@ -2,6 +2,7 @@
 // ✅ POLADENT - APP.JS COMPLETO
 // TODO EN ESPAÑOL + SALARIO USD
 // ✅ Domingo = libre pagado (8h)
+// ✅ Feriado GLOBAL = libre pagado (8h)  ✅ NUEVO
 // ✅ Día normal sin marcación = descuento (8h)
 // ===============================
 
@@ -85,6 +86,7 @@ function loginAdmin() {
       setDefaultDate();
       loadEmpleados();
       loadMarcaciones();
+      loadFeriadosGlobal(); // ✅ NUEVO
       updateChart();
     })
     .catch(() => alert("Error de acceso"));
@@ -673,10 +675,81 @@ function rangoFechasIncluye(desde, hasta) {
 }
 
 // ==================================================
+// ✅ FERIADOS GLOBALES PAGADOS (NUEVO)
+// Guarda en Firebase: feriados_global/YYYY-MM-DD
+// ==================================================
+
+let feriadosGlobalCache = {}; // { "YYYY-MM-DD": { motivo, horas, creadoEn } }
+
+function loadFeriadosGlobal() {
+  // Si no existe db todavía o no estás en admin, igual no rompe:
+  try {
+    db.ref("feriados_global").on("value", (snap) => {
+      feriadosGlobalCache = snap.val() || {};
+      // refrescar resumen si ya está visible
+      try { renderPagos(); } catch (e) {}
+    });
+  } catch (e) {
+    // no hacemos nada
+  }
+}
+
+function getFeriadoGlobal(fechaYYYYMMDD) {
+  return feriadosGlobalCache?.[fechaYYYYMMDD] || null;
+}
+
+// Modal + botón (requiere HTML ids)
+function openFeriadoModal() {
+  const modal = document.getElementById("feriadoModal");
+  const back = document.getElementById("feriadoModalBackdrop");
+  if (!modal || !back) {
+    alert("Falta el HTML del modal feriado (feriadoModal / feriadoModalBackdrop).");
+    return;
+  }
+  document.getElementById("feriadoFecha").value = "";
+  document.getElementById("feriadoMotivo").value = "";
+  modal.classList.remove("hidden");
+  back.classList.remove("hidden");
+}
+
+function closeFeriadoModal() {
+  const modal = document.getElementById("feriadoModal");
+  const back = document.getElementById("feriadoModalBackdrop");
+  if (modal) modal.classList.add("hidden");
+  if (back) back.classList.add("hidden");
+}
+
+async function saveFeriadoGlobal() {
+  const fecha = document.getElementById("feriadoFecha")?.value || "";
+  const motivo = (document.getElementById("feriadoMotivo")?.value || "").trim();
+
+  if (!fecha) {
+    alert("Selecciona una fecha.");
+    return;
+  }
+
+  await db.ref("feriados_global/" + fecha).set({
+    motivo: motivo || "Feriado pagado",
+    horas: HORAS_JORNADA,
+    creadoEn: Date.now(),
+  });
+
+  closeFeriadoModal();
+  alert("✅ Feriado global guardado.");
+}
+
+// listeners del modal/botón (no rompe si no existen)
+document.getElementById("btnFeriadoGlobal")?.addEventListener("click", openFeriadoModal);
+document.getElementById("feriadoCancelBtn")?.addEventListener("click", closeFeriadoModal);
+document.getElementById("feriadoModalBackdrop")?.addEventListener("click", closeFeriadoModal);
+document.getElementById("feriadoSaveBtn")?.addEventListener("click", saveFeriadoGlobal);
+
+// ==================================================
 // ✅ EXTRA PRO (NO ROMPE TU CÓDIGO)
 // Resumen PRO + PDF firma con:
 // ✅ Domingo pagado 8h aunque no marque
-// ✅ Día normal sin marcar = descuento 8h
+// ✅ Feriado GLOBAL pagado 8h aunque no marque
+// ✅ Día sin marcación = descuento 8h
 // ==================================================
 
 // 🔹 UTILIDAD: tarifa por hora según tipo de salario
@@ -691,9 +764,11 @@ function tarifaPorHoraUSD(salario, tipoSalario) {
 
 // 🔹 Cálculo único del día (para UI y PDF)
 // reglas:
+// - Feriado GLOBAL: si NO marcó => paga 8h (sin descuento)
 // - Domingo: si NO marcó => paga 8h (sin descuento)
 // - Día normal: si falta entrada o salida => 0h trabajadas, 8h descuento
 function calcularDia(timestampsDia, fechaYYYYMMDD, tarifaHora) {
+  const feriado = getFeriadoGlobal(fechaYYYYMMDD);
   const domingo = esDomingo(fechaYYYYMMDD);
 
   const entrada = timestampsDia?.entrada || null;
@@ -701,7 +776,24 @@ function calcularDia(timestampsDia, fechaYYYYMMDD, tarifaHora) {
   const aS = timestampsDia?.almuerzo_salida || null;
   const aR = timestampsDia?.almuerzo_regreso || null;
 
-  // ✅ DOMINGO: libre pagado
+  // ✅ FERIADO GLOBAL: libre pagado si no marcó
+  if (feriado && (!entrada || !salida)) {
+    const normales = HORAS_JORNADA;
+    const extra = 0;
+    const noTrab = 0;
+    const pagoDia = normales * tarifaHora;
+    const descuentoDia = 0;
+    return {
+      normales,
+      extra,
+      noTrab,
+      pagoDia,
+      descuentoDia,
+      etiqueta: `Feriado pagado${feriado?.motivo ? ": " + feriado.motivo : ""}`,
+    };
+  }
+
+  // ✅ DOMINGO: libre pagado si no marcó
   if (domingo && (!entrada || !salida)) {
     const normales = HORAS_JORNADA;
     const extra = 0;
@@ -718,7 +810,10 @@ function calcularDia(timestampsDia, fechaYYYYMMDD, tarifaHora) {
     };
   }
 
-  // ✅ DÍA NORMAL (o domingo con marcación): si falta algo => descuento
+  // ✅ si es feriado y marcó completo -> se calcula normal pero etiqueta
+  const etiquetaFeriadoTrabajado = feriado ? `Feriado trabajado${feriado?.motivo ? ": " + feriado.motivo : ""}` : "";
+
+  // ✅ DÍA NORMAL (o domingo/feriado con marcación): si falta algo => descuento
   if (!entrada || !salida) {
     const normales = 0;
     const extra = 0;
@@ -755,7 +850,7 @@ function calcularDia(timestampsDia, fechaYYYYMMDD, tarifaHora) {
     noTrab,
     pagoDia,
     descuentoDia,
-    etiqueta: "",
+    etiqueta: etiquetaFeriadoTrabajado || "",
   };
 }
 
@@ -769,7 +864,7 @@ function renderPagos() {
   const desde = (fechaDesde && fechaDesde.value) ? fechaDesde.value : "";
   const hasta = (fechaHasta && fechaHasta.value) ? fechaHasta.value : "";
 
-  // ✅ Fechas del rango (para incluir domingos aunque no marquen)
+  // ✅ Fechas del rango (para incluir domingos y feriados aunque no marquen)
   const fechasRango = rangoFechasIncluye(desde, hasta);
 
   // ✅ Construimos resumen desde excelSalarial (marcaciones existentes)
@@ -841,7 +936,6 @@ function renderPagos() {
       const detalleDia = [];
 
       diasParaCalcular.forEach((dia) => {
-        // si no hay nada en el día, igual lo calculamos:
         const d = diasMarc[dia] || {
           entrada: null,
           salida: null,
@@ -874,8 +968,8 @@ function renderPagos() {
           </p>
 
           <p style="margin:6px 0 0 0;">
-            Horas trabajadas: <b>${horasTrabTot.toFixed(2)}</b> |
-            Horas NO trabajadas (descuento): <b>${horasNoTrabTot.toFixed(2)}</b> |
+            Horas pagadas (normales): <b>${horasTrabTot.toFixed(2)}</b> |
+            Horas NO pagadas (descuento): <b>${horasNoTrabTot.toFixed(2)}</b> |
             Banco de horas (extra): <b>${horasExtraTot.toFixed(2)}</b>
           </p>
 
@@ -922,6 +1016,7 @@ function renderPagos() {
 // ===============================
 // 🧾 PDF DETALLADO CON FIRMA (USD)
 // ✅ Domingo libre pagado 8h
+// ✅ Feriado global pagado 8h
 // ✅ Día sin marcación = descuento 8h
 // ===============================
 async function generarReciboDetalladoPorId(empID, nombreEmpleado) {
@@ -959,7 +1054,7 @@ async function generarReciboDetalladoPorId(empID, nombreEmpleado) {
     const tipoSalario = emp.tipoSalario || "diario";
     const tarifaHora = tarifaPorHoraUSD(salario, tipoSalario);
 
-    // ✅ Fechas para el PDF (incluye domingos aunque no existan en marc)
+    // ✅ Fechas para el PDF (incluye domingos y feriados aunque no existan en marc)
     const diasParaCalcular = (desde && hasta)
       ? rangoFechasIncluye(desde, hasta)
       : Object.keys(marc).sort();
@@ -1011,9 +1106,9 @@ async function generarReciboDetalladoPorId(empID, nombreEmpleado) {
     y += 8;
 
     doc.setFontSize(12);
-    doc.text(`Horas trabajadas: ${horasTrabTot.toFixed(2)}`, 14, y);
+    doc.text(`Horas pagadas (normales): ${horasTrabTot.toFixed(2)}`, 14, y);
     y += 6;
-    doc.text(`Horas NO trabajadas (descuento): ${horasNoTrabTot.toFixed(2)}`, 14, y);
+    doc.text(`Horas NO pagadas (descuento): ${horasNoTrabTot.toFixed(2)}`, 14, y);
     y += 6;
     doc.text(`Banco de horas (extra): ${horasExtraTot.toFixed(2)}`, 14, y);
     y += 6;
@@ -1049,7 +1144,7 @@ async function generarReciboDetalladoPorId(empID, nombreEmpleado) {
       doc.text(formatUSD(d.pagoDia), 115, y);
       y += 6;
 
-      // ✅ nota corta para domingo pagado / descuento
+      // ✅ nota corta para domingo/feriado/descuento
       if (d.etiqueta) {
         if (y > 270) {
           doc.addPage();
@@ -1290,6 +1385,47 @@ async function saveEditHorario() {
     showEditStatus("❌ " + msg, true);
   }
 }
+// ==========================================
+// 📅 LISTA Y ELIMINACIÓN DE FERIADOS
+// ==========================================
+
+function loadFeriadosGlobal() {
+  const cont = document.getElementById("listaFeriados");
+  if (!cont) return;
+
+  db.ref("feriados_global").on("value", (snap) => {
+    cont.innerHTML = "";
+
+    const data = snap.val();
+    if (!data) {
+      cont.innerHTML = "<p style='opacity:.7;'>No hay feriados registrados.</p>";
+      return;
+    }
+
+    Object.keys(data)
+      .sort()
+      .forEach((fecha) => {
+        const f = data[fecha];
+        const motivo = f.motivo || "Feriado pagado";
+
+        cont.innerHTML += `
+          <div style="background:#fff; padding:6px; margin:5px 0; border-radius:6px; box-shadow:0 2px 5px rgba(0,0,0,.05);">
+            <b>${fecha}</b> - ${motivo}
+            <button 
+              onclick="eliminarFeriado('${fecha}')" 
+              style="float:right; background:#dc3545; color:white; border:none; padding:3px 6px; border-radius:4px; cursor:pointer;">
+              ✕
+            </button>
+          </div>
+        `;
+      });
+  });
+}
+
+function eliminarFeriado(fecha) {
+  if (!confirm("¿Eliminar este feriado global?")) return;
+  db.ref("feriados_global/" + fecha).remove();
+}
 
 // ✅ Alias seguros
 window.closeEditModal = window.closeEditModal || closeEditModal;
@@ -1303,4 +1439,5 @@ setDefaultDate();
 periodoResumen.value = "diario";
 loadEmpleados();
 loadMarcaciones();
+loadFeriadosGlobal(); // ✅ NUEVO (por si entra directo sin login)
 updateChart();
