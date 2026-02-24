@@ -1,6 +1,8 @@
 // ===============================
 // ✅ POLADENT - APP.JS COMPLETO
 // TODO EN ESPAÑOL + SALARIO USD
+// ✅ Domingo = libre pagado (8h)
+// ✅ Día normal sin marcación = descuento (8h)
 // ===============================
 
 // 🔹 ELEMENTOS PRINCIPALES
@@ -35,6 +37,7 @@ document.getElementById("empPin").addEventListener("input", pinInputHandler);
 // 🔹 UTILIDADES
 // ===============================
 const USD = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
+const HORAS_JORNADA = 8; // ✅ tu jornada fija
 
 function formatUSD(value) {
   const num = Number(value);
@@ -414,9 +417,9 @@ function renderAdminList(dateFilter) {
     Object.keys(fechas)
       .sort()
       .forEach((fecha) => {
-        let fechaObj = new Date(fecha);
-        let desde = fechaDesde.value ? new Date(fechaDesde.value) : null;
-        let hasta = fechaHasta.value ? new Date(fechaHasta.value) : null;
+        let fechaObj = new Date(fecha + "T00:00:00");
+        let desde = fechaDesde.value ? new Date(fechaDesde.value + "T00:00:00") : null;
+        let hasta = fechaHasta.value ? new Date(fechaHasta.value + "T00:00:00") : null;
 
         if (desde && fechaObj < desde) return;
         if (hasta && fechaObj > hasta) return;
@@ -576,14 +579,14 @@ function renderChart(startDate = "", endDate = "", periodo = "diario", dateFilte
     datasets: [{ label: "Horas trabajadas", data: [], backgroundColor: "rgba(0,123,255,0.5)" }],
   };
 
-  const filtroInicio = startDate ? new Date(startDate) : null;
-  const filtroFin = endDate ? new Date(endDate) : null;
+  const filtroInicio = startDate ? new Date(startDate + "T00:00:00") : null;
+  const filtroFin = endDate ? new Date(endDate + "T00:00:00") : null;
   const resumenHoras = {};
 
   for (const empID in allMarcaciones) {
     const fechas = allMarcaciones[empID] || {};
     for (const fecha in fechas) {
-      const fechaObj = new Date(fecha);
+      const fechaObj = new Date(fecha + "T00:00:00");
       if (filtroInicio && fechaObj < filtroInicio) continue;
       if (filtroFin && fechaObj > filtroFin) continue;
 
@@ -638,77 +641,445 @@ function toggleSection(id) {
 }
 
 // ===============================
-// 🔹 RESUMEN DE PAGOS
+// 🔹 RANGO FECHAS + DOMINGO
 // ===============================
 function estaEnRango(fecha, desde, hasta) {
-  const f = new Date(fecha);
-  const d = desde ? new Date(desde) : null;
-  const h = hasta ? new Date(hasta) : null;
+  const f = new Date(fecha + "T00:00:00");
+  const d = desde ? new Date(desde + "T00:00:00") : null;
+  const h = hasta ? new Date(hasta + "T00:00:00") : null;
   if (d && f < d) return false;
   if (h && f > h) return false;
   return true;
 }
 
+function esDomingo(fechaYYYYMMDD) {
+  const dt = new Date(fechaYYYYMMDD + "T00:00:00");
+  return dt.getDay() === 0;
+}
+
+function rangoFechasIncluye(desde, hasta) {
+  if (!desde || !hasta) return [];
+  const out = [];
+  let d = new Date(desde + "T00:00:00");
+  const end = new Date(hasta + "T00:00:00");
+  while (d <= end) {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    out.push(`${y}-${m}-${day}`);
+    d.setDate(d.getDate() + 1);
+  }
+  return out;
+}
+
+// ==================================================
+// ✅ EXTRA PRO (NO ROMPE TU CÓDIGO)
+// Resumen PRO + PDF firma con:
+// ✅ Domingo pagado 8h aunque no marque
+// ✅ Día normal sin marcar = descuento 8h
+// ==================================================
+
+// 🔹 UTILIDAD: tarifa por hora según tipo de salario
+function tarifaPorHoraUSD(salario, tipoSalario) {
+  const s = Number(salario || 0);
+  const t = String(tipoSalario || "diario").toLowerCase();
+  if (t === "diario") return s / HORAS_JORNADA;
+  if (t === "quincenal") return s / (15 * HORAS_JORNADA);
+  if (t === "mensual") return s / (30 * HORAS_JORNADA);
+  return s / HORAS_JORNADA;
+}
+
+// 🔹 Cálculo único del día (para UI y PDF)
+// reglas:
+// - Domingo: si NO marcó => paga 8h (sin descuento)
+// - Día normal: si falta entrada o salida => 0h trabajadas, 8h descuento
+function calcularDia(timestampsDia, fechaYYYYMMDD, tarifaHora) {
+  const domingo = esDomingo(fechaYYYYMMDD);
+
+  const entrada = timestampsDia?.entrada || null;
+  const salida = timestampsDia?.salida || null;
+  const aS = timestampsDia?.almuerzo_salida || null;
+  const aR = timestampsDia?.almuerzo_regreso || null;
+
+  // ✅ DOMINGO: libre pagado
+  if (domingo && (!entrada || !salida)) {
+    const normales = HORAS_JORNADA;
+    const extra = 0;
+    const noTrab = 0;
+    const pagoDia = normales * tarifaHora;
+    const descuentoDia = 0;
+    return {
+      normales,
+      extra,
+      noTrab,
+      pagoDia,
+      descuentoDia,
+      etiqueta: "Domingo libre pagado",
+    };
+  }
+
+  // ✅ DÍA NORMAL (o domingo con marcación): si falta algo => descuento
+  if (!entrada || !salida) {
+    const normales = 0;
+    const extra = 0;
+    const noTrab = HORAS_JORNADA;
+    const pagoDia = 0;
+    const descuentoDia = noTrab * tarifaHora;
+    return {
+      normales,
+      extra,
+      noTrab,
+      pagoDia,
+      descuentoDia,
+      etiqueta: "Sin marcación completa (descuento)",
+    };
+  }
+
+  // ✅ Cálculo normal por horas marcadas
+  let almuerzo = 0;
+  if (aS && aR) almuerzo = (aR - aS) / 3600000;
+
+  let horas = (salida - entrada) / 3600000 - almuerzo;
+  if (!Number.isFinite(horas) || horas < 0) horas = 0;
+
+  const normales = Math.min(HORAS_JORNADA, horas);
+  const extra = Math.max(0, horas - HORAS_JORNADA);
+  const noTrab = Math.max(0, HORAS_JORNADA - normales);
+
+  const pagoDia = normales * tarifaHora;
+  const descuentoDia = noTrab * tarifaHora;
+
+  return {
+    normales,
+    extra,
+    noTrab,
+    pagoDia,
+    descuentoDia,
+    etiqueta: "",
+  };
+}
+
+// 🔹 REEMPLAZA renderPagos por uno PRO (mismo nombre => se usa automático)
 function renderPagos() {
   const cont = document.getElementById("resumenPagos");
   if (!cont) return;
 
-  cont.innerHTML = "<h4>💰 Resumen de pagos y banco de horas</h4>";
-  const desde = fechaDesde.value;
-  const hasta = fechaHasta.value;
+  cont.innerHTML = "<h4>💰 Resumen de pagos y banco de horas (USD)</h4>";
 
-  const resumen = {};
+  const desde = (fechaDesde && fechaDesde.value) ? fechaDesde.value : "";
+  const hasta = (fechaHasta && fechaHasta.value) ? fechaHasta.value : "";
+
+  // ✅ Fechas del rango (para incluir domingos aunque no marquen)
+  const fechasRango = rangoFechasIncluye(desde, hasta);
+
+  // ✅ Construimos resumen desde excelSalarial (marcaciones existentes)
+  const resumen = {}; // { empNombre: { empID, dias: { fecha: {tipo: timestamp} } } }
 
   for (const m of excelSalarial) {
+    if (!m || !m.fecha) continue;
     if (!estaEnRango(m.fecha, desde, hasta)) continue;
-    if (!resumen[m.nombre]) resumen[m.nombre] = { dias: {} };
-    if (!resumen[m.nombre].dias[m.fecha])
-      resumen[m.nombre].dias[m.fecha] = { entrada: null, salida: null, almuerzo_salida: null, almuerzo_regreso: null };
-    resumen[m.nombre].dias[m.fecha][m.tipo] = m.timestamp;
+
+    const nombre = m.nombre || "Sin nombre";
+    if (!resumen[nombre]) resumen[nombre] = { empID: m.empID || null, dias: {} };
+
+    if (!resumen[nombre].dias[m.fecha]) {
+      resumen[nombre].dias[m.fecha] = {
+        entrada: null,
+        salida: null,
+        almuerzo_salida: null,
+        almuerzo_regreso: null,
+      };
+    }
+    resumen[nombre].dias[m.fecha][m.tipo] = m.timestamp || null;
   }
 
   const empleadosKeys = Object.keys(resumen);
+  if (empleadosKeys.length === 0) {
+    cont.innerHTML += `<p style="opacity:.8;">No hay datos en el rango seleccionado.</p>`;
+    return;
+  }
 
   empleadosKeys.forEach((empNombre) => {
-    db.ref("empleados")
-      .orderByChild("nombre")
-      .equalTo(empNombre)
-      .once("value")
-      .then((snap) => {
-        const empData = Object.values(snap.val() || {})[0] || {};
-        const salario = empData?.salario || 0;
-        const tipoSalario = empData?.tipoSalario || "diario";
+    const empID = resumen[empNombre].empID;
 
-        let bancoTotal = 0;
-        let totalPagar = 0;
+    const promEmp = empID
+      ? db.ref("empleados/" + empID).once("value")
+      : db.ref("empleados").orderByChild("nombre").equalTo(empNombre).once("value");
 
-        for (const dia in resumen[empNombre].dias) {
-          const d = resumen[empNombre].dias[dia];
-          if (!d.entrada || !d.salida) continue;
+    promEmp.then((snap) => {
+      let empData = {};
+      let empIdFinal = empID || null;
 
-          let almuerzo = 0;
-          if (d.almuerzo_salida && d.almuerzo_regreso) {
-            almuerzo = (d.almuerzo_regreso - d.almuerzo_salida) / 3600000;
-          }
-
-          let hrs = (d.salida - d.entrada) / 3600000 - almuerzo;
-          let extra = Math.max(0, hrs - 8);
-          let normales = Math.min(8, hrs);
-          bancoTotal += extra;
-
-          let pagoDia = 0;
-          if (tipoSalario === "diario") pagoDia = normales * (salario / 8);
-          else if (tipoSalario === "quincenal") pagoDia = normales * (salario / 15 / 8);
-          else if (tipoSalario === "mensual") pagoDia = normales * (salario / 30 / 8);
-
-          totalPagar += pagoDia;
+      if (empID) {
+        empData = snap.val() || {};
+      } else {
+        const obj = snap.val() || {};
+        const keys = Object.keys(obj);
+        if (keys.length > 0) {
+          empIdFinal = keys[0];
+          empData = obj[empIdFinal] || {};
         }
+      }
 
-        let texto = `<p><b>${empData.nombre || empNombre}</b> - Total a pagar: ${formatUSD(totalPagar)} - Banco de horas: ${bancoTotal.toFixed(2)}</p>`;
-        if (bancoTotal >= 8) texto += `<p style="color:green;">✅ Puede tomar un día libre</p>`;
-        cont.innerHTML += texto;
+      const nombreMostrar = empData.nombre || empNombre;
+
+      const salario = Number(empData.salario || 0);
+      const tipoSalario = empData.tipoSalario || "diario";
+      const tarifaHora = tarifaPorHoraUSD(salario, tipoSalario);
+
+      let horasTrabTot = 0;
+      let horasExtraTot = 0;
+      let horasNoTrabTot = 0;
+      let totalPagar = 0;
+      let totalDescuento = 0;
+
+      const diasMarc = resumen[empNombre].dias || {};
+      const diasParaCalcular = (fechasRango.length > 0)
+        ? fechasRango
+        : Object.keys(diasMarc).sort();
+
+      const detalleDia = [];
+
+      diasParaCalcular.forEach((dia) => {
+        // si no hay nada en el día, igual lo calculamos:
+        const d = diasMarc[dia] || {
+          entrada: null,
+          salida: null,
+          almuerzo_salida: null,
+          almuerzo_regreso: null,
+        };
+
+        const r = calcularDia(d, dia, tarifaHora);
+
+        horasTrabTot += r.normales;
+        horasExtraTot += r.extra;
+        horasNoTrabTot += r.noTrab;
+        totalPagar += r.pagoDia;
+        totalDescuento += r.descuentoDia;
+
+        detalleDia.push({ dia, ...r });
       });
+
+      let html = `
+        <div style="background:#ffffff; border-radius:10px; padding:10px; margin:10px 0; box-shadow:0 2px 10px rgba(0,0,0,.06);">
+          <p style="margin:0 0 6px 0;"><b>${nombreMostrar}</b></p>
+
+          <p style="margin:0; opacity:.85;">
+            Periodo: <b>${desde || "—"}</b> a <b>${hasta || "—"}</b>
+          </p>
+
+          <p style="margin:6px 0 0 0;">
+            Salario: <b>${formatUSD(salario)}</b> (${tipoSalario}) |
+            Tarifa/hora: <b>${formatUSD(tarifaHora)}</b>
+          </p>
+
+          <p style="margin:6px 0 0 0;">
+            Horas trabajadas: <b>${horasTrabTot.toFixed(2)}</b> |
+            Horas NO trabajadas (descuento): <b>${horasNoTrabTot.toFixed(2)}</b> |
+            Banco de horas (extra): <b>${horasExtraTot.toFixed(2)}</b>
+          </p>
+
+          <p style="margin:6px 0 0 0;">
+            Descuento total: <b>${formatUSD(totalDescuento)}</b> |
+            <span style="font-size:16px;">Total a pagar: <b>${formatUSD(totalPagar)}</b></span>
+          </p>
+
+          <div style="margin-top:8px; padding-top:8px; border-top:1px solid rgba(0,0,0,.08);">
+            <p style="margin:0 0 6px 0; font-weight:600;">Detalle por día</p>
+      `;
+
+      if (detalleDia.length === 0) {
+        html += `<p style="margin:0; opacity:.8;">No hay días en el rango.</p>`;
+      } else {
+        detalleDia.forEach((x) => {
+          const tag = x.etiqueta ? ` <span style="opacity:.75;">(${x.etiqueta})</span>` : "";
+          html += `
+            <p style="margin:3px 0;">
+              📅 ${x.dia}${tag} — Horas: <b>${x.normales.toFixed(2)}</b>,
+              Descuento: <b>${x.noTrab.toFixed(2)}</b>,
+              Pago día: <b>${formatUSD(x.pagoDia)}</b>
+            </p>
+          `;
+        });
+      }
+
+      html += `
+          </div>
+
+          <div style="margin-top:10px;">
+            <button onclick="generarReciboDetalladoPorId('${empIdFinal || ""}', '${(nombreMostrar || "").replace(/'/g, "\\'")}')">
+              🧾 Generar recibo PDF (firma)
+            </button>
+          </div>
+        </div>
+      `;
+
+      cont.innerHTML += html;
+    });
   });
+}
+
+// ===============================
+// 🧾 PDF DETALLADO CON FIRMA (USD)
+// ✅ Domingo libre pagado 8h
+// ✅ Día sin marcación = descuento 8h
+// ===============================
+async function generarReciboDetalladoPorId(empID, nombreEmpleado) {
+  try {
+    if (!window.jspdf || !window.jspdf.jsPDF) {
+      alert("Falta jsPDF. Revisa el script de jspdf en el HTML.");
+      return;
+    }
+
+    // ✅ Si no tenemos ID, buscar por nombre
+    if (!empID) {
+      const snap = await db.ref("empleados").orderByChild("nombre").equalTo(nombreEmpleado).once("value");
+      const obj = snap.val();
+      if (!obj) {
+        alert("No se encontró el empleado en la base de datos.");
+        return;
+      }
+      empID = Object.keys(obj)[0];
+    }
+
+    const empSnap = await db.ref("empleados/" + empID).once("value");
+    const emp = empSnap.val();
+    if (!emp) {
+      alert("Empleado no encontrado.");
+      return;
+    }
+
+    const desde = (fechaDesde && fechaDesde.value) ? fechaDesde.value : "";
+    const hasta = (fechaHasta && fechaHasta.value) ? fechaHasta.value : "";
+
+    const marcSnap = await db.ref("marcaciones/" + empID).once("value");
+    const marc = marcSnap.val() || {};
+
+    const salario = Number(emp.salario || 0);
+    const tipoSalario = emp.tipoSalario || "diario";
+    const tarifaHora = tarifaPorHoraUSD(salario, tipoSalario);
+
+    // ✅ Fechas para el PDF (incluye domingos aunque no existan en marc)
+    const diasParaCalcular = (desde && hasta)
+      ? rangoFechasIncluye(desde, hasta)
+      : Object.keys(marc).sort();
+
+    let horasTrabTot = 0;
+    let horasExtraTot = 0;
+    let horasNoTrabTot = 0;
+    let totalPagar = 0;
+    let totalDescuento = 0;
+
+    const detalle = [];
+
+    diasParaCalcular.forEach((dia) => {
+      const tipos = marc[dia] || {};
+      const ts = {
+        entrada: tipos.entrada?.timestamp || null,
+        salida: tipos.salida?.timestamp || null,
+        almuerzo_salida: tipos.almuerzo_salida?.timestamp || null,
+        almuerzo_regreso: tipos.almuerzo_regreso?.timestamp || null,
+      };
+
+      const r = calcularDia(ts, dia, tarifaHora);
+
+      horasTrabTot += r.normales;
+      horasExtraTot += r.extra;
+      horasNoTrabTot += r.noTrab;
+      totalPagar += r.pagoDia;
+      totalDescuento += r.descuentoDia;
+
+      detalle.push({ dia, ...r });
+    });
+
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    let y = 18;
+
+    doc.setFontSize(16);
+    doc.text("RECIBO DE PAGO (USD)", 14, y);
+    y += 10;
+
+    doc.setFontSize(11);
+    doc.text(`Empleado: ${emp.nombre || nombreEmpleado || "Sin nombre"}`, 14, y);
+    y += 6;
+    doc.text(`Periodo: ${desde || "—"}  a  ${hasta || "—"}`, 14, y);
+    y += 6;
+    doc.text(`Tipo de salario: ${tipoSalario}`, 14, y);
+    y += 6;
+    doc.text(`Salario: ${formatUSD(salario)} | Tarifa/hora: ${formatUSD(tarifaHora)}`, 14, y);
+    y += 8;
+
+    doc.setFontSize(12);
+    doc.text(`Horas trabajadas: ${horasTrabTot.toFixed(2)}`, 14, y);
+    y += 6;
+    doc.text(`Horas NO trabajadas (descuento): ${horasNoTrabTot.toFixed(2)}`, 14, y);
+    y += 6;
+    doc.text(`Banco de horas (extra): ${horasExtraTot.toFixed(2)}`, 14, y);
+    y += 6;
+
+    doc.text(`Descuento total: ${formatUSD(totalDescuento)}`, 14, y);
+    y += 6;
+
+    doc.setFontSize(14);
+    doc.text(`TOTAL A PAGAR: ${formatUSD(totalPagar)}`, 14, y);
+    y += 10;
+
+    doc.setFontSize(12);
+    doc.text("Detalle por día:", 14, y);
+    y += 8;
+
+    doc.setFontSize(10);
+    doc.text("Fecha", 14, y);
+    doc.text("Horas", 55, y);
+    doc.text("Desc.", 85, y);
+    doc.text("Pago día", 115, y);
+    y += 4;
+    doc.line(14, y, 196, y);
+    y += 6;
+
+    detalle.forEach((d) => {
+      if (y > 270) {
+        doc.addPage();
+        y = 20;
+      }
+      doc.text(String(d.dia), 14, y);
+      doc.text(d.normales.toFixed(2), 55, y);
+      doc.text(d.noTrab.toFixed(2), 85, y);
+      doc.text(formatUSD(d.pagoDia), 115, y);
+      y += 6;
+
+      // ✅ nota corta para domingo pagado / descuento
+      if (d.etiqueta) {
+        if (y > 270) {
+          doc.addPage();
+          y = 20;
+        }
+        doc.setFontSize(9);
+        doc.text(`- ${d.etiqueta}`, 16, y);
+        doc.setFontSize(10);
+        y += 5;
+      }
+    });
+
+    if (y > 250) {
+      doc.addPage();
+      y = 20;
+    }
+    y += 12;
+
+    doc.setFontSize(11);
+    doc.text("Firma del empleado: ________________________________", 14, y);
+    y += 10;
+    doc.text("Firma del encargado: _______________________________", 14, y);
+    y += 10;
+    doc.text("Fecha de firma: ____/____/______", 14, y);
+
+    doc.save(`Recibo_${(emp.nombre || nombreEmpleado || "Empleado").replace(/\s+/g, "_")}.pdf`);
+  } catch (e) {
+    console.error(e);
+    alert("Error al generar el recibo: " + (e.message || e));
+  }
 }
 
 // ===============================
@@ -923,349 +1294,6 @@ async function saveEditHorario() {
 // ✅ Alias seguros
 window.closeEditModal = window.closeEditModal || closeEditModal;
 window.closeEditHorario = window.closeEditHorario || window.closeEditModal;
-
-// ==================================================
-// ✅ EXTRA PRO (NO ROMPE TU CÓDIGO)
-// Resumen de pagos PRO + Recibo PDF con firma (USD)
-// ==================================================
-
-// 🔹 UTILIDAD: tarifa por hora según tipo de salario
-function tarifaPorHoraUSD(salario, tipoSalario) {
-  const s = Number(salario || 0);
-  const t = String(tipoSalario || "diario").toLowerCase();
-  if (t === "diario") return s / 8;
-  if (t === "quincenal") return s / (15 * 8);
-  if (t === "mensual") return s / (30 * 8);
-  return s / 8;
-}
-
-// 🔹 REEMPLAZA renderPagos por uno PRO (mismo nombre => se usa automático)
-function renderPagos() {
-  const cont = document.getElementById("resumenPagos");
-  if (!cont) return;
-
-  cont.innerHTML = "<h4>💰 Resumen de pagos y banco de horas (USD)</h4>";
-
-  const desde = (fechaDesde && fechaDesde.value) ? fechaDesde.value : "";
-  const hasta = (fechaHasta && fechaHasta.value) ? fechaHasta.value : "";
-
-  // ✅ Construimos resumen desde tu excelSalarial (lo llenas en renderAdminList)
-  // OJO: aquí también guardamos empID si existe (más seguro para PDF).
-  const resumen = {}; // { empNombre: { empID, dias: { fecha: {tipo: timestamp} } } }
-
-  for (const m of excelSalarial) {
-    if (!m || !m.fecha) continue;
-    if (!estaEnRango(m.fecha, desde, hasta)) continue;
-
-    const nombre = m.nombre || "Sin nombre";
-    if (!resumen[nombre]) resumen[nombre] = { empID: m.empID || null, dias: {} };
-
-    if (!resumen[nombre].dias[m.fecha]) {
-      resumen[nombre].dias[m.fecha] = {
-        entrada: null,
-        salida: null,
-        almuerzo_salida: null,
-        almuerzo_regreso: null,
-      };
-    }
-    resumen[nombre].dias[m.fecha][m.tipo] = m.timestamp || null;
-  }
-
-  const empleadosKeys = Object.keys(resumen);
-  if (empleadosKeys.length === 0) {
-    cont.innerHTML += `<p style="opacity:.8;">No hay datos en el rango seleccionado.</p>`;
-    return;
-  }
-
-  empleadosKeys.forEach((empNombre) => {
-    // ✅ Intentar por ID primero (más seguro). Si no hay ID, buscar por nombre.
-    const empID = resumen[empNombre].empID;
-
-    const promEmp = empID
-      ? db.ref("empleados/" + empID).once("value")
-      : db.ref("empleados").orderByChild("nombre").equalTo(empNombre).once("value");
-
-    promEmp.then((snap) => {
-      let empData = {};
-      let empIdFinal = empID || null;
-
-      if (empID) {
-        empData = snap.val() || {};
-      } else {
-        const obj = snap.val() || {};
-        const keys = Object.keys(obj);
-        if (keys.length > 0) {
-          empIdFinal = keys[0];
-          empData = obj[empIdFinal] || {};
-        }
-      }
-
-      const nombreMostrar = empData.nombre || empNombre;
-
-      const salario = Number(empData.salario || 0);
-      const tipoSalario = empData.tipoSalario || "diario";
-      const tarifaHora = tarifaPorHoraUSD(salario, tipoSalario);
-
-      let horasTrabTot = 0;   // horas normales (máx 8/día)
-      let horasExtraTot = 0;  // >8 (banco)
-      let horasNoTrabTot = 0; // faltantes (descuento)
-      let totalPagar = 0;
-      let totalDescuento = 0;
-
-      const dias = resumen[empNombre].dias;
-      const diasOrdenados = Object.keys(dias).sort();
-      const detalleDia = [];
-
-      diasOrdenados.forEach((dia) => {
-        const d = dias[dia];
-        if (!d.entrada || !d.salida) return; // si no hay entrada+salida, no calcula
-
-        let almuerzo = 0;
-        if (d.almuerzo_salida && d.almuerzo_regreso) {
-          almuerzo = (d.almuerzo_regreso - d.almuerzo_salida) / 3600000;
-        }
-
-        let horas = (d.salida - d.entrada) / 3600000 - almuerzo;
-        if (!Number.isFinite(horas) || horas < 0) horas = 0;
-
-        const normales = Math.min(8, horas);
-        const extra = Math.max(0, horas - 8);
-        const noTrab = Math.max(0, 8 - normales);
-
-        const pagoDia = normales * tarifaHora;
-        const descuentoDia = noTrab * tarifaHora;
-
-        horasTrabTot += normales;
-        horasExtraTot += extra;
-        horasNoTrabTot += noTrab;
-
-        totalPagar += pagoDia;
-        totalDescuento += descuentoDia;
-
-        detalleDia.push({ dia, normales, noTrab, pagoDia });
-      });
-
-      // ✅ UI
-      let html = `
-        <div style="background:#ffffff; border-radius:10px; padding:10px; margin:10px 0; box-shadow:0 2px 10px rgba(0,0,0,.06);">
-          <p style="margin:0 0 6px 0;"><b>${nombreMostrar}</b></p>
-
-          <p style="margin:0; opacity:.85;">
-            Periodo: <b>${desde || "—"}</b> a <b>${hasta || "—"}</b>
-          </p>
-
-          <p style="margin:6px 0 0 0;">
-            Salario: <b>${formatUSD(salario)}</b> (${tipoSalario}) |
-            Tarifa/hora: <b>${formatUSD(tarifaHora)}</b>
-          </p>
-
-          <p style="margin:6px 0 0 0;">
-            Horas trabajadas: <b>${horasTrabTot.toFixed(2)}</b> |
-            Horas NO trabajadas (descuento): <b>${horasNoTrabTot.toFixed(2)}</b> |
-            Banco de horas (extra): <b>${horasExtraTot.toFixed(2)}</b>
-          </p>
-
-          <p style="margin:6px 0 0 0;">
-            Descuento total: <b>${formatUSD(totalDescuento)}</b> |
-            <span style="font-size:16px;">Total a pagar: <b>${formatUSD(totalPagar)}</b></span>
-          </p>
-
-          <div style="margin-top:8px; padding-top:8px; border-top:1px solid rgba(0,0,0,.08);">
-            <p style="margin:0 0 6px 0; font-weight:600;">Detalle por día</p>
-      `;
-
-      if (detalleDia.length === 0) {
-        html += `<p style="margin:0; opacity:.8;">No hay días completos (entrada y salida) en el rango.</p>`;
-      } else {
-        detalleDia.forEach((x) => {
-          html += `
-            <p style="margin:3px 0;">
-              📅 ${x.dia} — Horas: <b>${x.normales.toFixed(2)}</b>,
-              Descuento: <b>${x.noTrab.toFixed(2)}</b>,
-              Pago día: <b>${formatUSD(x.pagoDia)}</b>
-            </p>
-          `;
-        });
-      }
-
-      html += `
-          </div>
-
-          <div style="margin-top:10px;">
-            <button onclick="generarReciboDetalladoPorId('${empIdFinal || ""}', '${(nombreMostrar || "").replace(/'/g, "\\'")}')">
-              🧾 Generar recibo PDF (firma)
-            </button>
-          </div>
-        </div>
-      `;
-
-      cont.innerHTML += html;
-    });
-  });
-}
-
-// ===============================
-// 🧾 PDF DETALLADO CON FIRMA (USD)
-// ===============================
-async function generarReciboDetalladoPorId(empID, nombreEmpleado) {
-  try {
-    if (!window.jspdf || !window.jspdf.jsPDF) {
-      alert("Falta jsPDF. Revisa el script de jspdf en el HTML.");
-      return;
-    }
-
-    // ✅ Si no tenemos ID, buscar por nombre
-    if (!empID) {
-      const snap = await db.ref("empleados").orderByChild("nombre").equalTo(nombreEmpleado).once("value");
-      const obj = snap.val();
-      if (!obj) {
-        alert("No se encontró el empleado en la base de datos.");
-        return;
-      }
-      empID = Object.keys(obj)[0];
-    }
-
-    const empSnap = await db.ref("empleados/" + empID).once("value");
-    const emp = empSnap.val();
-    if (!emp) {
-      alert("Empleado no encontrado.");
-      return;
-    }
-
-    const desde = (fechaDesde && fechaDesde.value) ? fechaDesde.value : "";
-    const hasta = (fechaHasta && fechaHasta.value) ? fechaHasta.value : "";
-
-    const marcSnap = await db.ref("marcaciones/" + empID).once("value");
-    const marc = marcSnap.val() || {};
-
-    const salario = Number(emp.salario || 0);
-    const tipoSalario = emp.tipoSalario || "diario";
-    const tarifaHora = tarifaPorHoraUSD(salario, tipoSalario);
-
-    const dias = Object.keys(marc)
-      .sort()
-      .filter((f) => {
-        if (desde && new Date(f) < new Date(desde)) return false;
-        if (hasta && new Date(f) > new Date(hasta)) return false;
-        return true;
-      });
-
-    let horasTrabTot = 0;
-    let horasExtraTot = 0;
-    let horasNoTrabTot = 0;
-    let totalPagar = 0;
-    let totalDescuento = 0;
-
-    const detalle = [];
-
-    dias.forEach((dia) => {
-      const tipos = marc[dia] || {};
-      const entrada = tipos.entrada?.timestamp || null;
-      const salida = tipos.salida?.timestamp || null;
-
-      if (!entrada || !salida) return;
-
-      let almuerzo = 0;
-      const aS = tipos.almuerzo_salida?.timestamp || null;
-      const aR = tipos.almuerzo_regreso?.timestamp || null;
-      if (aS && aR) almuerzo = (aR - aS) / 3600000;
-
-      let horas = (salida - entrada) / 3600000 - almuerzo;
-      if (!Number.isFinite(horas) || horas < 0) horas = 0;
-
-      const normales = Math.min(8, horas);
-      const extra = Math.max(0, horas - 8);
-      const noTrab = Math.max(0, 8 - normales);
-
-      const pagoDia = normales * tarifaHora;
-      const descuentoDia = noTrab * tarifaHora;
-
-      horasTrabTot += normales;
-      horasExtraTot += extra;
-      horasNoTrabTot += noTrab;
-      totalPagar += pagoDia;
-      totalDescuento += descuentoDia;
-
-      detalle.push({ dia, normales, noTrab, pagoDia });
-    });
-
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-    let y = 18;
-
-    doc.setFontSize(16);
-    doc.text("RECIBO DE PAGO (USD)", 14, y);
-    y += 10;
-
-    doc.setFontSize(11);
-    doc.text(`Empleado: ${emp.nombre || nombreEmpleado || "Sin nombre"}`, 14, y);
-    y += 6;
-    doc.text(`Periodo: ${desde || "—"}  a  ${hasta || "—"}`, 14, y);
-    y += 6;
-    doc.text(`Tipo de salario: ${tipoSalario}`, 14, y);
-    y += 6;
-    doc.text(`Salario: ${formatUSD(salario)} | Tarifa/hora: ${formatUSD(tarifaHora)}`, 14, y);
-    y += 8;
-
-    doc.setFontSize(12);
-    doc.text(`Horas trabajadas: ${horasTrabTot.toFixed(2)}`, 14, y);
-    y += 6;
-    doc.text(`Horas NO trabajadas (descuento): ${horasNoTrabTot.toFixed(2)}`, 14, y);
-    y += 6;
-    doc.text(`Banco de horas (extra): ${horasExtraTot.toFixed(2)}`, 14, y);
-    y += 6;
-
-    doc.text(`Descuento total: ${formatUSD(totalDescuento)}`, 14, y);
-    y += 6;
-
-    doc.setFontSize(14);
-    doc.text(`TOTAL A PAGAR: ${formatUSD(totalPagar)}`, 14, y);
-    y += 10;
-
-    doc.setFontSize(12);
-    doc.text("Detalle por día:", 14, y);
-    y += 8;
-
-    doc.setFontSize(10);
-    doc.text("Fecha", 14, y);
-    doc.text("Horas", 55, y);
-    doc.text("Desc.", 85, y);
-    doc.text("Pago día", 115, y);
-    y += 4;
-    doc.line(14, y, 196, y);
-    y += 6;
-
-    detalle.forEach((d) => {
-      if (y > 270) {
-        doc.addPage();
-        y = 20;
-      }
-      doc.text(String(d.dia), 14, y);
-      doc.text(d.normales.toFixed(2), 55, y);
-      doc.text(d.noTrab.toFixed(2), 85, y);
-      doc.text(formatUSD(d.pagoDia), 115, y);
-      y += 6;
-    });
-
-    if (y > 250) {
-      doc.addPage();
-      y = 20;
-    }
-    y += 12;
-
-    doc.setFontSize(11);
-    doc.text("Firma del empleado: ________________________________", 14, y);
-    y += 10;
-    doc.text("Firma del encargado: _______________________________", 14, y);
-    y += 10;
-    doc.text("Fecha de firma: ____/____/______", 14, y);
-
-    doc.save(`Recibo_${(emp.nombre || nombreEmpleado || "Empleado").replace(/\s+/g, "_")}.pdf`);
-  } catch (e) {
-    console.error(e);
-    alert("Error al generar el recibo: " + (e.message || e));
-  }
-}
 
 // ===============================
 // 🔹 INICIO
