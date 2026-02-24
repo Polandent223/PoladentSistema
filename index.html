@@ -185,6 +185,26 @@
     </div>
     <!-- ✅ FIN MODAL FERIADO GLOBAL -->
 
+    
+<!-- 📌 DÍA LIBRE PAGADO POR EMPLEADO -->
+<div class="card">
+  <h4>👤 Día libre pagado (por empleado)</h4>
+
+  <label>Empleado</label>
+  <select id="libreEmpSelect"></select>
+
+  <label>Fecha</label>
+  <input type="date" id="libreFecha" />
+
+  <label>Motivo (opcional)</label>
+  <input id="libreMotivo" placeholder="Ej: folga, permiso, feriado individual..." />
+
+  <button id="btnMarcarLibreEmpleado">✅ Marcar día libre pagado (8h)</button>
+
+  <div id="libreStatus" class="notice" style="display:none; margin-top:8px;"></div>
+
+  <div id="listaLibresEmpleado" style="margin-top:10px; max-height:160px; overflow:auto;"></div>
+</div>
 
     <!-- Resumen marcaciones -->
     <div class="card">
