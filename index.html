@@ -138,32 +138,25 @@
     </div>
     <!-- ===== FIN MODAL SALARIO ===== -->
 
-    <!-- 📅 FERIADOS / DÍAS LIBRES PAGADOS -->
-<div class="card">
-  <h4>📅 Feriados / Días libres pagados</h4>
+    <!-- 📅 FERIADOS / DÍAS LIBRES PAGADOS (GLOBAL) -->
+    <div class="card">
+      <h4>📅 Feriados globales (pagados)</h4>
+      <button id="btnFeriadoGlobal">➕ Marcar feriado global (pagado)</button>
 
-  <button id="btnFeriadoGlobal">
-    📅 Marcar feriado global (pagado)
-  </button>
+      <div id="listaFeriados" style="margin-top:10px; max-height:180px; overflow:auto;"></div>
 
-  <div 
-    id="listaFeriados" 
-    style="margin-top:10px; max-height:150px; overflow:auto;">
-  </div>
+      <p style="margin-top:8px; font-size:13px; opacity:.8;">
+        Los feriados globales se pagan como 8 horas aunque el empleado no marque.
+      </p>
+    </div>
 
-  <p style="margin-top:8px; font-size:13px; opacity:.8;">
-    Los feriados globales se pagan como 8 horas aunque el empleado no marque.
-  </p>
-</div>
-
-
-    <!-- ✅ NUEVO: MODAL FERIADO GLOBAL -->
+    <!-- ✅ MODAL: FERIADO GLOBAL -->
     <div id="feriadoModalBackdrop" class="modalBackdrop hidden"></div>
 
     <div id="feriadoModal" class="modal hidden" role="dialog" aria-modal="true">
       <div class="modalHeader">
         <div class="modalTitle">📅 Feriado global pagado</div>
-        <button type="button" id="feriadoCancelBtn" class="modalClose" aria-label="Cerrar">✕</button>
+        <button type="button" id="feriadoCloseBtn" class="modalClose" aria-label="Cerrar">✕</button>
       </div>
 
       <div class="modalBody">
@@ -185,26 +178,41 @@
     </div>
     <!-- ✅ FIN MODAL FERIADO GLOBAL -->
 
-    
-<!-- 📌 DÍA LIBRE PAGADO POR EMPLEADO -->
-<div class="card">
-  <h4>👤 Día libre pagado (por empleado)</h4>
+    <!-- 👤 DÍA LIBRE PAGADO (POR EMPLEADO) -->
+    <div class="card">
+      <h4>👤 Días libres pagados (por empleado)</h4>
+      <button id="btnOpenLibreModal">➕ Marcar día libre pagado</button>
+      <div id="listaLibresEmpleado" style="margin-top:10px; max-height:220px; overflow:auto;"></div>
+    </div>
 
-  <label>Empleado</label>
-  <select id="libreEmpSelect"></select>
+    <!-- ✅ MODAL: DÍA LIBRE PAGADO (POR EMPLEADO) -->
+    <div id="libreModalBackdrop" class="modalBackdrop hidden"></div>
 
-  <label>Fecha</label>
-  <input type="date" id="libreFecha" />
+    <div id="libreModal" class="modal hidden" role="dialog" aria-modal="true">
+      <div class="modalHeader">
+        <div class="modalTitle">👤 Día libre pagado (8h)</div>
+        <button type="button" id="libreCloseBtn" class="modalClose" aria-label="Cerrar">✕</button>
+      </div>
 
-  <label>Motivo (opcional)</label>
-  <input id="libreMotivo" placeholder="Ej: folga, permiso, feriado individual..." />
+      <div class="modalBody">
+        <label>Empleado</label>
+        <select id="libreEmpSelect"></select>
 
-  <button id="btnMarcarLibreEmpleado">✅ Marcar día libre pagado (8h)</button>
+        <label>Fecha</label>
+        <input type="date" id="libreFecha" />
 
-  <div id="libreStatus" class="notice" style="display:none; margin-top:8px;"></div>
+        <label>Motivo (opcional)</label>
+        <input id="libreMotivo" placeholder="Ej: folga, permiso, feriado individual..." />
 
-  <div id="listaLibresEmpleado" style="margin-top:10px; max-height:160px; overflow:auto;"></div>
-</div>
+        <div id="libreStatus" class="notice" style="display:none; margin-top:8px;"></div>
+      </div>
+
+      <div class="modalFooter">
+        <button type="button" id="libreSaveBtn">💾 Guardar</button>
+        <button type="button" id="libreCancelBtn" class="danger">Cancelar</button>
+      </div>
+    </div>
+    <!-- ✅ FIN MODAL DÍA LIBRE -->
 
     <!-- Resumen marcaciones -->
     <div class="card">
@@ -231,7 +239,7 @@
     </div>
 
     <!-- RESUMEN DE PAGOS -->
-    <div id="resumenPagos" style="max-height:200px; overflow:auto; margin-top:15px; background:#f0f8ff; padding:10px; border-radius:8px;">
+    <div id="resumenPagos" style="max-height:260px; overflow:auto; margin-top:15px; background:#f0f8ff; padding:10px; border-radius:8px;">
       <h4>💰 Resumen de pagos y banco de horas</h4>
     </div>
 
@@ -272,4 +280,4 @@
   </div>
 
 </body>
-</html>
+                                                                                             </html>
