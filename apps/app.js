@@ -1,9 +1,11 @@
 // ===============================
-// ✅ POLADENT - APP.JS COMPLETO
+// ✅ POLADENT - APP.JS COMPLETO (FINAL)
 // TODO EN ESPAÑOL + SALARIO USD
 // ✅ Domingo = libre pagado (8h)
-// ✅ Feriado GLOBAL = libre pagado (8h)  ✅ NUEVO
+// ✅ Feriado GLOBAL = libre pagado (8h)
+// ✅ Día libre por EMPLEADO = libre pagado (8h)
 // ✅ Día normal sin marcación = descuento (8h)
+// ✅ PDF con nombre de la empresa
 // ===============================
 
 // 🔹 ELEMENTOS PRINCIPALES
@@ -38,7 +40,7 @@ document.getElementById("empPin").addEventListener("input", pinInputHandler);
 // 🔹 UTILIDADES
 // ===============================
 const USD = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
-const HORAS_JORNADA = 8; // ✅ tu jornada fija
+const HORAS_JORNADA = 8;
 
 function formatUSD(value) {
   const num = Number(value);
@@ -80,13 +82,20 @@ function loginAdmin() {
 
   auth
     .signInWithEmailAndPassword(email, pass)
-    .then(() => {
+    .then(async () => {
       hideAll();
       adminPanel.classList.remove("hidden");
       setDefaultDate();
+
       loadEmpleados();
       loadMarcaciones();
-      loadFeriadosGlobal(); // ✅ NUEVO
+
+      // ✅ caches/listas admin
+      await cargarEmpleadosParaModal();
+      loadFeriadosGlobalCache();
+      renderListaFeriadosGlobal();
+      renderListaLibresEmpleado();
+
       updateChart();
     })
     .catch(() => alert("Error de acceso"));
@@ -140,9 +149,14 @@ function cargarEmpleados() {
           <button onclick="borrarEmpleado('${emp.key}')">Borrar</button>
           <button onclick="asignarSalario('${emp.key}')">Asignar salario</button>
           <button onclick="openEditModal('${emp.key}')">Editar horario</button>
-          <button onclick="generarOlerite('${emp.key}')">Recibo PDF</button>
+          <button onclick="generarReciboDetalladoPorId('${emp.key}', '${(data.nombre || "").replace(/'/g, "\\'")}')">Recibo PDF</button>
         </div>
       </div>`;
+    });
+
+    // refrescar selects/listas
+    cargarEmpleadosParaModal().then(() => {
+      renderListaLibresEmpleado();
     });
   });
 }
@@ -155,6 +169,7 @@ function borrarEmpleado(id) {
   if (confirm("¿Seguro que deseas borrar este empleado?")) {
     db.ref("empleados/" + id).remove();
     db.ref("marcaciones/" + id).remove();
+    db.ref("dias_libres_empleado/" + id).remove();
   }
 }
 
@@ -185,13 +200,11 @@ async function openSalarioModal(empID) {
   const back = document.getElementById("salarioModalBackdrop");
   if (!modal || !back) return;
 
-  // Reset
   document.getElementById("salarioValor").value = "";
   document.getElementById("salarioTipo").value = "diario";
   document.getElementById("salarioEmpNombre").value = "";
   hideSalarioStatus();
 
-  // Cargar empleado
   const snap = await db.ref("empleados/" + empID).once("value");
   const emp = snap.val();
 
@@ -208,10 +221,8 @@ async function openSalarioModal(empID) {
 }
 
 function closeSalarioModal() {
-  const modal = document.getElementById("salarioModal");
-  const back = document.getElementById("salarioModalBackdrop");
-  if (modal) modal.classList.add("hidden");
-  if (back) back.classList.add("hidden");
+  document.getElementById("salarioModal")?.classList.add("hidden");
+  document.getElementById("salarioModalBackdrop")?.classList.add("hidden");
   hideSalarioStatus();
   salarioEmpIdActual = null;
 }
@@ -239,43 +250,17 @@ async function saveSalarioModal() {
     setTimeout(closeSalarioModal, 350);
   } catch (e) {
     console.error("saveSalarioModal error:", e);
-    const msg =
-      e && (e.code || e.message)
-        ? `${e.code ? e.code + " - " : ""}${e.message || ""}`
-        : String(e);
-    showSalarioStatus("❌ " + msg, true);
+    showSalarioStatus("❌ " + (e.message || e), true);
   }
 }
 
-// Botones modal salario
 document.getElementById("salarioCancelBtn")?.addEventListener("click", closeSalarioModal);
 document.getElementById("salarioCloseBtn")?.addEventListener("click", closeSalarioModal);
 document.getElementById("salarioModalBackdrop")?.addEventListener("click", closeSalarioModal);
 document.getElementById("salarioSaveBtn")?.addEventListener("click", saveSalarioModal);
 
-// ✅ reemplazo del prompt
 function asignarSalario(empID) {
   openSalarioModal(empID);
-}
-
-// ===============================
-// 🔹 RECIBO PDF (BÁSICO) - USD
-// ===============================
-function generarOlerite(empID) {
-  db.ref("empleados/" + empID).once("value", (snap) => {
-    const emp = snap.val();
-    if (!emp) return;
-
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-    doc.setFontSize(20);
-    doc.text("Recibo de Pago", 20, 20);
-    doc.setFontSize(14);
-    doc.text(`Empleado: ${emp.nombre}`, 20, 40);
-    doc.text(`Salario: ${formatUSD(emp.salario)} (${emp.tipoSalario})`, 20, 50);
-    doc.text(`Fecha: ${new Date().toLocaleDateString()}`, 20, 60);
-    doc.save(`Recibo_${emp.nombre}.pdf`);
-  });
 }
 
 // ===============================
@@ -675,37 +660,29 @@ function rangoFechasIncluye(desde, hasta) {
 }
 
 // ==================================================
-// ✅ FERIADOS GLOBALES PAGADOS (NUEVO)
-// Guarda en Firebase: feriados_global/YYYY-MM-DD
+// ✅ FERIADOS GLOBALES (cache + modal + lista)
+// Guarda: feriados_global/YYYY-MM-DD
 // ==================================================
-
 let feriadosGlobalCache = {}; // { "YYYY-MM-DD": { motivo, horas, creadoEn } }
 
-function loadFeriadosGlobal() {
-  // Si no existe db todavía o no estás en admin, igual no rompe:
+function loadFeriadosGlobalCache() {
   try {
     db.ref("feriados_global").on("value", (snap) => {
       feriadosGlobalCache = snap.val() || {};
-      // refrescar resumen si ya está visible
       try { renderPagos(); } catch (e) {}
     });
-  } catch (e) {
-    // no hacemos nada
-  }
+  } catch (e) {}
 }
 
 function getFeriadoGlobal(fechaYYYYMMDD) {
   return feriadosGlobalCache?.[fechaYYYYMMDD] || null;
 }
 
-// Modal + botón (requiere HTML ids)
 function openFeriadoModal() {
   const modal = document.getElementById("feriadoModal");
   const back = document.getElementById("feriadoModalBackdrop");
-  if (!modal || !back) {
-    alert("Falta el HTML del modal feriado (feriadoModal / feriadoModalBackdrop).");
-    return;
-  }
+  if (!modal || !back) return;
+
   document.getElementById("feriadoFecha").value = "";
   document.getElementById("feriadoMotivo").value = "";
   modal.classList.remove("hidden");
@@ -713,496 +690,77 @@ function openFeriadoModal() {
 }
 
 function closeFeriadoModal() {
-  const modal = document.getElementById("feriadoModal");
-  const back = document.getElementById("feriadoModalBackdrop");
-  if (modal) modal.classList.add("hidden");
-  if (back) back.classList.add("hidden");
+  document.getElementById("feriadoModal")?.classList.add("hidden");
+  document.getElementById("feriadoModalBackdrop")?.classList.add("hidden");
 }
 
 async function saveFeriadoGlobal() {
   const fecha = document.getElementById("feriadoFecha")?.value || "";
   const motivo = (document.getElementById("feriadoMotivo")?.value || "").trim();
 
-  if (!fecha) {
-    alert("Selecciona una fecha.");
-    return;
-  }
+  if (!fecha) return alert("Selecciona una fecha.");
 
   await db.ref("feriados_global/" + fecha).set({
     motivo: motivo || "Feriado pagado",
     horas: HORAS_JORNADA,
     creadoEn: Date.now(),
+    creadoPor: "admin",
   });
 
   closeFeriadoModal();
-  alert("✅ Feriado global guardado.");
+  renderListaFeriadosGlobal();
+  renderAdminList(document.getElementById("filterDate")?.value || "");
+  updateChart();
 }
 
-// listeners del modal/botón (no rompe si no existen)
+async function eliminarFeriadoGlobal(fecha) {
+  if (!confirm("¿Eliminar este feriado global?")) return;
+  await db.ref("feriados_global/" + fecha).remove();
+  renderListaFeriadosGlobal();
+  renderAdminList(document.getElementById("filterDate")?.value || "");
+  updateChart();
+}
+
+function renderListaFeriadosGlobal() {
+  const cont = document.getElementById("listaFeriados");
+  if (!cont) return;
+
+  db.ref("feriados_global").on("value", (snap) => {
+    const data = snap.val() || {};
+    const fechas = Object.keys(data).sort();
+
+    if (!fechas.length) {
+      cont.innerHTML = `<p style="opacity:.75;">No hay feriados registrados.</p>`;
+      return;
+    }
+
+    cont.innerHTML = fechas.map((fecha) => {
+      const f = data[fecha] || {};
+      const motivo = f.motivo || "Feriado pagado";
+      return `
+        <div style="background:#fff; padding:8px; margin:6px 0; border-radius:10px; box-shadow:0 2px 6px rgba(0,0,0,.05);">
+          <b>${fecha}</b> — <span style="opacity:.85;">${motivo}</span>
+          <button class="danger" style="float:right; min-width:auto; padding:8px 10px;" onclick="eliminarFeriadoGlobal('${fecha}')">✕</button>
+          <div style="clear:both;"></div>
+        </div>
+      `;
+    }).join("");
+  });
+}
+
+// listeners feriado
 document.getElementById("btnFeriadoGlobal")?.addEventListener("click", openFeriadoModal);
+document.getElementById("feriadoCloseBtn")?.addEventListener("click", closeFeriadoModal);
 document.getElementById("feriadoCancelBtn")?.addEventListener("click", closeFeriadoModal);
 document.getElementById("feriadoModalBackdrop")?.addEventListener("click", closeFeriadoModal);
 document.getElementById("feriadoSaveBtn")?.addEventListener("click", saveFeriadoGlobal);
 
+// global onclick
+window.eliminarFeriadoGlobal = eliminarFeriadoGlobal;
+
 // ==================================================
-// ✅ EXTRA PRO (NO ROMPE TU CÓDIGO)
-// Resumen PRO + PDF firma con:
-// ✅ Domingo pagado 8h aunque no marque
-// ✅ Feriado GLOBAL pagado 8h aunque no marque
-// ✅ Día sin marcación = descuento 8h
-// ==================================================
-
-// 🔹 UTILIDAD: tarifa por hora según tipo de salario
-function tarifaPorHoraUSD(salario, tipoSalario) {
-  const s = Number(salario || 0);
-  const t = String(tipoSalario || "diario").toLowerCase();
-  if (t === "diario") return s / HORAS_JORNADA;
-  if (t === "quincenal") return s / (15 * HORAS_JORNADA);
-  if (t === "mensual") return s / (30 * HORAS_JORNADA);
-  return s / HORAS_JORNADA;
-}
-
-// 🔹 Cálculo único del día (para UI y PDF)
-// reglas:
-// - Feriado GLOBAL: si NO marcó => paga 8h (sin descuento)
-// - Domingo: si NO marcó => paga 8h (sin descuento)
-// - Día normal: si falta entrada o salida => 0h trabajadas, 8h descuento
-function calcularDia(timestampsDia, fechaYYYYMMDD, tarifaHora) {
-  const feriado = getFeriadoGlobal(fechaYYYYMMDD);
-  const domingo = esDomingo(fechaYYYYMMDD);
-
-  const entrada = timestampsDia?.entrada || null;
-  const salida = timestampsDia?.salida || null;
-  const aS = timestampsDia?.almuerzo_salida || null;
-  const aR = timestampsDia?.almuerzo_regreso || null;
-
-  // ✅ FERIADO GLOBAL: libre pagado si no marcó
-  if (feriado && (!entrada || !salida)) {
-    const normales = HORAS_JORNADA;
-    const extra = 0;
-    const noTrab = 0;
-    const pagoDia = normales * tarifaHora;
-    const descuentoDia = 0;
-    return {
-      normales,
-      extra,
-      noTrab,
-      pagoDia,
-      descuentoDia,
-      etiqueta: `Feriado pagado${feriado?.motivo ? ": " + feriado.motivo : ""}`,
-    };
-  }
-
-  // ✅ DOMINGO: libre pagado si no marcó
-  if (domingo && (!entrada || !salida)) {
-    const normales = HORAS_JORNADA;
-    const extra = 0;
-    const noTrab = 0;
-    const pagoDia = normales * tarifaHora;
-    const descuentoDia = 0;
-    return {
-      normales,
-      extra,
-      noTrab,
-      pagoDia,
-      descuentoDia,
-      etiqueta: "Domingo libre pagado",
-    };
-  }
-
-  // ✅ si es feriado y marcó completo -> se calcula normal pero etiqueta
-  const etiquetaFeriadoTrabajado = feriado ? `Feriado trabajado${feriado?.motivo ? ": " + feriado.motivo : ""}` : "";
-
-  // ✅ DÍA NORMAL (o domingo/feriado con marcación): si falta algo => descuento
-  if (!entrada || !salida) {
-    const normales = 0;
-    const extra = 0;
-    const noTrab = HORAS_JORNADA;
-    const pagoDia = 0;
-    const descuentoDia = noTrab * tarifaHora;
-    return {
-      normales,
-      extra,
-      noTrab,
-      pagoDia,
-      descuentoDia,
-      etiqueta: "Sin marcación completa (descuento)",
-    };
-  }
-
-  // ✅ Cálculo normal por horas marcadas
-  let almuerzo = 0;
-  if (aS && aR) almuerzo = (aR - aS) / 3600000;
-
-  let horas = (salida - entrada) / 3600000 - almuerzo;
-  if (!Number.isFinite(horas) || horas < 0) horas = 0;
-
-  const normales = Math.min(HORAS_JORNADA, horas);
-  const extra = Math.max(0, horas - HORAS_JORNADA);
-  const noTrab = Math.max(0, HORAS_JORNADA - normales);
-
-  const pagoDia = normales * tarifaHora;
-  const descuentoDia = noTrab * tarifaHora;
-
-  return {
-    normales,
-    extra,
-    noTrab,
-    pagoDia,
-    descuentoDia,
-    etiqueta: etiquetaFeriadoTrabajado || "",
-  };
-}
-
-// 🔹 REEMPLAZA renderPagos por uno PRO (mismo nombre => se usa automático)
-function renderPagos() {
-  const cont = document.getElementById("resumenPagos");
-  if (!cont) return;
-
-  cont.innerHTML = "<h4>💰 Resumen de pagos y banco de horas (USD)</h4>";
-
-  const desde = (fechaDesde && fechaDesde.value) ? fechaDesde.value : "";
-  const hasta = (fechaHasta && fechaHasta.value) ? fechaHasta.value : "";
-
-  // ✅ Fechas del rango (para incluir domingos y feriados aunque no marquen)
-  const fechasRango = rangoFechasIncluye(desde, hasta);
-
-  // ✅ Construimos resumen desde excelSalarial (marcaciones existentes)
-  const resumen = {}; // { empNombre: { empID, dias: { fecha: {tipo: timestamp} } } }
-
-  for (const m of excelSalarial) {
-    if (!m || !m.fecha) continue;
-    if (!estaEnRango(m.fecha, desde, hasta)) continue;
-
-    const nombre = m.nombre || "Sin nombre";
-    if (!resumen[nombre]) resumen[nombre] = { empID: m.empID || null, dias: {} };
-
-    if (!resumen[nombre].dias[m.fecha]) {
-      resumen[nombre].dias[m.fecha] = {
-        entrada: null,
-        salida: null,
-        almuerzo_salida: null,
-        almuerzo_regreso: null,
-      };
-    }
-    resumen[nombre].dias[m.fecha][m.tipo] = m.timestamp || null;
-  }
-
-  const empleadosKeys = Object.keys(resumen);
-  if (empleadosKeys.length === 0) {
-    cont.innerHTML += `<p style="opacity:.8;">No hay datos en el rango seleccionado.</p>`;
-    return;
-  }
-
-  empleadosKeys.forEach((empNombre) => {
-    const empID = resumen[empNombre].empID;
-
-    const promEmp = empID
-      ? db.ref("empleados/" + empID).once("value")
-      : db.ref("empleados").orderByChild("nombre").equalTo(empNombre).once("value");
-
-    promEmp.then((snap) => {
-      let empData = {};
-      let empIdFinal = empID || null;
-
-      if (empID) {
-        empData = snap.val() || {};
-      } else {
-        const obj = snap.val() || {};
-        const keys = Object.keys(obj);
-        if (keys.length > 0) {
-          empIdFinal = keys[0];
-          empData = obj[empIdFinal] || {};
-        }
-      }
-
-      const nombreMostrar = empData.nombre || empNombre;
-
-      const salario = Number(empData.salario || 0);
-      const tipoSalario = empData.tipoSalario || "diario";
-      const tarifaHora = tarifaPorHoraUSD(salario, tipoSalario);
-
-      let horasTrabTot = 0;
-      let horasExtraTot = 0;
-      let horasNoTrabTot = 0;
-      let totalPagar = 0;
-      let totalDescuento = 0;
-
-      const diasMarc = resumen[empNombre].dias || {};
-      const diasParaCalcular = (fechasRango.length > 0)
-        ? fechasRango
-        : Object.keys(diasMarc).sort();
-
-      const detalleDia = [];
-
-      diasParaCalcular.forEach((dia) => {
-        const d = diasMarc[dia] || {
-          entrada: null,
-          salida: null,
-          almuerzo_salida: null,
-          almuerzo_regreso: null,
-        };
-
-        const r = calcularDia(d, dia, tarifaHora);
-
-        horasTrabTot += r.normales;
-        horasExtraTot += r.extra;
-        horasNoTrabTot += r.noTrab;
-        totalPagar += r.pagoDia;
-        totalDescuento += r.descuentoDia;
-
-        detalleDia.push({ dia, ...r });
-      });
-
-      let html = `
-        <div style="background:#ffffff; border-radius:10px; padding:10px; margin:10px 0; box-shadow:0 2px 10px rgba(0,0,0,.06);">
-          <p style="margin:0 0 6px 0;"><b>${nombreMostrar}</b></p>
-
-          <p style="margin:0; opacity:.85;">
-            Periodo: <b>${desde || "—"}</b> a <b>${hasta || "—"}</b>
-          </p>
-
-          <p style="margin:6px 0 0 0;">
-            Salario: <b>${formatUSD(salario)}</b> (${tipoSalario}) |
-            Tarifa/hora: <b>${formatUSD(tarifaHora)}</b>
-          </p>
-
-          <p style="margin:6px 0 0 0;">
-            Horas pagadas (normales): <b>${horasTrabTot.toFixed(2)}</b> |
-            Horas NO pagadas (descuento): <b>${horasNoTrabTot.toFixed(2)}</b> |
-            Banco de horas (extra): <b>${horasExtraTot.toFixed(2)}</b>
-          </p>
-
-          <p style="margin:6px 0 0 0;">
-            Descuento total: <b>${formatUSD(totalDescuento)}</b> |
-            <span style="font-size:16px;">Total a pagar: <b>${formatUSD(totalPagar)}</b></span>
-          </p>
-
-          <div style="margin-top:8px; padding-top:8px; border-top:1px solid rgba(0,0,0,.08);">
-            <p style="margin:0 0 6px 0; font-weight:600;">Detalle por día</p>
-      `;
-
-      if (detalleDia.length === 0) {
-        html += `<p style="margin:0; opacity:.8;">No hay días en el rango.</p>`;
-      } else {
-        detalleDia.forEach((x) => {
-          const tag = x.etiqueta ? ` <span style="opacity:.75;">(${x.etiqueta})</span>` : "";
-          html += `
-            <p style="margin:3px 0;">
-              📅 ${x.dia}${tag} — Horas: <b>${x.normales.toFixed(2)}</b>,
-              Descuento: <b>${x.noTrab.toFixed(2)}</b>,
-              Pago día: <b>${formatUSD(x.pagoDia)}</b>
-            </p>
-          `;
-        });
-      }
-
-      html += `
-          </div>
-
-          <div style="margin-top:10px;">
-            <button onclick="generarReciboDetalladoPorId('${empIdFinal || ""}', '${(nombreMostrar || "").replace(/'/g, "\\'")}')">
-              🧾 Generar recibo PDF (firma)
-            </button>
-          </div>
-        </div>
-      `;
-
-      cont.innerHTML += html;
-    });
-  });
-}
-
-// ===============================
-// 🧾 PDF DETALLADO CON FIRMA (USD)
-// ✅ Domingo libre pagado 8h
-// ✅ Feriado global pagado 8h
-// ✅ Día sin marcación = descuento 8h
-// ===============================
-async function generarReciboDetalladoPorId(empID, nombreEmpleado) {
-  try {
-    if (!window.jspdf || !window.jspdf.jsPDF) {
-      alert("Falta jsPDF. Revisa el script de jspdf en el HTML.");
-      return;
-    }
-
-    // ✅ Si no tenemos ID, buscar por nombre
-    if (!empID) {
-      const snap = await db.ref("empleados").orderByChild("nombre").equalTo(nombreEmpleado).once("value");
-      const obj = snap.val();
-      if (!obj) {
-        alert("No se encontró el empleado en la base de datos.");
-        return;
-      }
-      empID = Object.keys(obj)[0];
-    }
-
-    const empSnap = await db.ref("empleados/" + empID).once("value");
-    const emp = empSnap.val();
-    if (!emp) {
-      alert("Empleado no encontrado.");
-      return;
-    }
-
-    const desde = (fechaDesde && fechaDesde.value) ? fechaDesde.value : "";
-    const hasta = (fechaHasta && fechaHasta.value) ? fechaHasta.value : "";
-
-    const marcSnap = await db.ref("marcaciones/" + empID).once("value");
-    const marc = marcSnap.val() || {};
-
-    const salario = Number(emp.salario || 0);
-    const tipoSalario = emp.tipoSalario || "diario";
-    const tarifaHora = tarifaPorHoraUSD(salario, tipoSalario);
-
-    // ✅ Fechas para el PDF (incluye domingos y feriados aunque no existan en marc)
-    const diasParaCalcular = (desde && hasta)
-      ? rangoFechasIncluye(desde, hasta)
-      : Object.keys(marc).sort();
-
-    let horasTrabTot = 0;
-    let horasExtraTot = 0;
-    let horasNoTrabTot = 0;
-    let totalPagar = 0;
-    let totalDescuento = 0;
-
-    const detalle = [];
-
-    diasParaCalcular.forEach((dia) => {
-      const tipos = marc[dia] || {};
-      const ts = {
-        entrada: tipos.entrada?.timestamp || null,
-        salida: tipos.salida?.timestamp || null,
-        almuerzo_salida: tipos.almuerzo_salida?.timestamp || null,
-        almuerzo_regreso: tipos.almuerzo_regreso?.timestamp || null,
-      };
-
-      const r = calcularDia(ts, dia, tarifaHora);
-
-      horasTrabTot += r.normales;
-      horasExtraTot += r.extra;
-      horasNoTrabTot += r.noTrab;
-      totalPagar += r.pagoDia;
-      totalDescuento += r.descuentoDia;
-
-      detalle.push({ dia, ...r });
-    });
-
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-    let y = 18;
-
-    doc.setFontSize(16);
-    doc.text("RECIBO DE PAGO (USD)", 14, y);
-    y += 10;
-
-    doc.setFontSize(11);
-    doc.text(`Empleado: ${emp.nombre || nombreEmpleado || "Sin nombre"}`, 14, y);
-    y += 6;
-    doc.text(`Periodo: ${desde || "—"}  a  ${hasta || "—"}`, 14, y);
-    y += 6;
-    doc.text(`Tipo de salario: ${tipoSalario}`, 14, y);
-    y += 6;
-    doc.text(`Salario: ${formatUSD(salario)} | Tarifa/hora: ${formatUSD(tarifaHora)}`, 14, y);
-    y += 8;
-
-    doc.setFontSize(12);
-    doc.text(`Horas pagadas (normales): ${horasTrabTot.toFixed(2)}`, 14, y);
-    y += 6;
-    doc.text(`Horas NO pagadas (descuento): ${horasNoTrabTot.toFixed(2)}`, 14, y);
-    y += 6;
-    doc.text(`Banco de horas (extra): ${horasExtraTot.toFixed(2)}`, 14, y);
-    y += 6;
-
-    doc.text(`Descuento total: ${formatUSD(totalDescuento)}`, 14, y);
-    y += 6;
-
-    doc.setFontSize(14);
-    doc.text(`TOTAL A PAGAR: ${formatUSD(totalPagar)}`, 14, y);
-    y += 10;
-
-    doc.setFontSize(12);
-    doc.text("Detalle por día:", 14, y);
-    y += 8;
-
-    doc.setFontSize(10);
-    doc.text("Fecha", 14, y);
-    doc.text("Horas", 55, y);
-    doc.text("Desc.", 85, y);
-    doc.text("Pago día", 115, y);
-    y += 4;
-    doc.line(14, y, 196, y);
-    y += 6;
-
-    detalle.forEach((d) => {
-      if (y > 270) {
-        doc.addPage();
-        y = 20;
-      }
-      doc.text(String(d.dia), 14, y);
-      doc.text(d.normales.toFixed(2), 55, y);
-      doc.text(d.noTrab.toFixed(2), 85, y);
-      doc.text(formatUSD(d.pagoDia), 115, y);
-      y += 6;
-
-      // ✅ nota corta para domingo/feriado/descuento
-      if (d.etiqueta) {
-        if (y > 270) {
-          doc.addPage();
-          y = 20;
-        }
-        doc.setFontSize(9);
-        doc.text(`- ${d.etiqueta}`, 16, y);
-        doc.setFontSize(10);
-        y += 5;
-      }
-    });
-
-    if (y > 250) {
-      doc.addPage();
-      y = 20;
-    }
-    y += 12;
-
-    doc.setFontSize(11);
-    doc.text("Firma del empleado: ________________________________", 14, y);
-    y += 10;
-    doc.text("Firma del encargado: _______________________________", 14, y);
-    y += 10;
-    doc.text("Fecha de firma: ____/____/______", 14, y);
-
-    doc.save(`Recibo_${(emp.nombre || nombreEmpleado || "Empleado").replace(/\s+/g, "_")}.pdf`);
-  } catch (e) {
-    console.error(e);
-    alert("Error al generar el recibo: " + (e.message || e));
-  }
-}
-
-// ===============================
-// 🔹 LISTENERS FILTROS
-// ===============================
-const filterDate = document.getElementById("filterDate");
-const periodoResumen = document.getElementById("periodoResumen");
-
-filterDate?.addEventListener("change", () => {
-  renderAdminList(filterDate.value);
-  updateChart();
-});
-periodoResumen?.addEventListener("change", () => {
-  renderAdminList(filterDate.value);
-  updateChart();
-});
-fechaDesde?.addEventListener("change", () => {
-  renderAdminList(filterDate.value);
-  updateChart();
-});
-fechaHasta?.addEventListener("change", () => {
-  renderAdminList(filterDate.value);
-  updateChart();
-});
-
-// ===============================
 // ✅ MODAL EDITAR HORARIO (ADMIN)
-// ===============================
+// ==================================================
 let empleadosCache = {};
 
 async function cargarEmpleadosParaModal() {
@@ -1211,7 +769,9 @@ async function cargarEmpleadosParaModal() {
   snap.forEach((emp) => {
     empleadosCache[emp.key] = emp.val();
   });
+
   fillEmployeeSelect();
+  fillLibreEmpSelect(); // ✅ para modal libre
 }
 
 function fillEmployeeSelect(selectedId = null) {
@@ -1302,16 +862,9 @@ async function openEditModal(preselectEmpId = null) {
 }
 
 function closeEditModal() {
-  const modal = document.getElementById("editModal");
-  const back = document.getElementById("editModalBackdrop");
-  const box = document.getElementById("editStatus");
-
-  if (modal) modal.classList.add("hidden");
-  if (back) back.classList.add("hidden");
-  if (box) {
-    box.style.display = "none";
-    box.innerText = "";
-  }
+  document.getElementById("editModal")?.classList.add("hidden");
+  document.getElementById("editModalBackdrop")?.classList.add("hidden");
+  hideEditStatus();
 }
 
 document.getElementById("editCancelBtn")?.addEventListener("click", closeEditModal);
@@ -1326,20 +879,11 @@ async function saveEditHorario() {
     const tipo = document.getElementById("editTipo").value;
     const hora = document.getElementById("editHora").value;
 
-    if (!empId || !empleadosCache[empId]) {
-      showEditStatus("⚠️ Selecciona un empleado válido.", true);
-      return;
-    }
-    if (!fecha) {
-      showEditStatus("⚠️ Selecciona una fecha.", true);
-      return;
-    }
+    if (!empId || !empleadosCache[empId]) return showEditStatus("⚠️ Selecciona un empleado válido.", true);
+    if (!fecha) return showEditStatus("⚠️ Selecciona una fecha.", true);
 
     const ts = buildTimestampLocal(fecha, hora);
-    if (!ts) {
-      showEditStatus("⚠️ Hora inválida.", true);
-      return;
-    }
+    if (!ts) return showEditStatus("⚠️ Hora inválida.", true);
 
     const empNombre = empleadosCache[empId].nombre || "Sin nombre";
     const ref = db.ref(`marcaciones/${empId}/${fecha}/${tipo}`);
@@ -1375,57 +919,18 @@ async function saveEditHorario() {
 
     loadMarcaciones();
     updateChart();
-    setTimeout(closeEditModal, 700);
+    setTimeout(closeEditModal, 650);
   } catch (e) {
     console.error("saveEditHorario error:", e);
-    const msg =
-      e && (e.code || e.message)
-        ? `${e.code ? e.code + " - " : ""}${e.message || ""}`
-        : String(e);
-    showEditStatus("❌ " + msg, true);
+    showEditStatus("❌ " + (e.message || e), true);
   }
 }
-// ==========================================
-// 📅 LISTA Y ELIMINACIÓN DE FERIADOS
-// ==========================================
-
-function loadFeriadosGlobal() {
-  const cont = document.getElementById("listaFeriados");
-  if (!cont) return;
-
-  db.ref("feriados_global").on("value", (snap) => {
-    cont.innerHTML = "";
-
-    const data = snap.val();
-    if (!data) {
-      cont.innerHTML = "<p style='opacity:.7;'>No hay feriados registrados.</p>";
-      return;
-    }
-
-    Object.keys(data)
-      .sort()
-      .forEach((fecha) => {
-        const f = data[fecha];
-        const motivo = f.motivo || "Feriado pagado";
-
-        cont.innerHTML += `
-          <div style="background:#fff; padding:6px; margin:5px 0; border-radius:6px; box-shadow:0 2px 5px rgba(0,0,0,.05);">
-            <b>${fecha}</b> - ${motivo}
-            <button 
-              onclick="eliminarFeriado('${fecha}')" 
-              style="float:right; background:#dc3545; color:white; border:none; padding:3px 6px; border-radius:4px; cursor:pointer;">
-              ✕
-            </button>
-          </div>
-        `;
-      });
-  });
-}
 
 // ==================================================
-// ✅ DÍAS LIBRES PAGADOS POR EMPLEADO (8H)
-// Guarda en: dias_libres_empleado/{empId}/{fecha}
+// ✅ DÍAS LIBRES PAGADOS POR EMPLEADO (MODAL + EDITAR)
+// Guarda: dias_libres_empleado/{empId}/{fecha}
 // ==================================================
+let libreEditMode = { empId: null, fecha: null };
 
 function showLibreStatus(msg, isError = false) {
   const box = document.getElementById("libreStatus");
@@ -1443,7 +948,7 @@ function hideLibreStatus() {
   box.innerText = "";
 }
 
-function fillLibreEmpSelect() {
+function fillLibreEmpSelect(preselectId = null) {
   const sel = document.getElementById("libreEmpSelect");
   if (!sel) return;
 
@@ -1454,143 +959,256 @@ function fillLibreEmpSelect() {
       return `<option value="${id}">${n}</option>`;
     })
     .join("");
+
+  if (preselectId && ids.includes(preselectId)) sel.value = preselectId;
 }
 
-async function cargarLibresEmpleadoLista() {
-  const sel = document.getElementById("libreEmpSelect");
-  const cont = document.getElementById("listaLibresEmpleado");
-  if (!sel || !cont) return;
+function openLibreModal(empId = null, fecha = null, motivo = "") {
+  const modal = document.getElementById("libreModal");
+  const back = document.getElementById("libreModalBackdrop");
+  if (!modal || !back) return;
 
-  const empId = sel.value;
-  if (!empId) {
-    cont.innerHTML = `<p style="opacity:.75;">Selecciona un empleado.</p>`;
-    return;
+  fillLibreEmpSelect(empId);
+
+  const f = document.getElementById("libreFecha");
+  if (f) {
+    if (fecha) f.value = fecha;
+    else {
+      const now = new Date();
+      const yyyy = now.getFullYear();
+      const mm = String(now.getMonth() + 1).padStart(2, "0");
+      const dd = String(now.getDate()).padStart(2, "0");
+      f.value = `${yyyy}-${mm}-${dd}`;
+    }
   }
 
-  const snap = await db.ref(`dias_libres_empleado/${empId}`).once("value");
-  const obj = snap.val() || {};
+  document.getElementById("libreMotivo").value = motivo || "";
+  hideLibreStatus();
 
-  const fechas = Object.keys(obj).sort();
-  if (fechas.length === 0) {
-    cont.innerHTML = `<p style="opacity:.75;">No hay días libres pagados para este empleado.</p>`;
-    return;
-  }
+  libreEditMode = { empId, fecha };
 
-  cont.innerHTML = fechas
-    .map((f) => {
-      const motivo = obj[f]?.motivo ? ` — <span style="opacity:.8;">${obj[f].motivo}</span>` : "";
-      return `
-        <div style="padding:6px 8px; border:1px solid rgba(0,0,0,.08); border-radius:8px; margin-bottom:6px; background:#fff;">
-          <b>${f}</b>${motivo}
-          <button style="float:right;" onclick="borrarDiaLibreEmpleado('${empId}','${f}')">🗑️</button>
-          <div style="clear:both;"></div>
-        </div>
-      `;
-    })
-    .join("");
+  modal.classList.remove("hidden");
+  back.classList.remove("hidden");
 }
 
-async function marcarDiaLibreEmpleado() {
+function closeLibreModal() {
+  document.getElementById("libreModal")?.classList.add("hidden");
+  document.getElementById("libreModalBackdrop")?.classList.add("hidden");
+  hideLibreStatus();
+  libreEditMode = { empId: null, fecha: null };
+}
+
+async function saveLibreModal() {
   try {
-    const sel = document.getElementById("libreEmpSelect");
+    const empId = document.getElementById("libreEmpSelect")?.value || "";
     const fecha = document.getElementById("libreFecha")?.value || "";
     const motivo = (document.getElementById("libreMotivo")?.value || "").trim();
 
-    if (!sel || !sel.value) {
-      showLibreStatus("⚠️ Selecciona un empleado.", true);
-      return;
-    }
-    if (!fecha) {
-      showLibreStatus("⚠️ Selecciona una fecha.", true);
-      return;
-    }
+    if (!empId) return showLibreStatus("⚠️ Selecciona un empleado.", true);
+    if (!fecha) return showLibreStatus("⚠️ Selecciona una fecha.", true);
 
-    const empId = sel.value;
+    if (libreEditMode.empId && libreEditMode.fecha) {
+      const changed = libreEditMode.empId !== empId || libreEditMode.fecha !== fecha;
+      if (changed) {
+        await db.ref(`dias_libres_empleado/${libreEditMode.empId}/${libreEditMode.fecha}`).remove();
+      }
+    }
 
     await db.ref(`dias_libres_empleado/${empId}/${fecha}`).set({
       pagado: true,
       horas: HORAS_JORNADA,
       motivo: motivo || null,
-      creadoEn: Date.now(),
-      creadoPor: "admin",
+      actualizadoEn: Date.now(),
+      actualizadoPor: "admin",
     });
 
-    showLibreStatus("✅ Día libre pagado guardado.", false);
-    await cargarLibresEmpleadoLista();
+    showLibreStatus("✅ Guardado.", false);
 
-    // refrescar resumen/pagos y gráfico
+    await renderListaLibresEmpleado();
     renderAdminList(document.getElementById("filterDate")?.value || "");
     updateChart();
 
-    setTimeout(hideLibreStatus, 1200);
+    setTimeout(closeLibreModal, 450);
   } catch (e) {
     console.error(e);
     showLibreStatus("❌ Error: " + (e.message || e), true);
   }
 }
 
-async function borrarDiaLibreEmpleado(empId, fecha) {
-  if (!confirm(`¿Borrar día libre pagado ${fecha}?`)) return;
-  await db.ref(`dias_libres_empleado/${empId}/${fecha}`).remove();
-  await cargarLibresEmpleadoLista();
-  renderAdminList(document.getElementById("filterDate")?.value || "");
-  updateChart();
+async function renderListaLibresEmpleado() {
+  const cont = document.getElementById("listaLibresEmpleado");
+  if (!cont) return;
+
+  cont.innerHTML = `<p style="opacity:.75;">Cargando...</p>`;
+
+  const snap = await db.ref("dias_libres_empleado").once("value");
+  const all = snap.val() || {};
+
+  if (!Object.keys(all).length) {
+    cont.innerHTML = `<p style="opacity:.75;">No hay días libres pagados registrados.</p>`;
+    return;
+  }
+
+  let html = "";
+  const empIds = Object.keys(all).sort((a, b) => {
+    const na = empleadosCache[a]?.nombre || "";
+    const nb = empleadosCache[b]?.nombre || "";
+    return na.localeCompare(nb);
+  });
+
+  empIds.forEach((empId) => {
+    const nombre = empleadosCache[empId]?.nombre || "Sin nombre";
+    const dias = all[empId] || {};
+    const fechas = Object.keys(dias).sort();
+    if (!fechas.length) return;
+
+    html += `<div class="empleado" style="margin-bottom:12px;">
+      <b>${nombre}</b>
+      <div style="margin-top:8px;">`;
+
+    fechas.forEach((fecha) => {
+      const motivo = dias[fecha]?.motivo || "";
+      const motivoTxt = motivo ? ` — <span style="opacity:.8;">${motivo}</span>` : "";
+
+      html += `
+        <div style="padding:8px; border:1px solid rgba(0,0,0,.08); border-radius:12px; margin:8px 0; background:#fff;">
+          <b>${fecha}</b>${motivoTxt}
+
+          <div style="margin-top:8px; display:flex; gap:8px; flex-wrap:wrap;">
+            <button onclick="uiEditarDiaLibre('${empId}','${fecha}')" style="min-width:160px;">✏️ Editar</button>
+            <button class="danger" onclick="uiBorrarDiaLibre('${empId}','${fecha}')" style="min-width:160px;">🗑️ Borrar</button>
+          </div>
+        </div>
+      `;
+    });
+
+    html += `</div></div>`;
+  });
+
+  cont.innerHTML = html;
 }
 
-// ✅ Hook de botones/listeners (no rompe si no existe)
-document.getElementById("btnMarcarLibreEmpleado")?.addEventListener("click", marcarDiaLibreEmpleado);
-document.getElementById("libreEmpSelect")?.addEventListener("change", cargarLibresEmpleadoLista);
-
-// ✅ Cuando cargues empleadosCache para el modal, llenamos este select también
-const _cargarEmpleadosParaModalOriginal = cargarEmpleadosParaModal;
-cargarEmpleadosParaModal = async function () {
-  await _cargarEmpleadosParaModalOriginal();
-  fillLibreEmpSelect();
-  // fecha por defecto hoy
-  const f = document.getElementById("libreFecha");
-  if (f && !f.value) {
-    const now = new Date();
-    const yyyy = now.getFullYear();
-    const mm = String(now.getMonth() + 1).padStart(2, "0");
-    const dd = String(now.getDate()).padStart(2, "0");
-    f.value = `${yyyy}-${mm}-${dd}`;
-  }
-  cargarLibresEmpleadoLista();
+window.uiEditarDiaLibre = async function (empId, fecha) {
+  const snap = await db.ref(`dias_libres_empleado/${empId}/${fecha}`).once("value");
+  const data = snap.val() || {};
+  openLibreModal(empId, fecha, data.motivo || "");
 };
 
-// ==================================================
-// ✅ INTEGRA AL CÁLCULO: día libre por empleado paga 8h
-// Modifica calcularDia para aceptar "overrideLibre" opcional
-// ==================================================
+window.uiBorrarDiaLibre = async function (empId, fecha) {
+  if (!confirm(`¿Borrar día libre pagado ${fecha}?`)) return;
+  await db.ref(`dias_libres_empleado/${empId}/${fecha}`).remove();
+  await renderListaLibresEmpleado();
+  renderAdminList(document.getElementById("filterDate")?.value || "");
+  updateChart();
+};
 
-const _calcularDiaOriginal = calcularDia;
-calcularDia = function (timestampsDia, fechaYYYYMMDD, tarifaHora, overrideLibre = null) {
-  // ✅ Si el admin marcó ese día como libre pagado => paga 8h sí o sí
-  if (overrideLibre && overrideLibre.pagado) {
-    const normales = HORAS_JORNADA;
+// listeners libre
+document.getElementById("btnOpenLibreModal")?.addEventListener("click", () => openLibreModal());
+document.getElementById("libreCloseBtn")?.addEventListener("click", closeLibreModal);
+document.getElementById("libreCancelBtn")?.addEventListener("click", closeLibreModal);
+document.getElementById("libreModalBackdrop")?.addEventListener("click", closeLibreModal);
+document.getElementById("libreSaveBtn")?.addEventListener("click", saveLibreModal);
+
+// ==================================================
+// ✅ EXTRA PRO (CÁLCULO ÚNICO)
+// ==================================================
+function tarifaPorHoraUSD(salario, tipoSalario) {
+  const s = Number(salario || 0);
+  const t = String(tipoSalario || "diario").toLowerCase();
+  if (t === "diario") return s / HORAS_JORNADA;
+  if (t === "quincenal") return s / (15 * HORAS_JORNADA);
+  if (t === "mensual") return s / (30 * HORAS_JORNADA);
+  return s / HORAS_JORNADA;
+}
+
+// ✅ Base: domingo/feriado/desc.
+function calcularDiaBase(timestampsDia, fechaYYYYMMDD, tarifaHora) {
+  const feriado = getFeriadoGlobal(fechaYYYYMMDD);
+  const domingo = esDomingo(fechaYYYYMMDD);
+
+  const entrada = timestampsDia?.entrada || null;
+  const salida = timestampsDia?.salida || null;
+  const aS = timestampsDia?.almuerzo_salida || null;
+  const aR = timestampsDia?.almuerzo_regreso || null;
+
+  // ✅ feriado global pagado si no marcó
+  if (feriado && (!entrada || !salida)) {
     return {
-      normales,
+      normales: HORAS_JORNADA,
       extra: 0,
       noTrab: 0,
-      pagoDia: normales * tarifaHora,
+      pagoDia: HORAS_JORNADA * tarifaHora,
+      descuentoDia: 0,
+      etiqueta: `Feriado pagado${feriado?.motivo ? ": " + feriado.motivo : ""}`,
+    };
+  }
+
+  // ✅ domingo pagado si no marcó
+  if (domingo && (!entrada || !salida)) {
+    return {
+      normales: HORAS_JORNADA,
+      extra: 0,
+      noTrab: 0,
+      pagoDia: HORAS_JORNADA * tarifaHora,
+      descuentoDia: 0,
+      etiqueta: "Domingo libre pagado",
+    };
+  }
+
+  const etiquetaFeriadoTrabajado = feriado ? `Feriado trabajado${feriado?.motivo ? ": " + feriado.motivo : ""}` : "";
+
+  // ✅ día normal (o feriado/domingo con marcación incompleta) = descuento
+  if (!entrada || !salida) {
+    return {
+      normales: 0,
+      extra: 0,
+      noTrab: HORAS_JORNADA,
+      pagoDia: 0,
+      descuentoDia: HORAS_JORNADA * tarifaHora,
+      etiqueta: "Sin marcación completa (descuento)",
+    };
+  }
+
+  // ✅ cálculo normal
+  let almuerzo = 0;
+  if (aS && aR) almuerzo = (aR - aS) / 3600000;
+
+  let horas = (salida - entrada) / 3600000 - almuerzo;
+  if (!Number.isFinite(horas) || horas < 0) horas = 0;
+
+  const normales = Math.min(HORAS_JORNADA, horas);
+  const extra = Math.max(0, horas - HORAS_JORNADA);
+  const noTrab = Math.max(0, HORAS_JORNADA - normales);
+
+  return {
+    normales,
+    extra,
+    noTrab,
+    pagoDia: normales * tarifaHora,
+    descuentoDia: noTrab * tarifaHora,
+    etiqueta: etiquetaFeriadoTrabajado || "",
+  };
+}
+
+// ✅ Wrapper: aplica libre por empleado si existe
+function calcularDia(timestampsDia, fechaYYYYMMDD, tarifaHora, overrideLibre = null) {
+  if (overrideLibre && overrideLibre.pagado) {
+    return {
+      normales: HORAS_JORNADA,
+      extra: 0,
+      noTrab: 0,
+      pagoDia: HORAS_JORNADA * tarifaHora,
       descuentoDia: 0,
       etiqueta: overrideLibre.motivo ? `Libre pagado: ${overrideLibre.motivo}` : "Libre pagado",
     };
   }
-
-  // si no hay override, usar la lógica que ya tenías (domingo / descuento / etc.)
-  return _calcularDiaOriginal(timestampsDia, fechaYYYYMMDD, tarifaHora);
-};
+  return calcularDiaBase(timestampsDia, fechaYYYYMMDD, tarifaHora);
+}
 
 // ==================================================
-// ✅ APLICAR overrideLibre en RESUMEN y PDF
-// Reemplazo seguro: envolvemos renderPagos y generarReciboDetalladoPorId
+// ✅ RESUMEN PAGOS (con feriados + domingos + libres empleado)
 // ==================================================
-
-const _renderPagosOriginal = renderPagos;
-renderPagos = function () {
-  // llamamos a tu renderPagos actual, pero con override interno:
-  // Para no reescribir todo, hacemos una versión completa:
+async function renderPagos() {
   const cont = document.getElementById("resumenPagos");
   if (!cont) return;
 
@@ -1600,7 +1218,7 @@ renderPagos = function () {
   const hasta = (fechaHasta && fechaHasta.value) ? fechaHasta.value : "";
   const fechasRango = rangoFechasIncluye(desde, hasta);
 
-  // resumen desde marcaciones (excelSalarial)
+  // resumen desde marcaciones
   const resumen = {};
   for (const m of excelSalarial) {
     if (!m || !m.fecha) continue;
@@ -1621,10 +1239,10 @@ renderPagos = function () {
     return;
   }
 
-  empleadosKeys.forEach(async (empNombre) => {
+  for (const empNombre of empleadosKeys) {
     const empID = resumen[empNombre].empID;
 
-    // traer empleado
+    // empleado
     let empData = {};
     let empIdFinal = empID || null;
 
@@ -1646,7 +1264,7 @@ renderPagos = function () {
     const tipoSalario = empData.tipoSalario || "diario";
     const tarifaHora = tarifaPorHoraUSD(salario, tipoSalario);
 
-    // traer días libres del empleado
+    // libres del empleado
     const libresSnap = empIdFinal ? await db.ref(`dias_libres_empleado/${empIdFinal}`).once("value") : null;
     const libresObj = (libresSnap && libresSnap.val()) ? libresSnap.val() : {};
 
@@ -1718,39 +1336,189 @@ renderPagos = function () {
     `;
 
     cont.innerHTML += html;
-  });
-};
-
-const _generarPDFOriginal = generarReciboDetalladoPorId;
-generarReciboDetalladoPorId = async function (empID, nombreEmpleado) {
-  // usamos tu función, pero como ya usa calcularDia y ahora calcularDia soporta override,
-  // solo necesitamos asegurarnos que el PDF consulte los días libres del empleado.
-  // Para no romper, hacemos copia completa mínima:
-
-  if (!empID) return _generarPDFOriginal(empID, nombreEmpleado);
-
-  // traer días libres del empleado a un "cache" global simple para que el PDF lo use
-  // (hacemos override temporal usando un wrapper dentro del PDF)
-  const libresSnap = await db.ref(`dias_libres_empleado/${empID}`).once("value");
-  const libresObj = libresSnap.val() || {};
-
-  // wrap temporal: interceptar calcularDia SOLO durante este PDF
-  const old = calcularDia;
-  calcularDia = function (timestampsDia, fechaYYYYMMDD, tarifaHora) {
-    return old(timestampsDia, fechaYYYYMMDD, tarifaHora, libresObj[fechaYYYYMMDD] || null);
-  };
-
-  try {
-    await _generarPDFOriginal(empID, nombreEmpleado);
-  } finally {
-    calcularDia = old;
   }
-};
-
-function eliminarFeriado(fecha) {
-  if (!confirm("¿Eliminar este feriado global?")) return;
-  db.ref("feriados_global/" + fecha).remove();
 }
+
+// ==================================================
+// 🧾 PDF DETALLADO CON FIRMA (USD)
+// ✅ incluye POLADENT
+// ==================================================
+async function generarReciboDetalladoPorId(empID, nombreEmpleado) {
+  try {
+    if (!window.jspdf || !window.jspdf.jsPDF) {
+      alert("Falta jsPDF. Revisa el script de jspdf en el HTML.");
+      return;
+    }
+
+    // si no hay ID, buscar por nombre
+    if (!empID) {
+      const snap = await db.ref("empleados").orderByChild("nombre").equalTo(nombreEmpleado).once("value");
+      const obj = snap.val();
+      if (!obj) return alert("No se encontró el empleado en la base de datos.");
+      empID = Object.keys(obj)[0];
+    }
+
+    const empSnap = await db.ref("empleados/" + empID).once("value");
+    const emp = empSnap.val();
+    if (!emp) return alert("Empleado no encontrado.");
+
+    const desde = (fechaDesde && fechaDesde.value) ? fechaDesde.value : "";
+    const hasta = (fechaHasta && fechaHasta.value) ? fechaHasta.value : "";
+
+    const marcSnap = await db.ref("marcaciones/" + empID).once("value");
+    const marc = marcSnap.val() || {};
+
+    const libresSnap = await db.ref(`dias_libres_empleado/${empID}`).once("value");
+    const libresObj = libresSnap.val() || {};
+
+    const salario = Number(emp.salario || 0);
+    const tipoSalario = emp.tipoSalario || "diario";
+    const tarifaHora = tarifaPorHoraUSD(salario, tipoSalario);
+
+    const diasParaCalcular = (desde && hasta) ? rangoFechasIncluye(desde, hasta) : Object.keys(marc).sort();
+
+    let horasTrabTot = 0, horasExtraTot = 0, horasNoTrabTot = 0, totalPagar = 0, totalDescuento = 0;
+    const detalle = [];
+
+    diasParaCalcular.forEach((dia) => {
+      const tipos = marc[dia] || {};
+      const ts = {
+        entrada: tipos.entrada?.timestamp || null,
+        salida: tipos.salida?.timestamp || null,
+        almuerzo_salida: tipos.almuerzo_salida?.timestamp || null,
+        almuerzo_regreso: tipos.almuerzo_regreso?.timestamp || null,
+      };
+
+      const r = calcularDia(ts, dia, tarifaHora, libresObj[dia] || null);
+
+      horasTrabTot += r.normales;
+      horasExtraTot += r.extra;
+      horasNoTrabTot += r.noTrab;
+      totalPagar += r.pagoDia;
+      totalDescuento += r.descuentoDia;
+
+      detalle.push({ dia, ...r });
+    });
+
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    let y = 16;
+
+    // ✅ Encabezado empresa
+    doc.setFontSize(18);
+    doc.text("POLADENT", 14, y);
+    y += 7;
+    doc.setFontSize(11);
+    doc.text("Sistema de control de asistencia", 14, y);
+    y += 10;
+
+    doc.setFontSize(16);
+    doc.text("RECIBO DE PAGO (USD)", 14, y);
+    y += 10;
+
+    doc.setFontSize(11);
+    doc.text(`Empleado: ${emp.nombre || nombreEmpleado || "Sin nombre"}`, 14, y);
+    y += 6;
+    doc.text(`Periodo: ${desde || "—"}  a  ${hasta || "—"}`, 14, y);
+    y += 6;
+    doc.text(`Tipo de salario: ${tipoSalario}`, 14, y);
+    y += 6;
+    doc.text(`Salario: ${formatUSD(salario)} | Tarifa/hora: ${formatUSD(tarifaHora)}`, 14, y);
+    y += 8;
+
+    doc.setFontSize(12);
+    doc.text(`Horas pagadas: ${horasTrabTot.toFixed(2)}`, 14, y);
+    y += 6;
+    doc.text(`Horas NO pagadas (descuento): ${horasNoTrabTot.toFixed(2)}`, 14, y);
+    y += 6;
+    doc.text(`Banco de horas (extra): ${horasExtraTot.toFixed(2)}`, 14, y);
+    y += 6;
+
+    doc.text(`Descuento total: ${formatUSD(totalDescuento)}`, 14, y);
+    y += 6;
+
+    doc.setFontSize(14);
+    doc.text(`TOTAL A PAGAR: ${formatUSD(totalPagar)}`, 14, y);
+    y += 10;
+
+    doc.setFontSize(12);
+    doc.text("Detalle por día:", 14, y);
+    y += 8;
+
+    doc.setFontSize(10);
+    doc.text("Fecha", 14, y);
+    doc.text("Horas", 55, y);
+    doc.text("Desc.", 85, y);
+    doc.text("Pago día", 115, y);
+    y += 4;
+    doc.line(14, y, 196, y);
+    y += 6;
+
+    detalle.forEach((d) => {
+      if (y > 270) {
+        doc.addPage();
+        y = 20;
+      }
+      doc.text(String(d.dia), 14, y);
+      doc.text(d.normales.toFixed(2), 55, y);
+      doc.text(d.noTrab.toFixed(2), 85, y);
+      doc.text(formatUSD(d.pagoDia), 115, y);
+      y += 6;
+
+      if (d.etiqueta) {
+        if (y > 270) {
+          doc.addPage();
+          y = 20;
+        }
+        doc.setFontSize(9);
+        doc.text(`- ${d.etiqueta}`, 16, y);
+        doc.setFontSize(10);
+        y += 5;
+      }
+    });
+
+    if (y > 250) {
+      doc.addPage();
+      y = 20;
+    }
+    y += 12;
+
+    doc.setFontSize(11);
+    doc.text("Firma del empleado: ________________________________", 14, y);
+    y += 10;
+    doc.text("Firma del encargado: _______________________________", 14, y);
+    y += 10;
+    doc.text("Fecha de firma: ____/____/______", 14, y);
+
+    doc.save(`Recibo_${(emp.nombre || nombreEmpleado || "Empleado").replace(/\s+/g, "_")}.pdf`);
+  } catch (e) {
+    console.error(e);
+    alert("Error al generar el recibo: " + (e.message || e));
+  }
+}
+
+// ===============================
+// 🔹 LISTENERS FILTROS
+// ===============================
+const filterDate = document.getElementById("filterDate");
+const periodoResumen = document.getElementById("periodoResumen");
+
+filterDate?.addEventListener("change", () => {
+  renderAdminList(filterDate.value);
+  updateChart();
+});
+periodoResumen?.addEventListener("change", () => {
+  renderAdminList(filterDate.value);
+  updateChart();
+});
+fechaDesde?.addEventListener("change", () => {
+  renderAdminList(filterDate.value);
+  updateChart();
+});
+fechaHasta?.addEventListener("change", () => {
+  renderAdminList(filterDate.value);
+  updateChart();
+});
 
 // ✅ Alias seguros
 window.closeEditModal = window.closeEditModal || closeEditModal;
@@ -1764,6 +1532,7 @@ setDefaultDate();
 periodoResumen.value = "diario";
 loadEmpleados();
 loadMarcaciones();
-loadFeriadosGlobal(); // ✅ NUEVO (por si entra directo sin login)
+loadFeriadosGlobalCache();
+renderListaFeriadosGlobal();
+cargarEmpleadosParaModal().then(renderListaLibresEmpleado);
 updateChart();
-cargarEmpleadosParaModal(); // ✅ llena empleadosCache y el select de días libres
