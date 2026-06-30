@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Poladent – Sistema Completo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="icon" type="image/png" href="img/favicon.png" />
+
+  <!-- Firebase SDK (compat) -->
+  <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+  <!-- Librerías -->
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Tu configuración y app (orden IMPORTA) -->
+  <script defer src="firebase/config.js"></script>
+  <script defer src="apps/app.js"></script>
+  <script defer src="apps/abrir-empleado-rapido.js"></script>
+</head>
+
+<body>
+
+  <!-- PORTADA PRO / HOME -->
+  <div id="home" class="landingPro">
+    <div class="landingGlow glowOne"></div>
+    <div class="landingGlow glowTwo"></div>
+
+    <section class="heroTop">
+      <div class="brandSeal">
+        <img src="img/logo-poladent.png" alt="Poladent Casa Dental" />
+      </div>
+      <div class="brandText">
+        <span class="eyebrow">Sistema empresarial</span>
+        <h1>POLADENT</h1>
+        <p>Casa Dental</p>
+        <div class="systemBadge">CONTROL DE ASISTENCIA</div>
+      </div>
+    </section>
+
+    <section class="landingGrid">
+      <div class="introPanel">
+        <span class="miniLabel">Gestión inteligente del equipo</span>
+        <h2>Controla entradas, salidas, horarios y reportes en tiempo real.</h2>
+        <p>Una portada profesional para tu sistema interno, diseñada para celular, tablet y computadora.</p>
+
+        <div class="featureList">
+          <div class="featureItem"><span>👥</span><b>Empleados</b><small>Registro por PIN</small></div>
+          <div class="featureItem"><span>⏱️</span><b>Asistencia</b><small>Marcaciones precisas</small></div>
+          <div class="featureItem"><span>📊</span><b>Reportes</b><small>Resumen y gráficos</small></div>
+          <div class="featureItem"><span>🔐</span><b>Seguridad</b><small>Datos protegidos</small></div>
+        </div>
+      </div>
+
+      <div class="accessPanel">
+        <div class="accessLogo">
+          <img src="img/logo-poladent.png" alt="Logo Poladent" />
+        </div>
+        <h3>Bienvenido</h3>
+        <p>Selecciona tu tipo de acceso para continuar</p>
+
+        <div class="homeBtns">
+          <button id="btnAdmin" class="btnAccess adminAccess">
+            <span>🔐</span> Administrador
+          </button>
+          <button id="btnEmployee" class="btnAccess employeeAccess">
+            <span>👤</span> Empleado (PIN)
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <section class="trustBar">
+      <div><span>☁️</span><b>Respaldo en la nube</b></div>
+      <div><span>📱</span><b>Acceso móvil</b></div>
+      <div><span>📈</span><b>Reportes inteligentes</b></div>
+      <div><span>🛡️</span><b>Sistema seguro</b></div>
+    </section>
+  </div>
+
+  <!-- HEADER INTERNO -->
+  <div class="appHeader hidden">
+    <h1>POLADENT</h1>
+    <p>Sistema de control de asistencia y horas laborales</p>
+  </div>
+
+  <!-- ADMIN LOGIN -->
+  <div id="adminLogin" class="card hidden">
+    <h3>Administrador</h3>
+    <input id="adminEmail" placeholder="Correo" />
+    <input id="adminPass" type="password" placeholder="Contraseña" />
+    <br />
+    <button id="loginBtn">Entrar</button>
+    <button id="backHomeBtn1">Volver</button>
+  </div>
+
+  <!-- ADMIN PANEL -->
+  <div id="adminPanel" class="panel hidden">
+    <div class="adminTopBar">
+      <div>
+        <span class="miniLabel">POLADENT CASA DENTAL</span>
+        <h3>Panel Administrador</h3>
+      </div>
+      <div class="adminTopActions">
+        <span>🏢 Sistema empresarial</span>
+      </div>
+    </div>
+
+    <!-- Dashboard PRO -->
+    <section class="dashboardHero">
+      <div class="dashTitleBox">
+        <span class="dashEyebrow">Centro de control</span>
+        <h2>Resumen ejecutivo de asistencia</h2>
+        <p>Vista rápida para administrar empleados, horarios, pagos y reportes.</p>
+      </div>
+      <div class="dashLogoMini">🦷</div>
+    </section>
+
+    <section class="kpiGrid">
+      <div class="kpiCard"><div class="kpiIcon">👥</div><span>Empleados</span><strong>Activos</strong><small>Personal registrado</small></div>
+      <div class="kpiCard"><div class="kpiIcon green">✅</div><span>Asistencia</span><strong>Hoy</strong><small>Entradas y salidas</small></div>
+      <div class="kpiCard"><div class="kpiIcon gold">⏱️</div><span>Horas</span><strong>Trabajadas</strong><small>Control por rango</small></div>
+      <div class="kpiCard"><div class="kpiIcon purple">💰</div><span>Nómina</span><strong>Pagos</strong><small>Salarios y banco</small></div>
+    </section>
+
+    <!-- Gráfico destacado -->
+    <div class="card chartPremium">
+      <div class="chartHeaderPro">
+        <div>
+          <span class="miniLabel">Análisis visual</span>
+          <h4>📊 Gráfico de horas trabajadas por empleado</h4>
+        </div>
+        <div class="chartPills"><span>Horas</span><span>Reportes</span><span>Rendimiento</span></div>
+      </div>
+      <canvas id="horasChart"></canvas>
+    </div>
+
+
+    <!-- Agregar empleado -->
+    <div class="card">
+      <h4>Agregar empleado</h4>
+      <input id="nombreEmpleado" placeholder="Nombre del empleado" />
+      <input id="pinEmpleado" placeholder="PIN del empleado" />
+      <button id="guardarEmpleadoBtn">Guardar empleado</button>
+    </div>
+
+    <!-- Empleados registrados -->
+    <div class="card">
+      <h4 onclick="toggleSection('listaEmpleados')" style="cursor:pointer;">
+        👥 Empleados registrados ▼
+      </h4>
+      <div id="listaEmpleados" style="max-height:300px; overflow:auto;"></div>
+    </div>
+
+    <!-- ===== MODAL: EDITAR HORARIO (ADMIN) ===== -->
+    <div id="editModalBackdrop" class="modalBackdrop hidden"></div>
+
+    <div id="editModal" class="modal hidden" role="dialog" aria-modal="true">
+      <div class="modalHeader">
+        <div class="modalTitle">🦷 Editar Horario (Administrador)</div>
+        <button type="button" id="editCloseBtn" class="modalClose" aria-label="Cerrar">✕</button>
+      </div>
+
+      <div class="modalBody">
+        <label for="editEmpSelect">Empleado</label>
+        <select id="editEmpSelect"></select>
+
+        <label for="editFecha">Fecha</label>
+        <input type="date" id="editFecha" />
+
+        <label for="editTipo">Tipo de marcación</label>
+        <select id="editTipo">
+          <option value="entrada">Entrada</option>
+          <option value="almuerzo_salida">Salida Almuerzo</option>
+          <option value="almuerzo_regreso">Regreso Almuerzo</option>
+          <option value="salida">Salida</option>
+        </select>
+
+        <label for="editHora">Hora</label>
+        <select id="editHora"></select>
+
+        <div id="editStatus" class="notice" style="display:none;"></div>
+      </div>
+
+      <div class="modalFooter">
+        <button type="button" id="editSaveBtn">💾 Guardar</button>
+        <button type="button" id="editCancelBtn" class="danger">Cancelar</button>
+      </div>
+    </div>
+    <!-- ===== FIN MODAL EDITAR HORARIO ===== -->
+
+    <!-- ===== MODAL: ASIGNAR SALARIO (ADMIN) ===== -->
+    <div id="salarioModalBackdrop" class="modalBackdrop hidden"></div>
+
+    <div id="salarioModal" class="modal hidden" role="dialog" aria-modal="true">
+      <div class="modalHeader">
+        <div class="modalTitle">💰 Asignar Salario (USD)</div>
+        <button type="button" id="salarioCloseBtn" class="modalClose" aria-label="Cerrar">✕</button>
+      </div>
+
+      <div class="modalBody">
+        <label for="salarioEmpNombre">Empleado</label>
+        <input id="salarioEmpNombre" type="text" disabled />
+
+        <label for="salarioValor">Salario (USD)</label>
+        <input id="salarioValor" type="number" step="0.01" placeholder="Ej: 200 o 200.50" />
+
+        <label for="salarioTipo">Tipo de salario</label>
+        <select id="salarioTipo">
+          <option value="diario">Diario</option>
+          <option value="quincenal">Quincenal</option>
+          <option value="mensual">Mensual</option>
+        </select>
+
+        <div id="salarioStatus" class="notice" style="display:none;"></div>
+      </div>
+
+      <div class="modalFooter">
+        <button type="button" id="salarioSaveBtn">💾 Guardar</button>
+        <button type="button" id="salarioCancelBtn" class="danger">Cancelar</button>
+      </div>
+    </div>
+    <!-- ===== FIN MODAL SALARIO ===== -->
+
+    <!-- 📅 FERIADOS / DÍAS LIBRES PAGADOS (GLOBAL) -->
+    <div class="card">
+      <h4>📅 Feriados globales (pagados)</h4>
+      <button id="btnFeriadoGlobal">➕ Marcar feriado global (pagado)</button>
+
+      <div id="listaFeriados" style="margin-top:10px; max-height:180px; overflow:auto;"></div>
+
+      <p style="margin-top:8px; font-size:13px; opacity:.8;">
+        Los feriados globales se pagan como 8 horas aunque el empleado no marque.
+      </p>
+    </div>
+
+    <!-- ✅ MODAL: FERIADO GLOBAL -->
+    <div id="feriadoModalBackdrop" class="modalBackdrop hidden"></div>
+
+    <div id="feriadoModal" class="modal hidden" role="dialog" aria-modal="true">
+      <div class="modalHeader">
+        <div class="modalTitle">📅 Feriado global pagado</div>
+        <button type="button" id="feriadoCloseBtn" class="modalClose" aria-label="Cerrar">✕</button>
+      </div>
+
+      <div class="modalBody">
+        <label for="feriadoFecha">Fecha</label>
+        <input type="date" id="feriadoFecha" />
+
+        <label for="feriadoMotivo">Motivo (opcional)</label>
+        <input type="text" id="feriadoMotivo" placeholder="Ej: Navidad" />
+
+        <div class="notice" style="margin-top:10px; opacity:.85;">
+          ✅ Ese día se pagará como <b>8 horas</b> aunque el empleado no marque.
+        </div>
+      </div>
+
+      <div class="modalFooter">
+        <button type="button" id="feriadoSaveBtn">💾 Guardar</button>
+        <button type="button" id="feriadoCancelBtn" class="danger">Cancelar</button>
+      </div>
+    </div>
+    <!-- ✅ FIN MODAL FERIADO GLOBAL -->
+
+    <!-- 👤 DÍA LIBRE PAGADO (POR EMPLEADO) -->
+    <div class="card">
+      <h4>👤 Días libres pagados (por empleado)</h4>
+      <button id="btnOpenLibreModal">➕ Marcar día libre pagado</button>
+      <div id="listaLibresEmpleado" style="margin-top:10px; max-height:220px; overflow:auto;"></div>
+    </div>
+
+    <!-- ✅ MODAL: DÍA LIBRE PAGADO (POR EMPLEADO) -->
+    <div id="libreModalBackdrop" class="modalBackdrop hidden"></div>
+
+    <div id="libreModal" class="modal hidden" role="dialog" aria-modal="true">
+      <div class="modalHeader">
+        <div class="modalTitle">👤 Día libre pagado (8h)</div>
+        <button type="button" id="libreCloseBtn" class="modalClose" aria-label="Cerrar">✕</button>
+      </div>
+
+      <div class="modalBody">
+        <label>Empleado</label>
+        <select id="libreEmpSelect"></select>
+
+        <label>Fecha</label>
+        <input type="date" id="libreFecha" />
+
+        <label>Motivo (opcional)</label>
+        <input id="libreMotivo" placeholder="Ej: folga, permiso, feriado individual..." />
+
+        <div id="libreStatus" class="notice" style="display:none; margin-top:8px;"></div>
+      </div>
+
+      <div class="modalFooter">
+        <button type="button" id="libreSaveBtn">💾 Guardar</button>
+        <button type="button" id="libreCancelBtn" class="danger">Cancelar</button>
+      </div>
+    </div>
+    <!-- ✅ FIN MODAL DÍA LIBRE -->
+
+    <!-- Resumen marcaciones -->
+    <div class="card">
+      <h4 onclick="toggleSection('adminList')" style="cursor:pointer;">
+        Resumen de marcaciones ▼
+      </h4>
+
+      <input type="date" id="filterDate" />
+
+      <label>Desde:</label>
+      <input type="date" id="fechaDesde" />
+
+      <label>Hasta:</label>
+      <input type="date" id="fechaHasta" />
+
+      <label>Periodo:</label>
+      <select id="periodoResumen">
+        <option value="diario">Diario</option>
+        <option value="quincenal">Quincenal</option>
+        <option value="mensual">Mensual</option>
+      </select>
+
+      <div id="adminList" style="max-height:300px; overflow:auto;"></div>
+    </div>
+
+    <!-- RESUMEN DE PAGOS -->
+    <div id="resumenPagos" style="max-height:260px; overflow:auto; margin-top:15px; background:#f0f8ff; padding:10px; border-radius:8px;">
+      <h4>💰 Resumen de pagos y banco de horas</h4>
+    </div>
+
+    <!-- Notificaciones -->
+    <div class="card">
+      <h4 onclick="toggleSection('notificaciones')" style="cursor:pointer;">
+        Notificaciones ▼
+      </h4>
+      <div id="notificaciones" style="max-height:200px; overflow:auto;"></div>
+      <button id="exportMarcBtn">Exportar Marcaciones</button>
+      <button id="exportSalarioBtn">Exportar Salario</button>
+    </div>
+
+    <button id="logoutBtn">Salir</button>
+  </div>
+
+  <!-- EMPLEADO PANEL -->
+  <div id="employeePanel" class="card hidden">
+    <div class="employeeHeroPro">
+      <img src="img/logo-poladent.png" alt="Poladent Casa Dental" />
+      <span class="miniLabel">Control de Asistencia</span>
+      <h2>Registro de Jornada</h2>
+      <p>Ingrese su PIN para marcar entrada, almuerzo o salida.</p>
+      <div class="clockFake">⏰ Marcación rápida y segura</div>
+    </div>
+
+    <div class="nombreGrande" id="empNombreGrande"></div>
+
+    <input id="empPin" type="password" placeholder="Ingresa tu PIN" />
+
+    <div id="employeeButtons" class="hidden">
+      <button id="entradaBtn">Entrada</button>
+      <button id="almuerzoSalidaBtn">Salida Almuerzo</button>
+      <button id="almuerzoRegresoBtn">Regreso Almuerzo</button>
+      <button id="salidaBtn">Salida</button>
+    </div>
+
+    <div id="empMsg" class="notice"></div>
+    <button id="backHomeBtn2">Volver</button>
+  </div>
+
+</body>
+                                                                                             </html>
