@@ -1,0 +1,158 @@
+/* =========================================================
+   POLADENT SISTEMA v4.2 PREMIUM ORGANIZADO
+   Capa visual segura: NO cambia Firebase, IDs ni estructura de datos.
+   ========================================================= */
+:root{
+  --pd-bg:#f3f8fc;
+  --pd-card:#ffffff;
+  --pd-text:#10233f;
+  --pd-muted:#66758b;
+  --pd-primary:#0f72cf;
+  --pd-primary-2:#064c96;
+  --pd-cyan:#08b8d8;
+  --pd-success:#16a36a;
+  --pd-warning:#f2b84b;
+  --pd-danger:#df3b46;
+  --pd-line:rgba(16,35,63,.10);
+  --pd-shadow:0 18px 45px rgba(16,65,115,.12);
+  --pd-radius:22px;
+}
+
+body.pd42-admin-open{
+  padding:0 !important;
+  background:
+    radial-gradient(800px 420px at 10% 0%, rgba(8,184,216,.16), transparent 55%),
+    radial-gradient(900px 500px at 100% 10%, rgba(15,114,207,.14), transparent 58%),
+    linear-gradient(135deg,#fbfdff 0%,#edf7ff 48%,#f8fbff 100%) !important;
+}
+
+body.pd42-admin-open .appHeader{display:none !important;}
+body.pd42-admin-open #adminPanel{
+  max-width:none !important;
+  width:100% !important;
+  margin:0 !important;
+  padding:0 !important;
+  min-height:100vh;
+}
+
+body.pd42-admin-open #adminPanel.pd42-layout{
+  display:grid;
+  grid-template-columns:280px minmax(0,1fr);
+  gap:0;
+}
+
+.pd42-sidebar{
+  position:sticky;
+  top:0;
+  height:100vh;
+  padding:20px 16px;
+  background:linear-gradient(180deg,#092f5e 0%,#0d5ead 58%,#08a8c6 100%);
+  color:white;
+  box-shadow:18px 0 45px rgba(8,47,94,.18);
+  z-index:20;
+  overflow:auto;
+}
+.pd42-side-brand{display:flex;align-items:center;gap:12px;margin-bottom:22px;padding:8px 6px 16px;border-bottom:1px solid rgba(255,255,255,.18)}
+.pd42-side-brand img{width:54px;height:54px;border-radius:16px;object-fit:contain;background:rgba(255,255,255,.94);padding:4px;box-shadow:0 10px 24px rgba(0,0,0,.16)}
+.pd42-side-brand strong{display:block;font-size:18px;letter-spacing:.08em;line-height:1}
+.pd42-side-brand small{opacity:.85;font-weight:800;font-size:12px}
+.pd42-menu{display:grid;gap:8px}
+.pd42-nav-btn{
+  width:100% !important;
+  min-width:0 !important;
+  margin:0 !important;
+  border:1px solid rgba(255,255,255,.12) !important;
+  background:rgba(255,255,255,.10) !important;
+  color:white !important;
+  box-shadow:none !important;
+  display:flex !important;
+  align-items:center;
+  justify-content:flex-start !important;
+  gap:10px;
+  border-radius:16px !important;
+  padding:13px 14px !important;
+  font-size:14px !important;
+  text-align:left;
+}
+.pd42-nav-btn.active,.pd42-nav-btn:hover{background:rgba(255,255,255,.22) !important;transform:none !important;}
+.pd42-side-footer{margin-top:18px;padding:14px;border-radius:18px;background:rgba(255,255,255,.12);font-size:12px;line-height:1.35;opacity:.92;font-weight:700}
+
+.pd42-main{min-width:0;padding:24px 26px 40px;}
+body.pd42-admin-open #adminPanel > *:not(.pd42-sidebar):not(.pd42-main){display:none !important;}
+
+.pd42-main .adminTopBar{
+  margin:0 0 18px !important;
+  border-radius:26px !important;
+  background:linear-gradient(135deg,#ffffff,#edf8ff) !important;
+  color:var(--pd-text) !important;
+  border:1px solid rgba(255,255,255,.95) !important;
+  box-shadow:var(--pd-shadow) !important;
+}
+.pd42-main .adminTopBar h3{color:var(--pd-text) !important;}
+.pd42-main .adminTopBar .miniLabel{color:var(--pd-primary-2) !important;}
+.pd42-main .adminTopActions{background:#eaf6ff !important;color:var(--pd-primary-2) !important;}
+
+.pd42-section{display:none;animation:pd42fade .18s ease both;}
+.pd42-section.active{display:block;}
+@keyframes pd42fade{from{opacity:.3;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+.pd42-section-title{
+  display:flex;align-items:flex-end;justify-content:space-between;gap:12px;
+  margin:8px 0 14px;
+}
+.pd42-section-title h2{font-size:28px;margin:0;color:var(--pd-text);letter-spacing:-.03em;}
+.pd42-section-title p{margin:4px 0 0;color:var(--pd-muted);font-weight:700;}
+.pd42-chip{display:inline-flex;align-items:center;gap:7px;padding:9px 12px;border-radius:999px;background:white;border:1px solid var(--pd-line);box-shadow:0 8px 20px rgba(16,65,115,.07);font-weight:900;color:var(--pd-primary-2);}
+
+.pd42-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;}
+.pd42-grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;align-items:start;}
+.pd42-full{grid-column:1/-1;}
+
+.pd42-main .card,.pd42-main #resumenPagos{
+  margin:0 0 16px !important;
+  border-radius:24px !important;
+  border:1px solid rgba(255,255,255,.96) !important;
+  box-shadow:0 14px 34px rgba(16,65,115,.10) !important;
+}
+.pd42-main .card:hover,.pd42-main #resumenPagos:hover{box-shadow:0 18px 44px rgba(16,65,115,.14) !important;}
+.pd42-main .card h4,.pd42-main #resumenPagos h4{color:var(--pd-text);}
+.pd42-main input,.pd42-main select{background:#fbfdff !important;border-radius:14px !important;}
+.pd42-main button{border-radius:14px !important;}
+
+.pd42-quick-actions{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px;}
+.pd42-quick-actions button{width:100% !important;min-width:0 !important;margin:0 !important;background:linear-gradient(135deg,#ffffff,#edf8ff) !important;color:var(--pd-primary-2) !important;border:1px solid rgba(15,114,207,.12) !important;box-shadow:0 12px 28px rgba(16,65,115,.09) !important;}
+
+.pd42-main #logoutBtn{position:fixed;right:22px;bottom:22px;z-index:30;width:auto !important;min-width:118px !important;margin:0 !important;border-radius:999px !important;background:linear-gradient(135deg,#df3b46,#a30f21) !important;}
+
+.pd42-main #listaEmpleados,.pd42-main #adminList,.pd42-main #notificaciones,.pd42-main #resumenPagos,.pd42-main #listaFeriados,.pd42-main #listaLibresEmpleado{
+  max-height:420px !important;
+  overflow:auto !important;
+  border-radius:18px;
+}
+
+.pd42-toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px;padding:12px;border-radius:18px;background:rgba(15,114,207,.07);border:1px solid rgba(15,114,207,.10)}
+.pd42-toolbar b{color:var(--pd-primary-2)}
+
+@media(max-width:1050px){
+  body.pd42-admin-open #adminPanel.pd42-layout{grid-template-columns:1fr;}
+  .pd42-sidebar{position:relative;height:auto;border-radius:0 0 26px 26px;}
+  .pd42-menu{grid-template-columns:repeat(3,1fr);}
+  .pd42-main{padding:16px 14px 90px;}
+  .pd42-grid-2,.pd42-grid-3{grid-template-columns:1fr;}
+  .pd42-quick-actions{grid-template-columns:1fr 1fr;}
+}
+@media(max-width:620px){
+  .pd42-sidebar{padding:14px 10px;}
+  .pd42-side-brand{margin-bottom:12px;padding-bottom:12px;}
+  .pd42-side-brand img{width:44px;height:44px;}
+  .pd42-side-brand strong{font-size:15px;}
+  .pd42-menu{grid-template-columns:1fr 1fr;gap:7px;}
+  .pd42-nav-btn{font-size:12px !important;padding:11px 10px !important;border-radius:14px !important;}
+  .pd42-side-footer{display:none;}
+  .pd42-main{padding:12px 10px 84px;}
+  .pd42-section-title{display:block;}
+  .pd42-section-title h2{font-size:22px;}
+  .pd42-chip{margin-top:8px;font-size:12px;}
+  .pd42-quick-actions{grid-template-columns:1fr;}
+  .pd42-main #logoutBtn{left:10px;right:10px;width:calc(100% - 20px) !important;}
+}
