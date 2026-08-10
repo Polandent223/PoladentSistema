@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Poladent – Empleado rápido</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" href="img/favicon.png?v=20260808-fase19-2" />
+  <link rel="stylesheet" href="css/empleado.css?v=20260808-fase19-2" />
+  <link rel="stylesheet" href="css/seguridad-asistencia.css?v=20260808-fase19-2" />
+  <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  <script defer src="firebase/config.js?v=20260808-fase19-2"></script>
+  <script defer src="apps/data-store.js?v=20260808-fase19-2"></script>
+  <script defer src="apps/performance-runtime.js?v=20260808-fase19-2"></script>
+  <script defer src="apps/empleado.js?v=20260808-fase19-2"></script>
+</head>
+<body>
+  <main class="fast-shell">
+    <section class="fast-card">
+      <div class="brand">
+        <img src="img/logo-poladent.png?v=20260808-fase19-2" onerror="this.src='img/logo-poladent.jpg'" alt="Poladent Casa Dental" />
+        <div>
+          <h1>Control de Asistencia</h1>
+          <p>Entrada rápida para empleados</p>
+        </div>
+      </div>
+
+      <div class="clock-box">
+        <div id="fastDate">--</div>
+        <div id="fastClock">--:--</div>
+      </div>
+
+      <div id="fastEmployee" class="employee-preview hidden">
+        <div id="fastPhoto" class="photo-placeholder">👤</div>
+        <div>
+          <h2 id="fastName">Empleado</h2>
+          <p>Listo para marcar jornada</p>
+        </div>
+      </div>
+
+      <label class="pin-label" for="fastPin">Ingrese su PIN</label>
+      <div class="pin-search-row">
+        <input id="fastPin" class="pin-input" type="password" inputmode="numeric" autocomplete="off" placeholder="PIN del empleado" aria-describedby="fastMsg" />
+        <button id="fastSearch" class="pin-search-btn" type="button" disabled>Buscar</button>
+      </div>
+
+      <div id="fastButtons" class="mark-grid hidden">
+        <button data-tipo="entrada" class="entrada">Entrada</button>
+        <button data-tipo="almuerzo_salida" class="almuerzo">Salida almuerzo</button>
+        <button data-tipo="almuerzo_regreso" class="regreso">Regreso almuerzo</button>
+        <button data-tipo="salida" class="salida">Salida</button>
+      </div>
+
+      <div id="fastMsg" class="fast-msg">Carga rápida para registrar la asistencia.</div>
+
+      <a class="admin-link" href="index.html?v=20260808-fase19-2">Volver al sistema principal</a>
+    </section>
+  </main>
+</body>
+</html>
