@@ -1,0 +1,37 @@
+POLADENT SISTEMA — FASE 19.6
+CIERRE DE REVISIÓN OPERATIVA
+
+1. LISTA DE EMPLEADOS
+- Se eliminó la repetición de bloques de foto dentro de las tarjetas.
+- La vista abre en "Todos" para no ocultar funcionarios.
+- El contador ahora muestra total y activos.
+- Si hay filtro: muestra "X visibles de Y".
+- Se mantiene búsqueda por nombre/PIN y filtros.
+
+2. RESUMEN DE MARCACIONES
+- Rehecho visualmente en formato profesional.
+- Agrupa por funcionario y día.
+- Muestra Entrada, Salida al almuerzo, Regreso del almuerzo y Salida.
+- Ya no muestra códigos técnicos como almuerzo_salida.
+- Indicadores de jornada completa/incompleta.
+- Resumen superior de jornadas y marcaciones.
+
+3. HISTORIAL PROFESIONAL
+- Se reforzó la carga de Firebase.
+- Si PoladentData todavía no está listo, usa Firebase directamente.
+- Reconoce historial de empleados actuales y registros antiguos.
+- Carga empleado, rango, horas, estado y auditoría.
+- Excel, impresión y acceso a corrección siguen disponibles.
+- No modifica historial.
+
+4. VELOCIDAD DEL EMPLEADO / PIN
+- La sesión anónima persistida se recupera con espera mucho más corta.
+- Se precarga un mapa de PIN -> empleado.
+- Después de la precarga, Buscar normalmente no necesita consultar Firebase otra vez.
+- El caché se actualiza automáticamente cuando cambia la lista de empleados.
+- Se conserva validación GPS, cámara, etapa pendiente y seguridad.
+
+5. SEGURIDAD
+- firebase/config.js intacto.
+- Sin migraciones ni borrados.
+- 31 archivos JavaScript: 0 errores de sintaxis.
