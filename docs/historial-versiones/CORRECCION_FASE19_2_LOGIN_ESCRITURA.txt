@@ -1,0 +1,18 @@
+POLADENT SISTEMA — FASE 19.2
+CORRECCIÓN LOGIN ADMINISTRADOR
+
+Problema corregido:
+- El login podía verse, pero una capa/modal marcada como hidden podía seguir recibiendo eventos táctiles.
+- Esto impedía tocar o escribir en Correo y Contraseña.
+
+Cambios:
+- Todo elemento [hidden] ahora usa display:none !important.
+- Login y sus campos quedan por encima de capas secundarias y con pointer-events activos.
+- Se mantiene la corrección de botones de entrada de Fase 19.1.
+- Se actualizó caché para GitHub Pages.
+- No se modificó Firebase ni ningún dato histórico.
+
+Validación:
+- 31 JavaScript: 0 errores de sintaxis.
+- Sin referencias faltantes.
+- firebase/config.js intacto.

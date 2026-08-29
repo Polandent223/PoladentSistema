@@ -1,0 +1,62 @@
+POLADENT SISTEMA — FASE 19.5
+CORRECCIÓN CONJUNTA DE PRUEBAS OPERATIVAS
+
+1. MARCACIÓN SECUENCIAL
+- Corregido rechazo falso al guardar Salida almuerzo / Regreso / Salida.
+- La validación de la etapa se vuelve a leer desde Firebase justo antes de guardar.
+- La protección atómica se hace sobre la etapa específica para evitar que un caché local vacío aborte la transacción.
+- Sigue bloqueada la duplicación de la misma etapa.
+- No se migraron ni borraron marcaciones antiguas.
+
+2. LISTA DE EMPLEADOS
+- Nuevo directorio compacto y profesional.
+- Foto, nombre, estado, PIN, salario, sede cuando está disponible.
+- Buscar por nombre/PIN.
+- Filtros Activos / Archivados / Todos.
+- Botones compactos para Archivar/Reactivar, Salario, Horario y Recibo.
+- Sin límite artificial de 300 px.
+
+3. DÍAS LIBRES PAGADOS
+- Vista profesional por tarjetas.
+- Buscar funcionario/motivo.
+- Filtro por mes.
+- Fecha, motivo y horas pagadas visibles.
+- Editar/eliminar siguen disponibles.
+- Sin límite artificial de 220 px.
+
+4. NOTIFICACIONES
+- Tarjetas profesionales por tipo de marcación.
+- Nombre, tipo, fecha y hora.
+- Exportaciones rápidas separadas visualmente.
+- Área más amplia y legible.
+
+5. ALERTAS GPS
+- Ahora muestra latitud, longitud, precisión, distancia y radio permitido.
+- Muestra local más cercano cuando existe.
+- Botón para abrir la coordenada exacta en Google Maps.
+- Las alertas revisadas no se borran; siguen conservadas.
+- Registros antiguos sin coordenadas indican que la coordenada no fue registrada.
+
+6. RESUMEN DE PAGOS Y BANCO DE HORAS
+- Ahora lee los recibos cerrados de Nómina.
+- Si existen pagos cerrados dentro del rango seleccionado, los muestra y suma.
+- Separa claramente:
+  * horas trabajadas
+  * horas pagadas
+  * horas no cumplidas
+  * banco de horas extra
+  * base calculada por asistencia
+  * total realmente cerrado en Nómina
+- Refresca cuando una nómina se cierra o reabre.
+
+7. CENTRO DE REPORTES
+- Se aclaró el nombre y propósito.
+- Sirve para consultar asistencia, horas y GPS por día/semana/quincena/mes/rango.
+- Filtros por funcionario y sucursal.
+- Vista previa, Excel, PDF e impresión.
+
+SEGURIDAD DE DATOS
+- firebase/config.js permanece intacto.
+- No se borró historial.
+- No se migraron rutas de Firebase.
+- 31 archivos JavaScript verificados sin errores de sintaxis.

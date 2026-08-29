@@ -1,0 +1,26 @@
+POLADENT SISTEMA — FASE 19.12
+
+1. HISTORIAL PROFESIONAL
+- Los IDs históricos duplicados cuyo nombre coincide con una ficha actual ya no aparecen como funcionarios separados.
+- Las marcaciones antiguas reales de esos IDs pueden integrarse al historial de la ficha actual.
+- Un ID histórico sin ficha ya no genera días vacíos ni ausencias artificiales.
+- Solo se muestran fechas donde realmente existen marcaciones, feriados o días libres asociados.
+
+2. RESUMEN DE PAGOS Y BANCO DE HORAS
+- La pantalla ahora ejecuta renderPagos() cada vez que se abre la ruta desde el menú.
+- Conserva filtros propios Desde / Hasta / Funcionario.
+- Ya no depende de abrir antes Resumen de marcaciones.
+- Incluye asistencia, banco de horas, horas no cumplidas y comparación con nóminas cerradas.
+
+3. CENTRO DE REPORTES
+- El módulo de reportes se monta directamente dentro de la ruta nueva del panel lateral.
+- Si el panel comercial ya construyó los controles, se trasladan.
+- Si todavía no existen, se crean al abrir Centro de reportes.
+- Se repueblan funcionarios y sucursales.
+- Deben mostrarse filtros de período, fechas, funcionario, sucursal y contenido.
+- Deben funcionar Vista previa, Excel, PDF e Imprimir.
+
+VALIDACIÓN
+- 31 archivos JavaScript: 0 errores de sintaxis.
+- Sin referencias internas faltantes.
+- firebase/config.js intacto.

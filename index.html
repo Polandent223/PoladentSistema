@@ -4,8 +4,8 @@
   <meta charset="UTF-8" />
   <title>Poladent · Control de asistencia</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="stylesheet" href="css/sistema-comercial.css?v=20260810-fase19-6" />
-  <link rel="icon" type="image/png" href="img/favicon.png?v=20260810-fase19-6" />
+  <link rel="stylesheet" href="css/sistema-comercial.css?v=20260829-fase19-17" />
+  <link rel="icon" type="image/png" href="img/favicon.png?v=20260829-fase19-17" />
 
   <!-- Firebase SDK (compat) -->
   <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -19,24 +19,24 @@
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
   <!-- Tu configuración y app (orden IMPORTA) -->
-  <script defer src="firebase/config.js?v=20260810-fase19-6"></script>
-  <script defer src="apps/data-store.js?v=20260810-fase19-6"></script>
-  <script defer src="apps/performance-runtime.js?v=20260810-fase19-6"></script>
-  <script defer src="apps/attendance-engine.js?v=20260810-fase19-6"></script>
-  <script defer src="apps/startup-recovery.js?v=20260810-fase19-6"></script>
-  <script defer src="apps/app.js?v=20260810-fase19-6"></script>
+  <script defer src="firebase/config.js?v=20260829-fase19-17"></script>
+  <script defer src="apps/data-store.js?v=20260829-fase19-17"></script>
+  <script defer src="apps/performance-runtime.js?v=20260829-fase19-17"></script>
+  <script defer src="apps/attendance-engine.js?v=20260829-fase19-17"></script>
+  <script defer src="apps/startup-recovery.js?v=20260829-fase19-17"></script>
+  <script defer src="apps/app.js?v=20260829-fase19-17"></script>
   <!-- Módulos comerciales: orden de carga controlado -->
-  <script defer src="apps/modules/empleados-ui.js?v=20260810-fase19-6"></script>
-  <script defer src="apps/modules/configuracion-permisos.js?v=20260810-fase19-6"></script>
-  <script defer src="apps/modules/gps-multisede.js?v=20260810-fase19-6"></script>
-  <script defer src="apps/modules/interfaz-comercial.js?v=20260810-fase19-6"></script>
-  <script defer src="apps/modules/estabilidad-seguridad.js?v=20260810-fase19-6"></script>
-  <script defer src="apps/modules/nomina.js?v=20260810-fase19-6"></script>
-  <script defer src="apps/modules/licencia.js?v=20260810-fase19-6"></script>
-  <script defer src="apps/modules/multiempresa.js?v=20260810-fase19-6"></script>
-  <script defer src="apps/modules/diagnostico-final.js?v=20260810-fase19-6"></script>
-  <script defer src="apps/modules/salud-datos.js?v=20260810-fase19-6"></script>
-  <link rel="stylesheet" href="css/analisis-asistencia.css?v=20260810-fase19-6">
+  <script defer src="apps/modules/empleados-ui.js?v=20260829-fase19-17"></script>
+  <script defer src="apps/modules/configuracion-permisos.js?v=20260829-fase19-17"></script>
+  <script defer src="apps/modules/gps-multisede.js?v=20260829-fase19-17"></script>
+  <script defer src="apps/modules/interfaz-comercial.js?v=20260829-fase19-17"></script>
+  <script defer src="apps/modules/estabilidad-seguridad.js?v=20260829-fase19-17"></script>
+  <script defer src="apps/modules/nomina.js?v=20260829-fase19-17"></script>
+  <script defer src="apps/modules/licencia.js?v=20260829-fase19-17"></script>
+  <script defer src="apps/modules/multiempresa.js?v=20260829-fase19-17"></script>
+  <script defer src="apps/modules/diagnostico-final.js?v=20260829-fase19-17"></script>
+  <script defer src="apps/modules/salud-datos.js?v=20260829-fase19-17"></script>
+  <link rel="stylesheet" href="css/analisis-asistencia.css?v=20260829-fase19-17">
 </head>
 
 <body>
@@ -48,7 +48,7 @@
 
     <section class="heroTop">
       <div class="brandSeal">
-        <img src="img/logo-poladent.png?v=20260810-fase19-6" alt="Poladent Casa Dental" />
+        <img src="img/logo-poladent.png?v=20260829-fase19-17" alt="Poladent Casa Dental" />
       </div>
       <div class="brandText">
         <span class="eyebrow">Sistema empresarial</span>
@@ -74,7 +74,7 @@
 
       <div class="accessPanel">
         <div class="accessLogo">
-          <img src="img/logo-poladent.png?v=20260810-fase19-6" alt="Logo Poladent" />
+          <img src="img/logo-poladent.png?v=20260829-fase19-17" alt="Logo Poladent" />
         </div>
         <h3>Bienvenido</h3>
         <p>Selecciona tu tipo de acceso para continuar</p>
@@ -383,7 +383,7 @@
   <!-- EMPLEADO PANEL -->
   <div id="employeePanel" class="card hidden">
     <div class="employeeHeroPro">
-      <img src="img/logo-poladent.png?v=20260810-fase19-6" alt="Poladent Casa Dental" />
+      <img src="img/logo-poladent.png?v=20260829-fase19-17" alt="Poladent Casa Dental" />
       <span class="miniLabel">Control de Asistencia</span>
       <h2>Registro de Jornada</h2>
       <p>Ingrese su PIN para marcar entrada, almuerzo o salida.</p>
@@ -405,19 +405,19 @@
     <button id="backHomeBtn2">Volver</button>
   </div>
 
-  <script defer src="apps/modules/panel-lateral-unico.js?v=20260810-fase19-6"></script>
-<script defer src="apps/modules/seguridad-operativa.js?v=20260810-fase19-6"></script>
-<script defer src="apps/modules/usuarios-acceso.js?v=20260810-fase19-6"></script>
-  <script defer src="apps/modules/panel-control-profesional.js?v=20260810-fase19-6"></script>
-  <script defer src="apps/modules/gestion-horarios.js?v=20260810-fase19-6"></script>
-  <script defer src="apps/modules/correccion-marcaciones.js?v=20260810-fase19-6"></script>
-  <script defer src="apps/modules/historial-profesional.js?v=20260810-fase19-6"></script>
-  <script defer src="apps/modules/verificacion-fotos-hoy.js?v=20260810-fase19-6"></script>
-  <script defer src="apps/modules/roles-permisos-sucursales.js?v=20260810-fase19-6"></script>
-  <script defer src="apps/modules/administracion-avanzada.js?v=20260810-fase19-6"></script>
-  <script defer src="apps/modules/optimizacion-comercial.js?v=20260810-fase19-6"></script>
-  <script defer src="apps/modules/version-enterprise-final.js?v=20260810-fase19-6"></script>
-  <script defer src="apps/modules/analisis-asistencia.js?v=20260810-fase19-6"></script>
+  <script defer src="apps/modules/panel-lateral-unico.js?v=20260829-fase19-17"></script>
+<script defer src="apps/modules/seguridad-operativa.js?v=20260829-fase19-17"></script>
+<script defer src="apps/modules/usuarios-acceso.js?v=20260829-fase19-17"></script>
+  <script defer src="apps/modules/panel-control-profesional.js?v=20260829-fase19-17"></script>
+  <script defer src="apps/modules/gestion-horarios.js?v=20260829-fase19-17"></script>
+  <script defer src="apps/modules/correccion-marcaciones.js?v=20260829-fase19-17"></script>
+  <script defer src="apps/modules/historial-profesional.js?v=20260829-fase19-17"></script>
+  <script defer src="apps/modules/verificacion-fotos-hoy.js?v=20260829-fase19-17"></script>
+  <script defer src="apps/modules/roles-permisos-sucursales.js?v=20260829-fase19-17"></script>
+  <script defer src="apps/modules/administracion-avanzada.js?v=20260829-fase19-17"></script>
+  <script defer src="apps/modules/optimizacion-comercial.js?v=20260829-fase19-17"></script>
+  <script defer src="apps/modules/version-enterprise-final.js?v=20260829-fase19-17"></script>
+  <script defer src="apps/modules/analisis-asistencia.js?v=20260829-fase19-17"></script>
 
 <script>
 /* FASE 19.1 - acceso principal de respaldo.

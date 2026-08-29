@@ -1,0 +1,29 @@
+POLADENT SISTEMA — FASE 2: ASISTENCIA + SALARIOS
+Fecha: 2026-08-08
+
+PRINCIPIO DE SEGURIDAD
+- No se eliminaron ni migraron marcaciones históricas.
+- No se modificó firebase/config.js.
+- No se renombró ninguna ruta existente de Firebase.
+- Los cálculos nuevos son de lectura; no fabrican marcaciones.
+
+CORRECCIONES
+1. Se añadió apps/attendance-engine.js como motor único de cálculo.
+2. Nómina y análisis de asistencia comparten las mismas reglas.
+3. El motor respeta horario individual y días laborables configurados.
+4. Respeta feriados_global y dias_libres_empleado.
+5. Se mantiene la regla existente de domingo libre pagado.
+6. Se separan horas trabajadas, horas pagadas, horas extra y horas no cumplidas.
+7. Funcionarios activos sin marcaciones ahora pueden aparecer en el resumen para detectar ausencia; antes podían quedar fuera.
+8. Funcionarios archivados no se incluyen en períodos sin actividad, pero su historial antiguo sigue consultable cuando existen marcaciones en el rango.
+9. Nómina incorpora accesos rápidos: Hoy, Semana, Quincena y Mes, además de Desde/Hasta.
+10. Exportación salarial usa el mismo motor que la pantalla, evitando resultados distintos.
+11. El análisis de cumplimiento usa días realmente programados y excluye de la obligación feriados y días libres.
+12. La puntuación de análisis combina asistencia, puntualidad, jornada completa y horas cumplidas.
+13. Se actualizó la versión de recursos para reducir caché viejo en GitHub Pages.
+
+VALIDACIONES
+- Todos los archivos JavaScript pasan node --check.
+- ZIP validado con unzip -t.
+- firebase/config.js conserva exactamente el mismo SHA-256 que la versión de entrada.
+- Casos probados: jornada completa, ausencia, domingo pagado, feriado pagado y día libre pagado.

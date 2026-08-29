@@ -1,0 +1,44 @@
+POLADENT SISTEMA — FASE 19.14
+
+NOTIFICACIONES INDEPENDIENTES
+
+Problema:
+- La pantalla Notificaciones dependía del rango Desde/Hasta seleccionado en Resumen de marcaciones.
+- Al abrirla directamente no había controles para escoger ese rango y los botones podían mostrar el aviso “Selecciona un rango Desde/Hasta válido”.
+
+Corrección:
+- Notificaciones ahora tiene sus propios filtros:
+  * Desde
+  * Hasta
+  * Funcionario
+  * Tipo de actividad
+- Accesos rápidos:
+  * Hoy
+  * Últimos 7 días
+  * Este mes
+- Carga directamente desde Firebase:
+  * empleados
+  * marcaciones
+  * alertas GPS
+  * alertas de seguridad
+- Tipos disponibles:
+  * Toda la actividad
+  * Entradas
+  * Almuerzo
+  * Salidas
+  * Alertas GPS
+  * Alertas de seguridad
+- Resumen superior:
+  * actividad total
+  * marcaciones
+  * alertas GPS
+  * seguridad
+  * funcionarios implicados
+- Listado cronológico profesional.
+- Exportar actividad genera Excel con los filtros actuales.
+- Se eliminó la dependencia funcional de los botones antiguos “Marcaciones / Salario” dentro de esta pantalla.
+
+VALIDACIÓN
+- 31 archivos JavaScript: 0 errores de sintaxis.
+- Sin referencias internas faltantes.
+- firebase/config.js intacto.

@@ -1,0 +1,34 @@
+POLADENT SISTEMA - CORRECCIONES DE ESTABILIDAD Y PROTECCION DE HISTORIAL
+Fecha: 2026-08-08
+
+1. El borrado destructivo de funcionarios fue sustituido por Archivar/Reactivar.
+   - No se eliminan marcaciones.
+   - No se eliminan dias libres.
+   - No se elimina nomina ni auditoria.
+   - Se registra el cambio de estado en auditoria_ediciones.
+   - Un funcionario archivado no puede realizar nuevas marcaciones.
+
+2. Se ampliaron los respaldos para incluir rutas modernas de GPS, seguridad,
+   roles/permisos, alertas, dispositivos, nomina y auditoria.
+
+3. El analisis de asistencia ahora considera:
+   - dias laborales configurados por funcionario;
+   - feriados globales;
+   - dias libres del funcionario;
+   - horario personalizado.
+
+4. Se centralizaron lecturas permanentes Firebase adicionales mediante PoladentData
+   para reducir escuchas duplicadas y cargas innecesarias.
+
+5. La pantalla rapida de empleados ahora carga PoladentData y rechaza funcionarios
+   archivados/inactivos.
+
+6. Se corrigio el manejo de fechas locales en el analisis para evitar diferencias UTC.
+
+7. Se actualizo la version de assets locales para evitar que GitHub Pages/navegador
+   reutilice archivos antiguos en cache.
+
+IMPORTANTE:
+- No se renombro ninguna ruta de Firebase.
+- No se migro ni borro informacion historica.
+- No se modifico firebase/config.js.

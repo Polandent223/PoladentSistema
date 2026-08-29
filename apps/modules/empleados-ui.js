@@ -14,7 +14,6 @@
   const FOTO_MAX_SIZE = 420;
   const FOTO_QUALITY = 0.72;
   let empleadosCache = {};
-  let observerStarted = false;
 
   function ready(fn){
     if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fn);
@@ -65,7 +64,6 @@
   function listenEmpleados(){
     window.PoladentData.subscribe('empleados', snap => {
       empleadosCache = snap.val() || {};
-      setTimeout(augmentListaEmpleados, 150);
       updateEmployeePhotoFromPin();
     });
   }
@@ -181,14 +179,6 @@
     });
   }
 
-  function startObserver(){
-    if(observerStarted) return;
-    observerStarted = true;
-    const cont = document.getElementById('listaEmpleados');
-    if(!cont) return;
-    const obs = new MutationObserver(() => setTimeout(augmentListaEmpleados, 100));
-    obs.observe(cont, {childList:true, subtree:true});
-  }
 
   function ensureEmployeePhotoBox(){
     let box = document.getElementById('pdEmpleadoFotoBox');
@@ -228,11 +218,9 @@
     injectBaseStyles();
     waitFirebase(() => {
       listenEmpleados();
-      startObserver();
       bindEmpleadoPin();
-      augmentListaEmpleados();
-      // Fase 6: estabilización limitada; el MutationObserver y PoladentData mantienen la UI actualizada.
-      [250, 800, 1600].forEach(ms => setTimeout(augmentListaEmpleados, ms));
+      // El directorio profesional de Fase 19.6 ya dibuja foto y datos.
+      // No observamos ni reinyectamos contenido dentro de sus tarjetas.
     });
   });
 })();
@@ -252,124 +240,7 @@
   });
 })();
 
-/* =========================================================
-   POLADENT V4.1 - Panel directo para fotos desde administrador
-   No reemplaza app.js. Usa la ruta empleados/{id}/foto.
-   ========================================================= */
-(function(){
-  'use strict';
-  const MAX_SIZE = 520;
-  const QUALITY = 0.74;
-  let empleados = {};
-
-  function ready(fn){ document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', fn) : fn(); }
-  function hasFirebase(){ return window.firebase && firebase.apps && firebase.apps.length && firebase.database; }
-  function $(id){ return document.getElementById(id); }
-  function status(text, type){ const el=$('pdFotoStatus'); if(!el) return; el.style.display='block'; el.textContent=text; el.style.borderColor = type==='ok' ? 'rgba(34,197,94,.35)' : type==='error' ? 'rgba(239,68,68,.35)' : 'rgba(13,110,253,.18)'; el.style.background = type==='ok' ? 'rgba(34,197,94,.10)' : type==='error' ? 'rgba(239,68,68,.10)' : 'rgba(13,110,253,.08)'; }
-  function selectedId(){ return $('pdFotoEmpSelect') ? $('pdFotoEmpSelect').value : ''; }
-
-  function injectStyles(){
-    if(document.getElementById('pdFotoAdminStyles')) return;
-    const st=document.createElement('style');
-    st.id='pdFotoAdminStyles';
-    st.textContent=`
-      .pd-photo-admin-card{position:relative;overflow:hidden;border:1px solid rgba(13,110,253,.16)!important;background:linear-gradient(135deg,rgba(255,255,255,.96),rgba(232,246,255,.88))!important}
-      .pd-photo-admin-card:before{content:"";position:absolute;right:-70px;top:-70px;width:180px;height:180px;border-radius:50%;background:radial-gradient(circle,rgba(13,110,253,.16),transparent 70%);pointer-events:none}
-      .pd-photo-admin-preview{display:flex;align-items:center;gap:14px;margin:12px 0;padding:14px;border-radius:18px;background:rgba(255,255,255,.78);border:1px solid rgba(16,42,67,.10);box-shadow:0 10px 25px rgba(16,42,67,.07);font-weight:700;color:#102a43}
-      .pd-photo-admin-preview img{width:86px;height:86px;border-radius:50%;object-fit:cover;border:4px solid #fff;box-shadow:0 10px 25px rgba(16,42,67,.18);background:#eef6ff}
-      .pd-photo-admin-empty{width:86px;height:86px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(135deg,#eaf4ff,#fff);border:2px dashed rgba(13,110,253,.35);font-size:34px;color:#0d6efd;flex:0 0 auto}
-      @media(max-width:768px){.pd-photo-admin-preview{align-items:flex-start}.pd-photo-admin-preview img,.pd-photo-admin-empty{width:72px;height:72px}.pd-photo-admin-card button{width:100%!important}}
-    `;
-    document.head.appendChild(st);
-  }
-
-  function waitFirebase(cb){
-    let tries=0;
-    const t=setInterval(()=>{
-      tries++;
-      if(hasFirebase()){ clearInterval(t); cb(); }
-      if(tries>80){ clearInterval(t); status('No se pudo conectar con Firebase. Revisa internet o config.js.','error'); }
-    },250);
-  }
-
-  function renderSelect(){
-    const sel=$('pdFotoEmpSelect'); if(!sel) return;
-    const old=sel.value;
-    const rows=Object.entries(empleados).sort((a,b)=>String((a[1]||{}).nombre||'').localeCompare(String((b[1]||{}).nombre||''),'es'));
-    sel.innerHTML='<option value="">Seleccionar empleado...</option>' + rows.map(([id,e])=>`<option value="${id}">${escapeHtml(e.nombre || 'Empleado sin nombre')} ${e.pin ? '· PIN '+escapeHtml(e.pin) : ''}</option>`).join('');
-    if(old && empleados[old]) sel.value=old;
-    renderPreview();
-  }
-
-  function escapeHtml(v){ return String(v||'').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
-
-  function renderPreview(){
-    const box=$('pdFotoAdminPreview'); if(!box) return;
-    const id=selectedId();
-    const emp=id ? empleados[id] : null;
-    if(!emp){ box.innerHTML='<div class="pd-photo-admin-empty">👤</div><div>Selecciona un empleado para ver o cargar su foto.</div>'; return; }
-    const foto = emp.foto || emp.photo || '';
-    box.innerHTML = (foto ? `<img src="${foto}" alt="Foto de ${escapeHtml(emp.nombre||'empleado')}">` : '<div class="pd-photo-admin-empty">👤</div>') +
-      `<div><div style="font-size:16px;">${escapeHtml(emp.nombre||'Empleado')}</div><div style="font-size:12px;opacity:.68;margin-top:4px;">${foto ? 'Foto cargada correctamente' : 'Sin foto asignada'}${emp.pin ? ' · PIN '+escapeHtml(emp.pin) : ''}</div></div>`;
-  }
-
-  function resize(file){
-    return new Promise((resolve,reject)=>{
-      if(!file || !file.type || !file.type.startsWith('image/')) return reject(new Error('Selecciona una imagen válida.'));
-      const reader=new FileReader();
-      reader.onload=()=>{
-        const img=new Image();
-        img.onload=()=>{
-          let w=img.width,h=img.height;
-          const scale=Math.min(1, MAX_SIZE/Math.max(w,h));
-          w=Math.round(w*scale); h=Math.round(h*scale);
-          const canvas=document.createElement('canvas'); canvas.width=w; canvas.height=h;
-          const ctx=canvas.getContext('2d'); ctx.fillStyle='#fff'; ctx.fillRect(0,0,w,h); ctx.drawImage(img,0,0,w,h);
-          resolve(canvas.toDataURL('image/jpeg', QUALITY));
-        };
-        img.onerror=()=>reject(new Error('No se pudo leer la imagen.'));
-        img.src=reader.result;
-      };
-      reader.onerror=()=>reject(new Error('No se pudo abrir la imagen.'));
-      reader.readAsDataURL(file);
-    });
-  }
-
-  function bind(){
-    const sel=$('pdFotoEmpSelect'), upload=$('pdFotoUploadBtn'), remove=$('pdFotoRemoveBtn'), file=$('pdFotoFileInput');
-    if(!sel || !upload || !remove || !file) return;
-    sel.addEventListener('change', renderPreview);
-    upload.addEventListener('click', ()=>{
-      if(!selectedId()){ status('Primero selecciona un empleado.','error'); return; }
-      file.value=''; file.click();
-    });
-    file.addEventListener('change', async()=>{
-      const id=selectedId(); if(!id) return;
-      const f=file.files && file.files[0]; if(!f) return;
-      try{
-        status('Comprimiendo y guardando foto...');
-        const dataUrl=await resize(f);
-        await firebase.database().ref('empleados/'+id).update({foto:dataUrl, fotoActualizada:Date.now()});
-        status('Foto guardada correctamente.','ok');
-      }catch(e){ status(e.message || 'No se pudo guardar la foto.','error'); }
-    });
-    remove.addEventListener('click', async()=>{
-      const id=selectedId(); if(!id){ status('Primero selecciona un empleado.','error'); return; }
-      if(!confirm('¿Quitar la foto de este empleado?')) return;
-      try{ await firebase.database().ref('empleados/'+id+'/foto').remove(); status('Foto eliminada.','ok'); }
-      catch(e){ status('No se pudo eliminar la foto.','error'); }
-    });
-  }
-
-  ready(()=>{
-    if(!$('pdFotoEmpSelect')) return;
-    injectStyles(); bind();
-    waitFirebase(()=>{
-      window.PoladentData.subscribe('empleados', snap=>{ empleados=snap.val()||{}; renderSelect(); });
-    });
-  });
-})();
-
+/* Panel de fotos V4.1 retirado en Fase 19.17: V5 cubre la misma interfaz/ruta sin doble binding. */
 
 /* =========================================================
    POLADENT V5 - Panel directo para subir fotos desde administrador

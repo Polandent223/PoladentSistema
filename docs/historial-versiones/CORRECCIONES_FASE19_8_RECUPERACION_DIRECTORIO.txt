@@ -1,0 +1,31 @@
+POLADENT SISTEMA — FASE 19.8
+RECUPERACIÓN Y DIAGNÓSTICO DEL DIRECTORIO DE EMPLEADOS
+
+Problema encontrado:
+- La Lista de empleados se construía solo con la ruta Firebase /empleados.
+- Si esa ruta tenía una sola ficha actual, el panel mostraba 1 funcionario aunque existieran muchos IDs conservados en marcaciones y nómina.
+
+Corrección:
+- El directorio combina, SOLO PARA MOSTRAR:
+  1) fichas actuales de /empleados
+  2) IDs conservados en /marcaciones
+  3) IDs conservados en /nomina_recibos
+  4) IDs conservados en /dias_libres_empleado
+- Las fichas actuales siempre tienen prioridad.
+- Un ID sin ficha actual aparece como “Histórico”.
+- Un histórico es SOLO LECTURA: no se crea, no se modifica, no se reactiva y no se duplica automáticamente.
+- Se muestra de qué fuentes se recuperó y su última referencia cuando existe.
+- Se agregó filtro “Registros históricos”.
+- Se agregó diagnóstico: fichas actuales, activos, archivados y solo en historial.
+- El botón “Ver historial” abre el Historial profesional con ese funcionario.
+- El Historial profesional ahora también lista IDs detectados en marcaciones aunque no tengan ficha actual.
+
+IMPORTANTE:
+- Esta fase NO restaura automáticamente fichas faltantes porque hacerlo sin verificar PIN, salario, horario, sede y estado podría crear información incorrecta.
+- Sirve para localizar y conservar visualmente todo lo que todavía existe en el historial antes de decidir cualquier restauración.
+
+VALIDACIÓN:
+- 31 archivos JavaScript: 0 errores de sintaxis.
+- Sin referencias internas faltantes.
+- firebase/config.js intacto.
+- No se modificaron rutas ni datos Firebase durante la preparación del ZIP.

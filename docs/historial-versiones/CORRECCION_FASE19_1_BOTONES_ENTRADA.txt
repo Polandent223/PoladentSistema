@@ -1,0 +1,15 @@
+POLADENT SISTEMA — FASE 19.1
+CORRECCIÓN BOTONES DE ENTRADA
+
+Corregido:
+- Botón Administrador con acceso de respaldo directo.
+- Botón Empleado (PIN) con acceso directo a empleado.html.
+- Se corrigió un error de ejecución en panel-lateral-unico.js: state.observer=obs -> state.observer=observer.
+- La pantalla de preparación ya no bloquea la portada principal.
+- Se actualizó la versión de caché para GitHub Pages.
+- No se tocaron Firebase, historial, empleados, marcaciones, nómina ni roles.
+
+Validación:
+- 31 archivos JavaScript: 0 errores de sintaxis.
+- Referencias internas completas.
+- firebase/config.js intacto.

@@ -1,0 +1,12 @@
+POLADENT SISTEMA — FASE 13 PANEL DE CONTROL PROFESIONAL
+Fecha: 2026-08-08
+
+- Inicio ahora incluye centro de supervisión operativo en tiempo real.
+- Estados: Por entrar, En jornada, Tarde, Jornada completada, Falta, Descanso, Feriado, Día libre, Justificada y Marcación incompleta.
+- No marca falta antes de la hora de entrada + tolerancia configurada.
+- Muestra foto, sede/local, horario, entrada y salida de cada funcionario.
+- Filtro: todos, requiere atención, presentes, faltas y descansos/libres.
+- Bloque Requiere atención: faltas vencidas, marcaciones incompletas, llegadas tarde, alertas GPS, seguridad, nóminas reabiertas y horarios por defecto.
+- Resumen Hoy / Semana / Mes con jornadas esperadas, asistencias, faltas, atrasos, jornadas completas y justificadas.
+- Accesos directos desde cada alerta al módulo correspondiente.
+- Solo lectura: esta fase no modifica empleados, marcaciones, nómina ni historial.

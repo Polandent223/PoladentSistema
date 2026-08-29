@@ -1,0 +1,13 @@
+FASE 12 — RESPALDO Y RECUPERACIÓN COMPLETA
+
+- Respaldo integral con empleados, marcaciones, horarios, configuraciones, GPS, seguridad, roles, nómina y auditorías.
+- Metadatos de rutas y conteos incluidos en cada respaldo.
+- Verificación SHA-256 para respaldos creados por esta fase.
+- Recuperación desde JSON con validación previa y vista del contenido.
+- Modo FUSIÓN SEGURA: incorpora el respaldo conservando los datos actuales.
+- Modo RESTAURACIÓN EXACTA: reemplaza únicamente las rutas incluidas en el respaldo.
+- Toda restauración requiere reautenticación real de la clave del administrador.
+- Restauración exacta requiere además escribir RESTAURAR.
+- Antes de restaurar, se descarga automáticamente un respaldo completo del estado actual.
+- Toda restauración queda registrada en auditoria_restauraciones.
+- No se modificó firebase/config.js.

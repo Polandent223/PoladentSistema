@@ -166,7 +166,13 @@ function renderReport(){const rows=getRows(),view=publicRows(rows),box=$('#pcRep
 function exportReport(){const rows=renderReport();if(!rows.length)return alert('No hay datos para exportar.');if(!window.XLSX)return alert('La librería de Excel todavía no cargó.');const view=publicRows(rows),st=reportStats(rows),wb=XLSX.utils.book_new();const summary=[['POLADENT CASA DENTAL'],[reportTitle()],[],['Resumen','Valor'],['Registros',st.records],['Funcionarios',st.people],['Presentes',st.present],['Ausencias',st.absent],['Atrasos',st.late],['Horas trabajadas',Number(st.hours.toFixed(2))],['Alertas GPS',st.gps],[],Object.keys(view[0]),...view.map(r=>Object.values(r))];const ws=XLSX.utils.aoa_to_sheet(summary);ws['!cols']=Object.keys(view[0]).map(k=>({wch:Math.max(12,Math.min(28,k.length+5))}));XLSX.utils.book_append_sheet(wb,ws,'Asistencia');XLSX.writeFile(wb,`Reporte_Asistencia_${$('#pcRepFrom').value}_${$('#pcRepTo').value}.xlsx`);}
 function exportReportPdf(){const rows=renderReport();if(!rows.length)return alert('No hay datos para generar el PDF.');if(!window.jspdf?.jsPDF)return alert('La librería PDF todavía no cargó.');const {jsPDF}=window.jspdf,doc=new jsPDF({orientation:'landscape',unit:'mm',format:'a4'}),view=publicRows(rows),cols=Object.keys(view[0]),st=reportStats(rows);let y=14;doc.setFontSize(15);doc.text('POLADENT CASA DENTAL',14,y);doc.setFontSize(10);doc.text(reportTitle(),14,y+6);doc.text(`Presentes: ${st.present}  Ausencias: ${st.absent}  Atrasos: ${st.late}  Horas: ${st.hours.toFixed(1)}  Alertas GPS: ${st.gps}`,14,y+12);y+=19;const widths=cols.map(c=>c==='Empleado'?38:c==='Estado'?43:c==='Fecha'?23:26),pageW=277;const total=widths.reduce((a,b)=>a+b,0),scale=Math.min(1,pageW/total),w=widths.map(x=>x*scale);const rowH=7;function header(){doc.setFillColor(235,240,247);doc.rect(10,y,w.reduce((a,b)=>a+b,0),rowH,'F');doc.setFontSize(7);let x=10;cols.forEach((c,i)=>{doc.text(String(c).slice(0,22),x+1,y+4.6);x+=w[i]});y+=rowH}header();doc.setFontSize(6.5);view.forEach(r=>{if(y>194){doc.addPage();y=12;header()}let x=10;cols.forEach((c,i)=>{const text=String(r[c]??'—').replace(/\s+/g,' ').slice(0,34);doc.rect(x,y,w[i],rowH);doc.text(text,x+1,y+4.5,{maxWidth:w[i]-2});x+=w[i]});y+=rowH});doc.setFontSize(7);doc.text(`Generado: ${new Date().toLocaleString('es-VE')}`,10,205);doc.save(`Reporte_Asistencia_${$('#pcRepFrom').value}_${$('#pcRepTo').value}.pdf`);}
 function renderAlerts(){const from=$('#pcAlertFrom')?.value||'',to=$('#pcAlertTo')?.value||'',name=$('#pcAlertEmp')?.value||'';let rows=Object.values(alerts).filter(a=>{const f=new Date(a.timestamp||0).toISOString().slice(0,10);return dateIn(f,from,to)&&(!name||a.empleado===name)}).sort((a,b)=>(b.timestamp||0)-(a.timestamp||0));const byEmp={};rows.forEach(a=>byEmp[a.empleado||'Desconocido']=(byEmp[a.empleado||'Desconocido']||0)+1);$('#pcAlertSummary').innerHTML=`<div><small>Total</small><b>${rows.length}</b></div><div><small>Funcionarios</small><b>${Object.keys(byEmp).length}</b></div><div><small>Fuera del área</small><b>${rows.filter(a=>/fuera|distancia/i.test(a.motivo||'')).length}</b></div><div><small>Sin sucursal</small><b>${rows.filter(a=>/sin tienda|sin sucursal|asignad/i.test(a.motivo||'')).length}</b></div><div><small>Último intento</small><b>${rows[0]?new Date(rows[0].timestamp).toLocaleDateString('es-VE'):'—'}</b></div>`;$('#pcAlertHistory').innerHTML=rows.length?rows.map(a=>`<div class="pc-alert-item"><b>${esc(a.empleado||'Empleado desconocido')}</b><span>${esc(a.motivo||'Intento bloqueado')}</span><small>${esc(fmtDate(a.timestamp))}${a.distancia!=null?' · '+Math.round(a.distancia)+' m':''}${a.sedeCercana?' · '+esc(a.sedeCercana):''}</small></div>`).join(''):'<p>No hay alertas con esos filtros.</p>';}
-function populate(){const opts=Object.entries(emp).sort((a,b)=>(a[1].nombre||'').localeCompare(b[1].nombre||''));['#pcRepEmp'].forEach(s=>{const el=$(s);if(el)el.innerHTML='<option value="">Todos</option>'+opts.map(([id,e])=>`<option value="${id}">${esc(e.nombre||'Sin nombre')}</option>`).join('')});const names=[...new Set(opts.map(([,e])=>e.nombre).filter(Boolean))];const ae=$('#pcAlertEmp');if(ae)ae.innerHTML='<option value="">Todos</option>'+names.map(n=>`<option>${esc(n)}</option>`).join('');const ss=$('#pcRepSede');if(ss)ss.innerHTML='<option value="">Todas</option>'+Object.values(sedes).map(s=>`<option>${esc(s.nombre||'Sucursal')}</option>`).join('');}
+function populate(){
+ const opts=Object.entries(emp).filter(([,e])=>e&&e.archivado!==true&&e.activo!==false).sort((a,b)=>(a[1].nombre||'').localeCompare(b[1].nombre||''));
+ const re=$('#pcRepEmp'),currentEmp=re?.value||'';if(re){re.innerHTML='<option value="">Todos los funcionarios</option>'+opts.map(([id,e])=>`<option value="${id}">${esc(e.nombre||'Sin nombre')}</option>`).join('');if(currentEmp&&emp[currentEmp])re.value=currentEmp;}
+ const names=[...new Set(opts.map(([,e])=>e.nombre).filter(Boolean))];const ae=$('#pcAlertEmp'),curA=ae?.value||'';if(ae){ae.innerHTML='<option value="">Todos</option>'+names.map(n=>`<option>${esc(n)}</option>`).join('');if(curA)ae.value=curA;}
+ const rawSedes=Object.values(sedes||{}).filter(Boolean),unique=[];const seen=new Set();rawSedes.forEach(s=>{const n=s.nombre||s.name||s.sedeNombre||'';if(n&&!seen.has(n)){seen.add(n);unique.push(n)}});
+ const ss=$('#pcRepSede'),curS=ss?.value||'';if(ss){ss.innerHTML='<option value="">Todas las sucursales</option>'+unique.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('');if(curS&&seen.has(curS))ss.value=curS;}
+}
 function renderHome(){const t=today(),total=Object.keys(emp).length,present=Object.keys(emp).filter(id=>marks[id]&&marks[id][t]).length;$('#pcKTotal').textContent=total;$('#pcKPresent').textContent=present;$('#pcKAbsent').textContent=Math.max(0,total-present);const aToday=Object.values(alerts).filter(a=>new Date(a.timestamp||0).toISOString().slice(0,10)===t);$('#pcKAlert').textContent=aToday.length;$('#pcKSedes').textContent=Object.values(sedes).filter(s=>s.activa!==false).length;
  const mr=[];Object.entries(emp).forEach(([id,e])=>Object.entries(marks[id]||{}).forEach(([fecha,m])=>Object.entries(m||{}).forEach(([tipo,v])=>{const ts=v?.timestamp||v?.ts||0;mr.push({nombre:e.nombre,fecha,tipo,hora:v?.hora||v,ts})})));mr.sort((a,b)=>(b.ts||0)-(a.ts||0));$('#pcRecentMarks').innerHTML=mr.slice(0,5).map(r=>`<div class="pc-row"><div><b>${esc(r.nombre)}</b><small>${esc(r.tipo.replace('_',' '))}</small></div><small>${esc(r.fecha)} · ${esc(r.hora||'—')}</small></div>`).join('')||'<p>Sin marcaciones recientes.</p>';$('#pcRecentAlerts').innerHTML=Object.values(alerts).sort((a,b)=>(b.timestamp||0)-(a.timestamp||0)).slice(0,5).map(a=>`<div class="pc-row"><div><b>${esc(a.empleado||'Desconocido')}</b><small>${esc(a.motivo||'Bloqueado')}</small></div><small>${new Date(a.timestamp||0).toLocaleDateString('es-VE')}</small></div>`).join('')||'<p>Sin alertas recientes.</p>';}
 
@@ -196,6 +202,47 @@ function cleanupLegacy(panel,pages){
   });
 }
 
+
+async function mountReportsUnified(){
+  const host=document.querySelector('#plu-view-reportes .plu-view-body');
+  if(!host)return;
+  let box=document.querySelector('.pc-report-center');
+  if(box){
+    if(!host.contains(box))host.appendChild(box);
+  }else{
+    buildReports(host);
+    box=host.querySelector('.pc-report-center');
+  }
+  try{
+    const d=firebase.database();
+    const [es,ms,as,ss,ls]=await Promise.all([
+      d.ref('empleados').once('value'),
+      d.ref('marcaciones').once('value'),
+      d.ref('alertas_gps').once('value'),
+      d.ref('configuracion_gps_v51/sedes').once('value'),
+      d.ref('locales').once('value')
+    ]);
+    emp=es.val()||{};
+    marks=ms.val()||{};
+    alerts=as.val()||{};
+    sedes={...(ss.val()||{}),...(ls.val()||{})};
+    populate();
+    const preview=document.querySelector('#pcRepPreviewBox');
+    if(preview&&preview.dataset.rendered!=='1'){
+      syncReportDates();
+      preview.dataset.rendered='1';
+      renderReport();
+    }
+  }catch(error){
+    console.error('[Poladent] Centro de reportes:',error);
+    const preview=document.querySelector('#pcRepPreviewBox');
+    if(preview)preview.innerHTML='<p>No se pudieron cargar los datos de Firebase. Revisa la conexión.</p>';
+  }
+}
+document.addEventListener('poladent:route',e=>{
+  if(e.detail?.route!=='reportes')return;
+  setTimeout(mountReportsUnified,50);
+});
 function subscribe(){if(!readyDb())return setTimeout(subscribe,250);const d=firebase.database();window.PoladentData.subscribe('empleados',s=>{emp=s.val()||{};window.PoladentPerformance?.schedule('pc-empleados',()=>{populate();renderHome()})});window.PoladentData.subscribe('marcaciones',s=>{marks=s.val()||{};window.PoladentPerformance?.schedule('pc-marcaciones',renderHome)});window.PoladentData.subscribe('alertas_gps',s=>{alerts=s.val()||{};window.PoladentPerformance?.schedule('pc-alertas',()=>{renderAlerts();renderHome()})});window.PoladentData.subscribe('configuracion_gps_v51/sedes',s=>{sedes=s.val()||{};window.PoladentPerformance?.schedule('pc-sedes',()=>{populate();renderHome()})});}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(mount,50));else setTimeout(mount,50);
 })();

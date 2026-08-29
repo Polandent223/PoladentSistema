@@ -1,0 +1,44 @@
+POLADENT SISTEMA — FASE 19.16
+
+1. SEGURIDAD — ALERTAS PENDIENTES
+Problema:
+- La tarjeta “Alertas pendientes” abría únicamente la configuración de seguridad.
+- No mostraba cuáles alertas estaban pendientes ni permitía gestionarlas.
+
+Corrección:
+- Seguridad conserva toda su configuración actual.
+- Debajo aparece “Centro de alertas de seguridad”.
+- Muestra:
+  * funcionario
+  * tipo de alerta
+  * motivo/detalle
+  * fecha y hora
+  * estado Pendiente/Revisada
+  * quién la revisó cuando existe
+- Filtros:
+  * Pendientes
+  * Revisadas
+  * Todas
+- Acciones:
+  * Marcar revisada
+  * Reabrir una revisada
+  * Eliminar una alerta
+  * Borrar únicamente las alertas ya revisadas
+- Las alertas pendientes nunca se borran al usar “Borrar revisadas”.
+- GPS sigue administrándose en su módulo GPS.
+
+2. LLEGADAS TARDE
+Problema:
+- La tarjeta “Llegadas tarde” enviaba a Análisis visual.
+
+Corrección:
+- Ya no abre Análisis visual.
+- Al pulsarla se filtra “Funcionarios de hoy” por “Llegaron tarde”.
+- Solo muestra funcionarios cuya hora real de entrada superó el horario + tolerancia.
+- Cada tarjeta conserva horario, hora de entrada, salida y minutos de retraso.
+- También la alerta “X llegadas tarde” dentro de Requiere atención aplica ese mismo filtro.
+
+VALIDACIÓN
+- 31 archivos JavaScript: 0 errores de sintaxis.
+- firebase/config.js intacto.
+- Sin modificaciones al historial de asistencia.

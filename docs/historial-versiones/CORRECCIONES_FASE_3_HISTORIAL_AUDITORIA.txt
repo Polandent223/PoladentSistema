@@ -1,0 +1,13 @@
+POLADENT SISTEMA - FASE 3 HISTORIAL Y AUDITORÍA
+Fecha: 2026-08-08
+
+1. Se añadió Historial profesional dentro de Asistencia.
+2. Filtros por funcionario, Desde/Hasta y accesos Hoy/Semana/Mes.
+3. Incluye funcionarios activos y archivados sin borrar su historia.
+4. Muestra Entrada, salida a almuerzo, regreso, salida final, horas, estado y si hubo corrección.
+5. Añadidos resumen, impresión y exportación Excel del período seleccionado.
+6. Auditoría de correcciones: valor anterior, valor nuevo, motivo, fecha y administrador.
+7. Corrección manual ahora usa escritura atómica junto con auditoría.
+8. El modal clásico de corrección ya no reemplaza el registro completo: conserva GPS, sede, dispositivo, foto y demás evidencia existente al cambiar una hora.
+9. Desde Historial profesional se puede abrir directamente la corrección del funcionario y fecha elegidos.
+10. No se cambió firebase/config.js, no se migraron rutas y no se borró historial existente.

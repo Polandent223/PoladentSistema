@@ -1,0 +1,19 @@
+POLADENT SISTEMA — FASE 4
+ANÁLISIS VISUAL + FUNCIONARIO DESTACADO
+Fecha: 2026-08-08
+
+1. Se corrigió un error real del análisis: se llamaba timeMinutes() sin estar definida en el módulo.
+2. El ranking usa horarios reales del funcionario mediante PoladentAttendance.
+3. Feriados y días libres no se consideran ausencias.
+4. Las justificaciones de justificaciones_v44 se incorporan al análisis. Una ausencia justificada se muestra pero no castiga la asistencia.
+5. Funcionarios archivados conservan sus períodos históricos; los días posteriores al archivado actual no generan ausencias nuevas.
+6. El puntaje es transparente:
+   - Asistencia 30%
+   - Puntualidad 25%
+   - Jornada completa 20%
+   - Horas cumplidas 15%
+   - Responsabilidad 10%
+7. Se muestran: jornadas asistidas, justificadas, ausencias, puntualidad, jornada completa, horas, responsabilidad y total.
+8. Se añadió impresión del análisis seleccionado.
+9. El detalle por funcionario muestra fecha, entrada, salida, horas, estado y nota de justificación.
+10. Esta fase es de SOLO LECTURA sobre historial: no escribe ni elimina marcaciones, empleados, días libres, feriados ni justificaciones.

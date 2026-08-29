@@ -1,0 +1,11 @@
+POLADENT · FASE 17 · CENTRO DE CORRECCIONES GUIADAS
+
+- Salud de datos continúa siendo una herramienta de solo lectura.
+- Cada hallazgo compatible incorpora un botón para ir al módulo correcto.
+- Problemas de horario abren Editar horarios con el funcionario seleccionado.
+- Problemas de marcación abren Correcciones y justificaciones con funcionario y fecha seleccionados.
+- Problemas de PIN, nombre o posible duplicado llevan a Gestión de empleados para revisión manual.
+- Marcaciones huérfanas llevan a Auditoría para investigación antes de cualquier decisión.
+- Ningún hallazgo se corrige, fusiona o elimina automáticamente.
+- Las correcciones de marcaciones continúan usando la auditoría atómica existente.
+- No se borró ni migró historial.

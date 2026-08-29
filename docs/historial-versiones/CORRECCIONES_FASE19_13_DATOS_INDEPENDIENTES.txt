@@ -1,0 +1,40 @@
+POLADENT SISTEMA — FASE 19.13
+
+1. RESUMEN DE PAGOS Y BANCO DE HORAS
+- Se ejecuta directamente al abrir la ruta.
+- Lee empleados, marcaciones, feriados, días libres y nómina directamente desde Firebase.
+- Ya no depende de haber abierto Resumen de marcaciones ni de cachés de otra pantalla.
+- Mantiene filtros propios Desde / Hasta / Funcionario.
+
+2. CENTRO DE REPORTES
+- Al abrir la ruta carga directamente:
+  * empleados
+  * marcaciones
+  * alertas GPS
+  * sedes GPS
+  * locales
+- El selector Funcionario muestra los empleados activos.
+- El selector Sucursal muestra las sucursales/locales existentes sin duplicados.
+- La primera carga sincroniza las fechas con el período seleccionado y genera la vista previa.
+- Vista previa, Excel, PDF e Imprimir conservados.
+
+3. DÍAS LIBRES PAGADOS
+- El modal carga los funcionarios directamente antes de abrir.
+- El historial carga empleados + días libres directamente desde Firebase.
+- Se muestra un resumen con funcionarios disponibles, registros y regla de 8 horas.
+- Los registros históricos sin ficha actual se identifican sin bloquear la pantalla.
+- La ruta vuelve a cargar la información al abrirla.
+
+4. FERIADOS GLOBALES
+- Nueva vista profesional con:
+  * total registrados
+  * próximos
+  * pasados
+  * fecha, motivo y regla de 8 horas pagadas
+- Tarjetas más claras y botón Eliminar.
+- La ruta refresca al abrirla.
+
+VALIDACIÓN
+- 31 archivos JavaScript: 0 errores de sintaxis.
+- Sin referencias internas faltantes.
+- firebase/config.js intacto.

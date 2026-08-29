@@ -1,0 +1,9 @@
+POLADENT - FASE 10: DESCANSOS PAGADOS
+
+Cambio aplicado:
+- Todo día desmarcado en Editar horario se considera día de descanso pagado de 8 horas.
+- Un día marcado como laborable y sin marcación completa sigue siendo falta y genera 0 horas pagadas + 8 horas no cumplidas (o las horas planificadas del horario para el descuento).
+- Feriados pagados y días libres autorizados pagados contabilizan 8 horas cuando no se trabajan.
+- Si un funcionario trabaja en un día de descanso, se conserva la lógica existente para calcular las horas realmente trabajadas; este cambio no altera marcaciones ni historial.
+- No se modificaron rutas ni datos de Firebase.
+- La configuración de cámara corregida en Fase 9 se mantiene.

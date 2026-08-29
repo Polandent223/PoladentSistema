@@ -1,0 +1,9 @@
+POLADENT SISTEMA - FASE 15 AUTODIAGNOSTICO Y PREVENCION
+Fecha: 2026-08-08
+
+- Diagnóstico administrativo ampliado y de solo lectura.
+- Comprueba internet, HTTPS, SDK Firebase, conexión real de Realtime Database, sesión, lectura de rutas críticas, horarios, sedes GPS y configuración de cámara.
+- Registra localmente hasta 20 errores JavaScript del dispositivo sin guardar contraseñas y permite limpiarlos desde Diagnóstico.
+- La pantalla de empleado muestra aviso visible cuando pierde internet/Firebase y bloquea la búsqueda mientras no sea seguro marcar.
+- Si GPS/seguridad tardan más de 8 segundos en cargar, informa claramente al usuario y mantiene bloqueada la marcación.
+- No se modifican rutas Firebase ni datos históricos.

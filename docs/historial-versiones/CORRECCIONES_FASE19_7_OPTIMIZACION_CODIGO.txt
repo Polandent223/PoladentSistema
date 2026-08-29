@@ -1,0 +1,22 @@
+POLADENT SISTEMA — FASE 19.7
+REVISIÓN Y OPTIMIZACIÓN DE CÓDIGO
+
+Objetivo:
+Ordenar la ejecución del sistema sin eliminar funciones ni tocar historial.
+
+Cambios seguros realizados:
+- Reutilización de snapshots compartidos de Firebase en lecturas repetidas de empleados, días libres y nómina.
+- Se redujeron lecturas directas repetidas a Firebase.
+- Eliminado observador antiguo del directorio de empleados que volvía a inyectar fotos y contenido.
+- Eliminada reinyección temporizada de tarjetas del directorio profesional.
+- El módulo de permisos ya no observa continuamente cambios de clase del panel; usa eventos explícitos de admin/ruta/marcaciones.
+- Se mantiene el almacén compartido PoladentData para que varios módulos puedan usar una sola escucha por ruta.
+- Se conservaron los observadores que todavía son necesarios para montar módulos dinámicos.
+- No se minificó ni se acortó código de forma agresiva; se priorizó estabilidad y legibilidad.
+- Se actualizó el control de caché a Fase 19.7.
+
+Seguridad:
+- firebase/config.js intacto.
+- Sin cambios en rutas Firebase.
+- Sin borrado ni migración de historial.
+- 31 archivos JavaScript validados sin errores de sintaxis.

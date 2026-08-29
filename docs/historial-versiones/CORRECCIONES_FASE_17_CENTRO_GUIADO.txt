@@ -1,0 +1,12 @@
+POLADENT SISTEMA — FASE 17
+Centro de Correcciones Guiadas
+
+Cambios:
+- Salud de datos ahora incluye acciones guiadas por hallazgo.
+- Problemas de horario abren Editar horarios con el funcionario seleccionado.
+- Problemas de marcaciones abren Correcciones con funcionario y fecha cargados.
+- Problemas de PIN/nombre/duplicados llevan a Lista de empleados.
+- Marcaciones huérfanas llevan a Auditoría para revisión manual.
+- Los botones NO corrigen, fusionan ni eliminan datos automáticamente.
+- Se conserva la auditoría existente y el historial completo.
+- Se actualizó el versionado de caché a Fase 17.

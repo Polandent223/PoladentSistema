@@ -1,0 +1,10 @@
+FASE 9 - CORRECCIÓN DE CÁMARA
+
+1. La configuración global del administrador manda en cada etapa.
+   - Entrada -> fotoEntrada
+   - Salida almuerzo -> fotoAlmuerzoSalida
+   - Regreso almuerzo -> fotoAlmuerzoRegreso
+   - Salida -> fotoSalida
+2. Se eliminó la condición fotosTemporalesDiarias que forzaba foto en las cuatro etapas.
+3. El botón de permisos ahora solicita realmente acceso a la cámara mediante getUserMedia.
+4. Si el permiso está bloqueado, muestra instrucciones claras sin modificar marcaciones ni historial.

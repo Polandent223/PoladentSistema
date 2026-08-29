@@ -103,7 +103,14 @@
   function renderAll(){if(!$('#pd44-main'))return; renderMini(); renderSelects(); renderRoles(); renderPermissionChecks(); renderFicha(); renderJustList();}
   async function backup(lite){if(!dbReady()){show('#pd44Status','⚠️ Firebase todavía no está listo.');return;} const paths=lite?['empleados']:['empleados','marcaciones','feriados_global','dias_libres_empleado','configuracion_v44','configuracion_gps_v51','configuracion_seguridad_asistencia','roles_v44','catalogo_roles_v45','permisos_roles_v44','justificaciones_v44','auditoria_ediciones','alertas_gps','alertas_seguridad','dispositivos_marcacion','nomina_ajustes','nomina_recibos','nomina_recibos_historial','auditoria_nomina']; const out={fechaRespaldo:new Date().toISOString(),version:'Poladent v4.4',tipo:lite?'empleados':'completo'}; for(const p of paths){try{out[p]=(await db.ref(p).once('value')).val()||{};}catch(e){out[p]={error:'No se pudo leer'};}} const blob=new Blob([JSON.stringify(out,null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`Poladent_respaldo_${out.tipo}_${today()}.json`; a.click(); URL.revokeObjectURL(a.href); show('#pd44Status','✅ Respaldo descargado.');}
   function subscribe(){if(!dbReady())return setTimeout(subscribe,300); try{window.PoladentData.subscribe('configuracion_v44',s=>{if(s.exists()){config={...DEFAULT,...config,...s.val()}; localSave(); fillForms(); renderAll();}}); window.PoladentData.subscribe('empleados',s=>{empleados=s.val()||{}; renderAll();}); window.PoladentData.subscribe('marcaciones',s=>{marcaciones=s.val()||{}; renderAll();}); window.PoladentData.subscribe('justificaciones_v44',s=>{justificaciones=s.val()||{}; renderAll();}); window.PoladentData.subscribe('roles_v44',s=>{roles=s.val()||{}; renderAll();}); window.PoladentData.subscribe('permisos_roles_v44',s=>{permisosRoles=s.val()||{}; renderPermissionChecks();});}catch(e){setTimeout(subscribe,800);}}
-  function watch(){const panel=$('#adminPanel');if(!panel)return;let queued=false;const tick=()=>{if(queued)return;queued=true;requestAnimationFrame(()=>{queued=false;if(!panel.classList.contains('hidden')){buildUI();renderAll();}});};new MutationObserver(tick).observe(panel,{attributes:true,attributeFilter:['class']});document.addEventListener('poladent:route',tick);document.addEventListener('poladent:marcaciones-actualizadas',tick);tick();}
+  function watch(){
+    let queued=false;
+    const tick=()=>{if(queued)return;queued=true;requestAnimationFrame(()=>{queued=false;const panel=$('#adminPanel');if(panel&&!panel.classList.contains('hidden')){buildUI();renderAll();}});};
+    document.addEventListener('poladent:admin-ready',tick,{passive:true});
+    document.addEventListener('poladent:route',tick,{passive:true});
+    document.addEventListener('poladent:marcaciones-actualizadas',tick,{passive:true});
+    tick();
+  }
   ready(()=>{localLoad();applyConfig();watch();subscribe();});
 })();
 

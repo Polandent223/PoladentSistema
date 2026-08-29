@@ -4,6 +4,7 @@
 'use strict';
 const $=(s,r=document)=>r.querySelector(s);
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function normEmployeeName(v){return String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();}
 let empleados={},marcaciones={},feriados={},libres={};
 let mounted=false,subscribed=false,lastRows=[];
 function localDate(d=new Date()){const x=new Date(d);return `${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,'0')}-${String(x.getDate()).padStart(2,'0')}`}
@@ -11,7 +12,37 @@ function startWeek(){const d=new Date(),n=d.getDay()||7;d.setHours(12,0,0,0);d.s
 function fmtMark(day,type){const m=window.PoladentAttendance?.mark(day,type);if(!m)return '—';if(m.hora)return String(m.hora).slice(0,5);const d=new Date(Number(m.timestamp)||0);return Number.isFinite(d.getTime())?`${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`:'—'}
 function avatar(e){const src=e?.foto||e?.photo||e?.photoUrl||e?.imagen||'';return src?`<img src="${esc(src)}" alt="Foto">`:'<span>👤</span>'}
 function statusFor(calc,holiday,free){if(calc.label)return calc.label;if(holiday)return holiday?.motivo||'Feriado';if(free)return free?.motivo||'Día libre';return calc.complete?'Jornada completa':calc.scheduled?'Jornada incompleta':'Día no laborable'}
-function fillEmployees(){const s=$('#hpEmpleado');if(!s)return;const cur=s.value;s.innerHTML='<option value="">Todos los funcionarios</option>'+Object.entries(empleados).sort((a,b)=>String(a[1]?.nombre||'').localeCompare(String(b[1]?.nombre||''),'es')).map(([id,e])=>`<option value="${esc(id)}">${esc(e.nombre||id)}${e.archivado||e.activo===false?' (Archivado)':''}</option>`).join('');if(cur&&empleados[cur])s.value=cur;}
+function historicalName(id){
+ const days=marcaciones?.[id]||{};
+ for(const day of Object.values(days)){
+   for(const mark of Object.values(day||{})){
+     if(mark&&typeof mark==='object'&&mark.nombre)return mark.nombre;
+   }
+ }
+ return '';
+}
+function duplicateHistoricalIds(){
+ const currentNames=new Set(Object.values(empleados||{}).map(e=>normEmployeeName(e?.nombre)).filter(Boolean));
+ const dup=new Set();
+ Object.keys(marcaciones||{}).forEach(id=>{
+   if(empleados[id])return;
+   const n=normEmployeeName(historicalName(id));
+   if(n&&currentNames.has(n))dup.add(id);
+ });
+ return dup;
+}
+function fillEmployees(){
+ const s=$('#hpEmpleado');if(!s)return;
+ const cur=s.value, dup=duplicateHistoricalIds();
+ const ids=Array.from(new Set([...Object.keys(empleados||{}),...Object.keys(marcaciones||{})])).filter(id=>!dup.has(id));
+ const rows=ids.map(id=>{
+   const e=empleados[id]||{};
+   return {id,e,nombre:e.nombre||historicalName(id)||`Funcionario histórico ${String(id).slice(-6)}`,historico:!empleados[id]};
+ }).sort((a,b)=>String(a.nombre||'').localeCompare(String(b.nombre||''),'es'));
+ s.innerHTML='<option value="">Todos los funcionarios</option>'+rows.map(x=>`<option value="${esc(x.id)}">${esc(x.nombre)}${x.historico?' (Histórico)':(x.e.archivado||x.e.activo===false?' (Archivado)':'')}</option>`).join('');
+ if(cur&&ids.includes(cur))s.value=cur;
+ else if(cur&&!ids.includes(cur))s.value='';
+}
 function mount(){if(mounted&&$('#hpRoot'))return;const host=$('#plu-view-asistencia-historial .plu-view-body');if(!host)return;host.querySelectorAll('.plu-empty').forEach(x=>x.remove());let root=$('#hpRoot');if(!root){root=document.createElement('section');root.id='hpRoot';root.className='hp-root';root.innerHTML=`
  <div class="hp-card hp-toolbar"><div><label>Funcionario</label><select id="hpEmpleado"><option value="">Todos los funcionarios</option></select></div><div><label>Desde</label><input id="hpDesde" type="date"></div><div><label>Hasta</label><input id="hpHasta" type="date"></div><div class="hp-quick"><button data-range="hoy">Hoy</button><button data-range="semana">Semana</button><button data-range="mes">Mes</button></div><div class="hp-actions"><button id="hpRefresh">Actualizar</button><button id="hpPrint">🖨️ Imprimir</button><button id="hpExcel">📊 Excel</button></div></div>
  <div id="hpProfile"></div><div id="hpSummary" class="hp-summary"></div>
@@ -29,21 +60,32 @@ function buildRows(){
  const engine=window.PoladentAttendance;if(!engine)return[];
  const from=$('#hpDesde')?.value||'',to=$('#hpHasta')?.value||'',selected=$('#hpEmpleado')?.value||'';
  if(!from||!to||from>to)return[];
- const ids=selected?[selected]:Array.from(new Set([...Object.keys(empleados||{}),...Object.keys(marcaciones||{})]));
+ const dup=duplicateHistoricalIds();
+ const allIds=Array.from(new Set([...Object.keys(empleados||{}),...Object.keys(marcaciones||{})]));
+ let ids=selected?[selected]:allIds.filter(id=>!dup.has(id));
+
+ // Si seleccionas una ficha actual, integra las marcaciones antiguas del mismo nombre,
+ // pero SOLO en fechas donde realmente existen registros.
+ const selectedName=selected&&empleados[selected]?normEmployeeName(empleados[selected].nombre):'';
+ const legacyForSelected=selectedName?allIds.filter(id=>!empleados[id]&&normEmployeeName(historicalName(id))===selectedName):[];
+
  const rows=[];
- ids.forEach(id=>{
-   const e=empleados[id]||{};
+ const process=(id,displayEmp,legacyOnly=false)=>{
+   const e=displayEmp||empleados[id]||{};
    engine.datesBetween(from,to).forEach(date=>{
      const day=marcaciones?.[id]?.[date]||{},holiday=feriados?.[date]||null,free=libres?.[id]?.[date]||null;
-     const hasMark=Object.values(day||{}).some(v=>v&&typeof v==='object'&&(v.tipo||v.timestamp));
-     // Historial antiguo sin ficha actual de empleado: conserva nombre desde la propia marcación.
-     const markName=Object.values(day||{}).find(v=>v&&typeof v==='object'&&v.nombre)?.nombre||'';
-     const emp={...e,nombre:e.nombre||markName||id};
-     const calc=engine.calculateDay({employee:emp,date,day,holiday,freeDay:free,paidSunday:true});
-     if(!calc.scheduled&&!hasMark&&!holiday&&!free)return;
-     rows.push({id,e:emp,date,day,calc,holiday,free,status:statusFor(calc,holiday,free),edited:Object.values(day||{}).some(m=>m?.editado)});
+     const hasMark=Object.values(day||{}).some(v=>v&&typeof v==='object'&&(v.tipo||v.timestamp||v.hora));
+     // Un ID sin ficha actual nunca genera ausencias artificiales.
+     if((legacyOnly||!empleados[id])&&!hasMark&&!holiday&&!free)return;
+     const calc=engine.calculateDay({employee:e,date,day,holiday,freeDay:free,paidSunday:true});
+     if(!legacyOnly&&!empleados[id]&&!hasMark&&!holiday&&!free)return;
+     if(empleados[id]&&!calc.scheduled&&!hasMark&&!holiday&&!free)return;
+     rows.push({id:selected&&legacyOnly?selected:id,sourceId:id,e,date,day,calc,holiday,free,status:statusFor(calc,holiday,free),edited:Object.values(day||{}).some(x=>x?.editado),legacy:legacyOnly||!empleados[id]});
    });
- });
+ };
+ ids.forEach(id=>process(id,empleados[id]||{nombre:historicalName(id)||id},false));
+ if(selected&&empleados[selected])legacyForSelected.forEach(id=>process(id,empleados[selected],true));
+
  return rows.sort((a,b)=>b.date.localeCompare(a.date)||String(a.e.nombre||'').localeCompare(String(b.e.nombre||''),'es'));
 }
 function render(){if(!$('#hpRoot'))return;fillEmployees();lastRows=buildRows();const selected=$('#hpEmpleado').value,person=selected?empleados[selected]:null;if(person)$('#hpProfile').innerHTML=`<div class="hp-profile"><div class="hp-avatar">${avatar(person)}</div><div><h3>${esc(person.nombre||'Funcionario')}</h3><p>${person.archivado||person.activo===false?'Archivado · historial conservado':'Activo'} · ${esc(person.tipoSalario||'Salario diario')}</p></div></div>`;else $('#hpProfile').innerHTML='';const total=lastRows.length,complete=lastRows.filter(r=>r.calc.complete).length,worked=lastRows.reduce((a,r)=>a+r.calc.worked,0),missing=lastRows.reduce((a,r)=>a+r.calc.missing,0),edited=lastRows.filter(r=>r.edited).length;$('#hpSummary').innerHTML=`<div><small>Días mostrados</small><b>${total}</b></div><div><small>Jornadas completas</small><b>${complete}</b></div><div><small>Horas trabajadas</small><b>${worked.toFixed(1)}</b></div><div><small>Horas no cumplidas</small><b>${missing.toFixed(1)}</b></div><div><small>Días con corrección</small><b>${edited}</b></div>`;$('#hpBody').innerHTML=lastRows.length?lastRows.map(r=>`<tr><td>${r.date}</td><td>${esc(r.e.nombre||r.id)}</td><td>${fmtMark(r.day,'entrada')}</td><td>${fmtMark(r.day,'almuerzo_salida')}</td><td>${fmtMark(r.day,'almuerzo_regreso')}</td><td>${fmtMark(r.day,'salida')}</td><td>${r.calc.worked.toFixed(2)}</td><td><span class="hp-tag">${esc(r.status)}</span></td><td>${r.edited?'<span class="hp-tag">Corregida</span>':'Original'}</td><td><button class="hp-edit" data-edit-id="${esc(r.id)}" data-edit-date="${r.date}">Corregir</button></td></tr>`).join(''):'<tr><td colspan="10" class="hp-empty">No hay información para este período.</td></tr>';document.querySelectorAll('.hp-edit').forEach(b=>b.onclick=()=>window.PoladentCorreccionMarcaciones?.open?.(b.dataset.editId,b.dataset.editDate));renderAudit(selected);}
@@ -63,5 +105,16 @@ function subscribe(){
  sub('dias_libres_empleado',s=>{libres=s.val()||{};render()});
 }
 document.addEventListener('poladent:route',e=>{if(e.detail?.route==='asistencia-historial'){setTimeout(mount,30);setTimeout(mount,300);}});if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(mount,1500));else setTimeout(mount,1500);
-window.PoladentHistorialProfesional={mount,render};
+function openEmployee(id){
+ const go=()=>{
+   mount();
+   const sel=$('#hpEmpleado');
+   if(sel){sel.value=id;render();}
+ };
+ const nav=document.querySelector('#plu-nav button[data-route="asistencia-historial"]');
+ if(nav)nav.click();
+ setTimeout(go,120);
+ setTimeout(go,450);
+}
+window.PoladentHistorialProfesional={mount,render,openEmployee};
 })();

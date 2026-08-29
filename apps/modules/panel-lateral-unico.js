@@ -56,25 +56,108 @@ function cleanupLegacyShells(){
  });
 }
 function localDay(ts){const d=ts?new Date(Number(ts)):new Date();const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0');return `${y}-${m}-${day}`}
-function updateHomeStats(){
- const host=$('#plu-dashboard');if(!host)return;
- const employees=window.PoladentData?.get?.('empleados')||{};
- const marks=window.PoladentData?.get?.('marcaciones')||{};
- const gpsAlerts=window.PoladentData?.get?.('alertas_gps')||{};
- const secAlerts=window.PoladentData?.get?.('alertas_seguridad')||{};
- const today=localDay();
- const active=Object.values(employees).filter(e=>e&&e.archivado!==true&&e.activo!==false).length;
- let present=0,complete=0;
- Object.entries(employees).forEach(([id,e])=>{if(!e||e.archivado===true||e.activo===false)return;const r=marks?.[id]?.[today];if(!r)return;if(r.entrada)present++;if(r.entrada&&r.salida)complete++;});
- const pendingGps=Object.values(gpsAlerts).filter(a=>a&&a.revisada!==true).length;
- const pendingSec=Object.values(secAlerts).filter(a=>a&&a.revisada!==true).length;
- const vals={pluStatActive:active,pluStatPresent:present,pluStatComplete:complete,pluStatAlerts:pendingGps+pendingSec};
+function applyTodayStats(s={}){
+ const vals={
+   pluStatActive:s.active??0,
+   pluStatPresent:s.present??0,
+   pluStatComplete:s.complete??0,
+   pluStatAlerts:s.alerts??0,
+   pluStatWorking:s.working??0,
+   pluStatLunch:s.lunch??0,
+   pluStatPending:s.pending??0,
+   pluStatAbsent:s.absent??0,
+   pluStatLate:s.late??0
+ };
  Object.entries(vals).forEach(([id,v])=>{const el=$('#'+id);if(el)el.textContent=String(v)});
- const sync=$('#pluHomeSync');if(sync)sync.textContent=navigator.onLine?'● Sistema conectado':'● Sin conexión';
+ const sync=$('#pluHomeSync');
+ if(sync)sync.textContent=navigator.onLine?'● Sistema conectado':'● Sin conexión';
+ const updated=$('#pluHomeUpdated');
+ if(updated){
+   const ts=Number(s.updatedAt||Date.now());
+   updated.textContent=`Última actualización: ${new Date(ts).toLocaleTimeString('es-VE',{hour:'2-digit',minute:'2-digit'})}`;
+ }
 }
-function bindHomeStats(){if(state.homeBound||!window.PoladentData?.subscribe)return;state.homeBound=true;['empleados','marcaciones','alertas_gps','alertas_seguridad'].forEach(path=>window.PoladentData.subscribe(path,()=>updateHomeStats()));window.addEventListener('online',updateHomeStats);window.addEventListener('offline',updateHomeStats);updateHomeStats()}
-function buildHome(){const host=ensureView('inicio');if(!$('#plu-dashboard',host)){const x=document.createElement('div');x.id='plu-dashboard';x.className='plu-dashboard';x.innerHTML=`<div class="plu-welcome"><div><small>POLADENT CASA DENTAL</small><h3>Centro de control</h3><p>Resumen rápido del estado actual del personal y la asistencia.</p></div><div class="plu-status" id="pluHomeSync">● Sistema conectado</div></div><div class="plu-kpi-live"><button data-go="empleados-lista"><small>Funcionarios activos</small><strong id="pluStatActive">—</strong><span>Ver personal</span></button><button data-go="asistencia-marcaciones"><small>Con entrada hoy</small><strong id="pluStatPresent">—</strong><span>Ver asistencia</span></button><button data-go="asistencia-verificacion"><small>Jornada completada</small><strong id="pluStatComplete">—</strong><span>Verificación de hoy</span></button><button data-go="seguridad"><small>Alertas pendientes</small><strong id="pluStatAlerts">—</strong><span>Revisar seguridad</span></button></div><div class="plu-home-grid"><button data-go="analisis">📊<b>Análisis</b><small>Rendimiento y funcionario destacado</small></button><button data-go="asistencia-historial">📋<b>Historial</b><small>Consultar por rango</small></button><button data-go="nomina">💼<b>Nómina</b><small>Pagos y períodos</small></button><button data-go="gps-control">📍<b>GPS y locales</b><small>Geocercas y asignaciones</small></button></div>`;host.appendChild(x);$$('[data-go]',x).forEach(b=>b.onclick=()=>openRoute(b.dataset.go));}bindHomeStats()}
-function createAction(route,title,description,buttonText,handler){const host=ensureView(route);let box=$('.plu-action-card',host);if(!box){box=document.createElement('div');box.className='plu-action-card';box.innerHTML=`<h3>${title}</h3><p>${description}</p><button type="button">${buttonText}</button>`;host.appendChild(box);$('button',box).onclick=handler;}return box}
+function updateHomeStats(){
+ const live=window.PoladentTodayStats||window.PoladentControlProfesional?.stats?.();
+ if(live){applyTodayStats(live);return;}
+ // Respaldo mientras carga el panel operativo.
+ const employees=window.PoladentData?.getValue?.('empleados',{})||{};
+ const marks=window.PoladentData?.getValue?.('marcaciones',{})||{};
+ const gpsAlerts=window.PoladentData?.getValue?.('alertas_gps',{})||{};
+ const secAlerts=window.PoladentData?.getValue?.('alertas_seguridad',{})||{};
+ const today=localDay(),activeRows=Object.entries(employees).filter(([,e])=>e&&e.archivado!==true&&e.activo!==false);
+ let present=0,complete=0;
+ activeRows.forEach(([id])=>{
+   const day=marks?.[id]?.[today]||{};
+   const vals=Object.values(day||{}).filter(v=>v&&typeof v==='object');
+   const find=type=>day?.[type]||vals.find(v=>v?.tipo===type);
+   const en=find('entrada'),out=find('salida');
+   if(en)present++;
+   if(en&&out)complete++;
+ });
+ applyTodayStats({
+   active:activeRows.length,present,complete,
+   alerts:Object.values(gpsAlerts).filter(a=>a&&a.revisada!==true).length+Object.values(secAlerts).filter(a=>a&&a.revisada!==true).length,
+   working:0,lunch:0,pending:0,absent:0,late:0,updatedAt:Date.now()
+ });
+}
+function bindHomeStats(){
+ if(state.homeBound)return;
+ state.homeBound=true;
+ document.addEventListener('poladent:today-stats',e=>applyTodayStats(e.detail||{}),{passive:true});
+ window.addEventListener('online',updateHomeStats);
+ window.addEventListener('offline',updateHomeStats);
+ if(window.PoladentData?.subscribe){
+   ['empleados','marcaciones','alertas_gps','alertas_seguridad'].forEach(path=>window.PoladentData.subscribe(path,()=>updateHomeStats()));
+ }
+ updateHomeStats();
+}
+function buildHome(){
+ const host=ensureView('inicio');
+ if(!$('#plu-dashboard',host)){
+   const x=document.createElement('div');
+   x.id='plu-dashboard';x.className='plu-dashboard';
+   x.innerHTML=`
+   <div class="plu-welcome">
+     <div><small>POLADENT CASA DENTAL</small><h3>Centro de control</h3><p>Estado real de la jornada de hoy y puntos que requieren atención.</p></div>
+     <div class="plu-live-status"><div class="plu-status" id="pluHomeSync">● Sistema conectado</div><small id="pluHomeUpdated">Última actualización: —</small><button id="pluHomeRefresh" type="button">↻ Actualizar</button></div>
+   </div>
+   <div class="plu-kpi-live">
+     <button data-go="empleados-lista"><small>Funcionarios activos</small><strong id="pluStatActive">—</strong><span>Ver personal</span></button>
+     <button data-go="asistencia-marcaciones"><small>Con entrada hoy</small><strong id="pluStatPresent">—</strong><span>Ver asistencia</span></button>
+     <button data-go="asistencia-verificacion"><small>Jornada completada</small><strong id="pluStatComplete">—</strong><span>Verificación de hoy</span></button>
+     <button data-go="seguridad"><small>Alertas pendientes</small><strong id="pluStatAlerts">—</strong><span>Revisar seguridad</span></button>
+   </div>
+   <div class="plu-live-today-grid">
+     <button data-go="asistencia-marcaciones"><span>🟢</span><div><small>En jornada ahora</small><strong id="pluStatWorking">—</strong></div></button>
+     <button data-go="asistencia-marcaciones"><span>🍽️</span><div><small>En almuerzo</small><strong id="pluStatLunch">—</strong></div></button>
+     <button data-go="asistencia-marcaciones"><span>⏱️</span><div><small>Aún no han llegado</small><strong id="pluStatPending">—</strong></div></button>
+     <button data-go="asistencia-marcaciones"><span>🚫</span><div><small>Faltas de hoy</small><strong id="pluStatAbsent">—</strong></div></button>
+     <button data-action="late-today"><span>🕒</span><div><small>Llegadas tarde</small><strong id="pluStatLate">—</strong></div></button>
+   </div>
+   <div class="plu-home-grid">
+     <button data-go="analisis">📊<b>Análisis</b><small>Rendimiento y funcionario destacado</small></button>
+     <button data-go="asistencia-historial">📋<b>Historial</b><small>Consultar por rango</small></button>
+     <button data-go="nomina">💼<b>Nómina</b><small>Pagos y períodos</small></button>
+     <button data-go="gps-control">📍<b>GPS y locales</b><small>Geocercas y asignaciones</small></button>
+   </div>`;
+   host.appendChild(x);
+   $$('[data-go]',x).forEach(b=>b.onclick=()=>openRoute(b.dataset.go));
+   $$('[data-action="late-today"]',x).forEach(b=>b.onclick=()=>{
+     document.dispatchEvent(new CustomEvent('poladent:show-late-today'));
+   });
+   $('#pluHomeRefresh',x).onclick=async()=>{
+     const b=$('#pluHomeRefresh',x);if(b){b.disabled=true;b.textContent='Actualizando…'}
+     try{
+       if(window.PoladentControlProfesional?.refresh)await window.PoladentControlProfesional.refresh();
+       else updateHomeStats();
+     }finally{
+       if(b){b.disabled=false;b.textContent='↻ Actualizar'}
+     }
+   };
+ }
+ bindHomeStats();
+}function createAction(route,title,description,buttonText,handler){const host=ensureView(route);let box=$('.plu-action-card',host);if(!box){box=document.createElement('div');box.className='plu-action-card';box.innerHTML=`<h3>${title}</h3><p>${description}</p><button type="button">${buttonText}</button>`;host.appendChild(box);$('button',box).onclick=handler;}return box}
 function relocate(){if(state.busy)return;state.busy=true;try{
  disableLegacyShells();
  buildHome();
@@ -114,7 +197,7 @@ function relocate(){if(state.busy)return;state.busy=true;try{
  placeholder(ensureView('gps-locales'),'Las herramientas para agregar o editar locales aparecerán aquí al cargar el módulo GPS.');
  placeholder(ensureView('gps-asignar'),'Las asignaciones de locales aparecerán aquí al cargar el módulo GPS.');
  }finally{state.busy=false}}
-function openRoute(id,options={}){if(window.PoladentSecurity&&window.PoladentSecurity.can&&!window.PoladentSecurity.can(({'analisis':'reportes','empleados-roles':'configuracion','respaldo':'configuracion','diagnostico':'configuracion'}[id])||(id.startsWith('empleados-')?'empleados':id.startsWith('asistencia-')?'asistencia':id.startsWith('gps-')?'gps':id))){document.dispatchEvent(new CustomEvent('poladent:access-denied',{detail:{route:id}}));return;}state.current=id;document.dispatchEvent(new CustomEvent('poladent:route',{detail:{route:id}}));$$('.plu-view').forEach(v=>v.classList.toggle('active',v.dataset.route===id));$$('#plu-nav button').forEach(b=>b.classList.toggle('active',b.dataset.route===id));const btn=$(`#plu-nav button[data-route="${id}"]`);if(btn){const det=btn.closest('details');if(det)det.open=true;}const mt=$('#plu-mobile-title');if(mt)mt.textContent=titleMap[id]||'Panel';document.body.classList.remove('plu-menu-open');if(options.scroll!==false)window.scrollTo({top:0,behavior:'smooth'});}
+function openRoute(id,options={}){if(window.PoladentSecurity&&window.PoladentSecurity.can&&!window.PoladentSecurity.can(({'analisis':'reportes','empleados-roles':'configuracion','respaldo':'configuracion','diagnostico':'configuracion'}[id])||(id.startsWith('empleados-')?'empleados':id.startsWith('asistencia-')?'asistencia':id.startsWith('gps-')?'gps':id))){document.dispatchEvent(new CustomEvent('poladent:access-denied',{detail:{route:id}}));return;}state.current=id;ensureView(id);document.dispatchEvent(new CustomEvent('poladent:route',{detail:{route:id}}));if(id==='asistencia-pagos'){setTimeout(()=>window.renderPagos?.(),50);}if(id==='asistencia-libres'){setTimeout(()=>{window.cargarEmpleadosParaModal?.();window.renderListaLibresEmpleado?.();},30);}if(id==='asistencia-feriados'){setTimeout(()=>window.renderListaFeriadosGlobal?.(),30);}if(id==='asistencia-notificaciones'){setTimeout(()=>window.renderNotificacionesPro?.(),50);}$$('.plu-view').forEach(v=>v.classList.toggle('active',v.dataset.route===id));$$('#plu-nav button').forEach(b=>b.classList.toggle('active',b.dataset.route===id));const btn=$(`#plu-nav button[data-route="${id}"]`);if(btn){const det=btn.closest('details');if(det)det.open=true;}const mt=$('#plu-mobile-title');if(mt)mt.textContent=titleMap[id]||'Panel';document.body.classList.remove('plu-menu-open');if(options.scroll!==false)window.scrollTo({top:0,behavior:'smooth'});}
 function bind(){if(document.body.dataset.pluBound==='1')return;document.body.dataset.pluBound='1';$('#plu-nav')?.addEventListener('click',e=>{const b=e.target.closest('button[data-route]');if(b)openRoute(b.dataset.route)});$('#plu-open')?.addEventListener('click',()=>document.body.classList.add('plu-menu-open'));$('.plu-mobile-close')?.addEventListener('click',()=>document.body.classList.remove('plu-menu-open'));$('.plu-overlay')?.addEventListener('click',()=>document.body.classList.remove('plu-menu-open'))}
 function mount(){const panel=$('#adminPanel');if(!panel||state.mounted)return;buildShell(panel);disableLegacyShells();relocate();openRoute(state.current,{scroll:false});state.mounted=true;
  // Fase 8: observar solamente NUEVOS BLOQUES directos del panel.

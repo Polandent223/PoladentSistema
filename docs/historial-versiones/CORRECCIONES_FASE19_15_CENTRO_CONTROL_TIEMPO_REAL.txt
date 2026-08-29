@@ -1,0 +1,39 @@
+POLADENT SISTEMA — FASE 19.15
+
+CENTRO DE CONTROL EN TIEMPO REAL
+
+Problema corregido:
+- Los indicadores superiores de Resumen principal mostraban 0 aunque el panel operativo inferior sí tenía datos reales.
+- La causa principal era que la parte superior usaba una lectura distinta y además llamaba a un método incorrecto del almacén compartido.
+
+Cambios:
+- Los indicadores superiores ahora usan la MISMA lógica del panel “Estado del equipo”.
+- Se publica una única estadística diaria compartida para evitar contradicciones.
+- Funcionarios activos = fichas activas reales.
+- Con entrada hoy = funcionarios con Entrada registrada hoy.
+- Jornada completada = Entrada + Salida final.
+- Alertas pendientes = alertas GPS + seguridad no revisadas.
+
+Nuevos indicadores:
+- En jornada ahora.
+- En almuerzo.
+- Aún no han llegado.
+- Faltas de hoy.
+- Llegadas tarde.
+
+Actualización:
+- Se muestra la hora de última actualización.
+- El botón Actualizar hace una lectura directa de Firebase de:
+  empleados, marcaciones, feriados, días libres, justificaciones,
+  alertas GPS, alertas de seguridad, configuración y auditoría de nómina.
+- Después vuelve a calcular todo el Centro de Control.
+
+Consistencia:
+- La parte superior y “Estado del equipo” comparten la misma lógica de horario, tolerancia,
+  descansos, feriados, días libres y marcaciones.
+- Las tarjetas siguen siendo clicables y llevan al módulo correspondiente.
+
+VALIDACIÓN
+- 31 archivos JavaScript: 0 errores de sintaxis.
+- firebase/config.js intacto.
+- Sin cambios en historial ni rutas de datos.

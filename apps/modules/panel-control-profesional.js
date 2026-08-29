@@ -53,6 +53,52 @@ function periodStats(kind){
 }
 function pendingAlertCount(obj){return Object.values(obj||{}).filter(a=>a&&a.revisada!==true).length}
 function auditTodayCount(){const t=today();return Object.values(payrollAudit||{}).filter(a=>a&&a.accion==='pago_reabierto'&&isoLocal(new Date(Number(a.fecha||0)))===t).length}
+
+function dashboardStats(){
+ const t=today();
+ const rows=Object.entries(employees).filter(([,e])=>activeEmployee(e)).map(([id,e])=>statusFor(id,e,t));
+ const active=rows.length;
+ const present=rows.filter(r=>!!r.en).length;
+ const complete=rows.filter(r=>!!r.en&&!!r.out).length;
+ const working=rows.filter(r=>['working','late'].includes(r.code)).length;
+ const lunch=rows.filter(r=>!!r.ls&&!r.lr&&!r.out).length;
+ const pending=rows.filter(r=>r.code==='pending').length;
+ const absent=rows.filter(r=>r.code==='absent').length;
+ const late=rows.filter(r=>r.lateMin>r.tol).length;
+ const incomplete=rows.filter(r=>r.code==='incomplete').length;
+ const rest=rows.filter(r=>['rest','holiday','free','justified'].includes(r.code)).length;
+ const pendingGps=pendingAlertCount(gpsAlerts);
+ const pendingSec=pendingAlertCount(securityAlerts);
+ return {active,present,complete,working,lunch,pending,absent,late,incomplete,rest,pendingGps,pendingSec,alerts:pendingGps+pendingSec,updatedAt:Date.now()};
+}
+function publishDashboardStats(){
+ const detail=dashboardStats();
+ window.PoladentTodayStats=detail;
+ document.dispatchEvent(new CustomEvent('poladent:today-stats',{detail}));
+ return detail;
+}
+async function refreshDirect(){
+ try{
+   const d=firebase.database();
+   const [es,ms,hs,fs,js,gs,ss,gc,cc,pa]=await Promise.all([
+     d.ref('empleados').once('value'),
+     d.ref('marcaciones').once('value'),
+     d.ref('feriados_global').once('value'),
+     d.ref('dias_libres_empleado').once('value'),
+     d.ref('justificaciones_v44').once('value'),
+     d.ref('alertas_gps').once('value'),
+     d.ref('alertas_seguridad').once('value'),
+     d.ref('configuracion_gps_v51').once('value'),
+     d.ref('configuracion_v44').once('value'),
+     d.ref('auditoria_nomina').once('value')
+   ]);
+   employees=es.val()||{};marks=ms.val()||{};holidays=hs.val()||{};freeDays=fs.val()||{};
+   justifications=js.val()||{};gpsAlerts=gs.val()||{};securityAlerts=ss.val()||{};
+   gpsConfig={sedes:{},...(gc.val()||{})};generalConfig={tolerancia:10,...(cc.val()||{})};payrollAudit=pa.val()||{};
+ }catch(error){console.error('[Poladent] No se pudo refrescar el centro de control:',error)}
+ render();
+ return dashboardStats();
+}
 function ensure(){
  const host=$('#plu-dashboard');if(!host)return false;
  let root=$('#pcp13',host);if(root)return true;
@@ -60,13 +106,22 @@ function ensure(){
  root.innerHTML=`
  <div class="pcp13-section-head"><div><small>SUPERVISIÓN DE HOY</small><h3>Estado del equipo</h3><p>Vista operativa en tiempo real. Este panel no modifica registros.</p></div><button id="pcp13Refresh" type="button">↻ Actualizar</button></div>
  <div id="pcp13Attention" class="pcp13-attention"></div>
- <div class="pcp13-layout"><div class="pcp13-card"><div class="pcp13-card-head"><div><h4>Funcionarios de hoy</h4><p>Foto, sede, horario y estado actual.</p></div><select id="pcp13Filter"><option value="all">Todos</option><option value="attention">Requiere atención</option><option value="working">Presentes</option><option value="absent">Faltas</option><option value="rest">Descanso / libre</option></select></div><div id="pcp13People" class="pcp13-people"></div></div>
+ <div class="pcp13-layout"><div class="pcp13-card"><div class="pcp13-card-head"><div><h4>Funcionarios de hoy</h4><p>Foto, sede, horario y estado actual.</p></div><select id="pcp13Filter"><option value="all">Todos</option><option value="attention">Requiere atención</option><option value="working">Presentes</option><option value="late">Llegaron tarde</option><option value="absent">Faltas</option><option value="rest">Descanso / libre</option></select></div><div id="pcp13People" class="pcp13-people"></div></div>
  <div class="pcp13-card"><div class="pcp13-card-head"><div><h4>Resumen del período</h4><p>Asistencia acumulada sin alterar la nómina.</p></div><div class="pcp13-tabs"><button data-period="hoy">Hoy</button><button data-period="semana">Semana</button><button data-period="mes">Mes</button></div></div><div id="pcp13Period" class="pcp13-period"></div><div id="pcp13Alerts" class="pcp13-mini-alerts"></div></div></div>`;
  host.appendChild(root);
- $('#pcp13Refresh').onclick=render;
+ $('#pcp13Refresh').onclick=refreshDirect;
  $('#pcp13Filter').onchange=renderPeople;
  $$('.pcp13-tabs button',root).forEach(b=>b.onclick=()=>{period=b.dataset.period;renderPeriod()});
  return true;
+}
+
+function showLateToday(){
+ const filter=$('#pcp13Filter');
+ if(filter)filter.value='late';
+ renderPeople();
+ const people=$('#pcp13People');
+ people?.scrollIntoView?.({behavior:'smooth',block:'start'});
+ document.dispatchEvent(new CustomEvent('poladent:late-filter-opened'));
 }
 function renderAttention(){
  const box=$('#pcp13Attention');if(!box)return;const t=today(),rows=Object.entries(employees).filter(([,e])=>activeEmployee(e)).map(([id,e])=>statusFor(id,e,t));
@@ -74,17 +129,17 @@ function renderAttention(){
  const items=[];
  if(absent)items.push({icon:'🚫',title:`${absent} funcionario${absent===1?'':'s'} sin entrada`,text:'Día laborable y ya pasó la tolerancia.',route:'asistencia-marcaciones'});
  if(incomplete)items.push({icon:'⏳',title:`${incomplete} marcación${incomplete===1?'':'es'} incompleta${incomplete===1?'':'s'}`,text:'Revisa entrada/salida pendiente.',route:'asistencia-correcciones'});
- if(late)items.push({icon:'🕒',title:`${late} llegada${late===1?'':'s'} tarde`,text:'Según horario y tolerancia configurada.',route:'analisis'});
+ if(late)items.push({icon:'🕒',title:`${late} llegada${late===1?'':'s'} tarde`,text:'Según horario y tolerancia configurada.',action:'late'});
  if(gps)items.push({icon:'📍',title:`${gps} alerta${gps===1?'':'s'} GPS pendiente${gps===1?'':'s'}`,text:'Intentos fuera de geocerca o local.',route:'gps-alertas'});
  if(sec)items.push({icon:'🛡️',title:`${sec} alerta${sec===1?'':'s'} de seguridad`,text:'PIN, dispositivo o fotografía.',route:'seguridad'});
  if(reopened)items.push({icon:'💼',title:`${reopened} nómina${reopened===1?'':'s'} reabierta${reopened===1?'':'s'} hoy`,text:'Existe auditoría de reapertura.',route:'nomina'});
  if(noSchedule)items.push({icon:'⚙️',title:`${noSchedule} funcionario${noSchedule===1?'':'s'} con horario por defecto`,text:'Conviene revisar su horario individual.',route:'empleados-horarios'});
- box.innerHTML=`<div class="pcp13-att-head"><div><small>REQUIERE ATENCIÓN</small><h4>${items.length?`${items.length} punto${items.length===1?'':'s'} para revisar`:'Todo en orden'}</h4></div><span class="${items.length?'warn':'ok'}">${items.length?'Revisar':'✓ Sin pendientes críticos'}</span></div><div class="pcp13-att-grid">${items.length?items.map(i=>`<button data-route="${i.route}"><span>${i.icon}</span><b>${esc(i.title)}</b><small>${esc(i.text)}</small></button>`).join(''):'<div class="pcp13-allgood">No hay faltas vencidas, marcaciones incompletas ni alertas pendientes en este momento.</div>'}</div>`;
- $$('[data-route]',box).forEach(b=>b.onclick=()=>nav(b.dataset.route));
+ box.innerHTML=`<div class="pcp13-att-head"><div><small>REQUIERE ATENCIÓN</small><h4>${items.length?`${items.length} punto${items.length===1?'':'s'} para revisar`:'Todo en orden'}</h4></div><span class="${items.length?'warn':'ok'}">${items.length?'Revisar':'✓ Sin pendientes críticos'}</span></div><div class="pcp13-att-grid">${items.length?items.map(i=>`<button ${i.action?`data-action="${i.action}"`:`data-route="${i.route}"`}><span>${i.icon}</span><b>${esc(i.title)}</b><small>${esc(i.text)}</small></button>`).join(''):'<div class="pcp13-allgood">No hay faltas vencidas, marcaciones incompletas ni alertas pendientes en este momento.</div>'}</div>`;
+ $$('[data-route]',box).forEach(b=>b.onclick=()=>nav(b.dataset.route));$$('[data-action="late"]',box).forEach(b=>b.onclick=showLateToday);
 }
 function renderPeople(){
  const box=$('#pcp13People');if(!box)return;const filter=$('#pcp13Filter')?.value||'all',t=today();let rows=Object.entries(employees).filter(([,e])=>activeEmployee(e)).map(([id,e])=>statusFor(id,e,t));
- if(filter==='attention')rows=rows.filter(r=>r.attention||r.lateMin>r.tol);if(filter==='working')rows=rows.filter(r=>['working','late','complete','complete-late','worked-rest'].includes(r.code));if(filter==='absent')rows=rows.filter(r=>r.code==='absent');if(filter==='rest')rows=rows.filter(r=>['rest','holiday','free','justified'].includes(r.code));
+ if(filter==='attention')rows=rows.filter(r=>r.attention||r.lateMin>r.tol);if(filter==='working')rows=rows.filter(r=>['working','late','complete','complete-late','worked-rest'].includes(r.code));if(filter==='late')rows=rows.filter(r=>r.lateMin>r.tol);if(filter==='absent')rows=rows.filter(r=>r.code==='absent');if(filter==='rest')rows=rows.filter(r=>['rest','holiday','free','justified'].includes(r.code));
  const order={danger:0,warn:1,ok:2,info:3,neutral:4};rows.sort((a,b)=>(order[a.tone]??9)-(order[b.tone]??9)||String(a.e.nombre||'').localeCompare(String(b.e.nombre||'')));
  box.innerHTML=rows.length?rows.map(r=>{const p=employeePhoto(r.e),sch=schedule(r.e);return `<article class="pcp13-person"><div class="pcp13-avatar">${p?`<img src="${esc(p)}" alt="Foto de ${esc(r.e.nombre||'funcionario')}">`:'👤'}</div><div class="pcp13-person-main"><div><b>${esc(r.e.nombre||'Sin nombre')}</b><small>${esc(employeeBranch(r.e))}</small></div><span class="pcp13-badge ${r.tone}">${esc(r.label)}</span><div class="pcp13-times"><span>Horario ${esc(sch.entrada||'08:00')}–${esc(sch.salida||'17:00')}</span><span>Entrada ${esc(r.en?.hora||'—')}</span><span>Salida ${esc(r.out?.hora||'—')}</span></div></div></article>`}).join(''):'<div class="pcp13-empty">No hay funcionarios para este filtro.</div>';
 }
@@ -93,8 +148,99 @@ function renderPeriod(){
  box.innerHTML=`<div class="pcp13-period-range">${esc(s.from)} → ${esc(s.to)}</div><div class="pcp13-period-grid"><div><small>Jornadas esperadas</small><b>${s.expected}</b></div><div><small>Asistencias</small><b>${s.present}</b></div><div><small>Faltas</small><b>${s.absent}</b></div><div><small>Llegadas tarde</small><b>${s.late}</b></div><div><small>Completadas</small><b>${s.complete}</b></div><div><small>Justificadas</small><b>${s.justified}</b></div><div><small>Asistencia</small><b>${attendance}%</b></div><div><small>Jornada completa</small><b>${completion}%</b></div></div>`;
  const al=$('#pcp13Alerts');if(al){const gps=pendingAlertCount(gpsAlerts),sec=pendingAlertCount(securityAlerts);al.innerHTML=`<button data-route="gps-alertas"><span>📍</span><div><b>${gps} GPS pendientes</b><small>Ver intentos fuera de área</small></div></button><button data-route="seguridad"><span>🛡️</span><div><b>${sec} alertas de seguridad</b><small>PIN, cámara y dispositivos</small></div></button>`;$$('[data-route]',al).forEach(b=>b.onclick=()=>nav(b.dataset.route));}
 }
-function render(){if(!ensure())return;renderAttention();renderPeople();renderPeriod()}
+
+function alertTimestamp(a){
+ return Number(a?.timestamp||a?.fechaHora||a?.creadoEn||a?.fecha||0)||0;
+}
+function alertEmployeeName(a){
+ const id=a?.empleadoId||a?.employeeId||'';
+ return a?.empleado||a?.nombreEmpleado||a?.employeeName||employees?.[id]?.nombre||'Funcionario';
+}
+function alertType(a){
+ const raw=String(a?.tipo||a?.motivo||a?.evento||'Alerta de seguridad');
+ if(/pin/i.test(raw))return 'PIN';
+ if(/disposit/i.test(raw))return 'Dispositivo';
+ if(/foto|fotograf|c[aá]mara/i.test(raw))return 'Fotografía';
+ return raw;
+}
+async function setSecurityAlertReviewed(id,value){
+ if(!id)return;
+ try{
+   await firebase.database().ref(`alertas_seguridad/${id}`).update({
+     revisada:!!value,
+     revisadaEn:value?Date.now():null,
+     revisadaPor:value?(firebase.auth?.().currentUser?.email||firebase.auth?.().currentUser?.uid||'Administrador'):null
+   });
+ }catch(error){console.error('[Poladent] Alerta seguridad:',error);alert('No se pudo actualizar la alerta.');}
+}
+async function deleteSecurityAlert(id){
+ if(!id||!confirm('¿Eliminar esta alerta de seguridad del historial?'))return;
+ try{await firebase.database().ref(`alertas_seguridad/${id}`).remove();}
+ catch(error){console.error(error);alert('No se pudo eliminar la alerta.');}
+}
+async function clearReviewedSecurityAlerts(){
+ const reviewed=Object.entries(securityAlerts||{}).filter(([,a])=>a?.revisada===true);
+ if(!reviewed.length)return alert('No hay alertas revisadas para borrar.');
+ if(!confirm(`¿Borrar ${reviewed.length} alerta(s) ya revisada(s)? Las pendientes se conservarán.`))return;
+ const updates={};reviewed.forEach(([id])=>updates[`alertas_seguridad/${id}`]=null);
+ try{await firebase.database().ref().update(updates);}
+ catch(error){console.error(error);alert('No se pudo borrar el historial revisado.');}
+}
+function renderSecurityAlertsManager(){
+ const host=document.querySelector('#plu-view-seguridad .plu-view-body');
+ if(!host)return;
+ let panel=$('#pcp16SecurityAlerts',host);
+ if(!panel){
+   panel=document.createElement('section');
+   panel.id='pcp16SecurityAlerts';panel.className='pcp16-security-alerts';
+   host.appendChild(panel);
+ }
+ const rows=Object.entries(securityAlerts||{}).map(([id,a])=>({id,a,ts:alertTimestamp(a)})).sort((x,y)=>y.ts-x.ts);
+ const pending=rows.filter(x=>x.a?.revisada!==true).length, reviewed=rows.length-pending;
+ panel.innerHTML=`
+   <div class="pcp16-sec-head">
+     <div><small>CENTRO DE ALERTAS</small><h3>Alertas de seguridad</h3><p>Revisa eventos de PIN, dispositivo compartido y evidencia fotográfica.</p></div>
+     <div class="pcp16-sec-actions"><span><b>${pending}</b> pendientes · <b>${reviewed}</b> revisadas</span><button id="pcp16ClearReviewed" type="button">Borrar revisadas</button></div>
+   </div>
+   <div class="pcp16-sec-filters">
+     <button type="button" data-sec-filter="pending">Pendientes (${pending})</button>
+     <button type="button" data-sec-filter="reviewed">Revisadas (${reviewed})</button>
+     <button type="button" data-sec-filter="all">Todas (${rows.length})</button>
+   </div>
+   <div id="pcp16SecList" class="pcp16-sec-list"></div>`;
+ let filter='pending';
+ const draw=()=>{
+   const list=$('#pcp16SecList',panel);if(!list)return;
+   const filtered=rows.filter(x=>filter==='all'||(filter==='pending'?x.a?.revisada!==true:x.a?.revisada===true));
+   list.innerHTML=filtered.length?filtered.map(({id,a,ts})=>{
+     const date=ts?new Date(ts):null;
+     const when=date?date.toLocaleString('es-VE'):(a?.fecha||'Fecha no registrada');
+     const reviewed=a?.revisada===true;
+     return `<article class="pcp16-alert ${reviewed?'reviewed':'pending'}">
+       <div class="pcp16-alert-icon">${reviewed?'✅':'🛡️'}</div>
+       <div class="pcp16-alert-body">
+         <div><b>${esc(alertEmployeeName(a))}</b><span class="pcp16-state ${reviewed?'ok':'warn'}">${reviewed?'Revisada':'Pendiente'}</span></div>
+         <strong>${esc(alertType(a))}</strong>
+         <span>${esc(a?.motivo||a?.detalle||a?.mensaje||'Evento de seguridad registrado')}</span>
+         <small>${esc(when)}${a?.revisadaPor?` · Revisada por ${esc(a.revisadaPor)}`:''}</small>
+       </div>
+       <div class="pcp16-alert-actions">
+         <button type="button" data-review="${id}" data-value="${reviewed?'0':'1'}">${reviewed?'↩ Reabrir':'✓ Marcar revisada'}</button>
+         <button type="button" class="danger" data-delete="${id}">🗑️ Eliminar</button>
+       </div>
+     </article>`;
+   }).join(''):`<div class="pcp13-empty">No hay alertas en esta categoría.</div>`;
+   $$('[data-review]',list).forEach(b=>b.onclick=()=>setSecurityAlertReviewed(b.dataset.review,b.dataset.value==='1'));
+   $$('[data-delete]',list).forEach(b=>b.onclick=()=>deleteSecurityAlert(b.dataset.delete));
+   $$('.pcp16-sec-filters button',panel).forEach(b=>b.classList.toggle('active',b.dataset.secFilter===filter));
+ };
+ $$('.pcp16-sec-filters button',panel).forEach(b=>b.onclick=()=>{filter=b.dataset.secFilter;draw();});
+ $('#pcp16ClearReviewed',panel).onclick=clearReviewedSecurityAlerts;
+ draw();
+}
+function render(){if(!ensure())return;renderAttention();renderPeople();renderPeriod();renderSecurityAlertsManager();publishDashboardStats()}
 function subscribe(){if(bound||!window.PoladentData)return false;bound=true;const handlers={empleados:s=>employees=s.val()||{},marcaciones:s=>marks=s.val()||{},feriados_global:s=>holidays=s.val()||{},dias_libres_empleado:s=>freeDays=s.val()||{},justificaciones_v44:s=>justifications=s.val()||{},alertas_gps:s=>gpsAlerts=s.val()||{},alertas_seguridad:s=>securityAlerts=s.val()||{},configuracion_gps_v51:s=>gpsConfig={sedes:{},...(s.val()||{})},configuracion_v44:s=>generalConfig={tolerancia:10,...(s.val()||{})},auditoria_nomina:s=>payrollAudit=s.val()||{}};Object.entries(handlers).forEach(([path,setter])=>window.PoladentData.subscribe(path,s=>{setter(s);if(window.PoladentPerformance?.schedule)window.PoladentPerformance.schedule('pcp13-'+path,render);else render()}));return true}
-function boot(){if(!window.PoladentAttendance||!window.PoladentData||!$('#adminPanel'))return setTimeout(boot,250);ensure();subscribe();render();document.addEventListener('poladent:admin-ready',()=>setTimeout(render,120),{passive:true});document.addEventListener('poladent:route',e=>{if(e.detail?.route==='inicio')setTimeout(render,30)},{passive:true});}
+window.PoladentControlProfesional={refresh:refreshDirect,stats:dashboardStats,render,showLateToday,renderSecurityAlertsManager};
+function boot(){if(!window.PoladentAttendance||!window.PoladentData||!$('#adminPanel'))return setTimeout(boot,250);ensure();subscribe();render();document.addEventListener('poladent:admin-ready',()=>setTimeout(render,120),{passive:true});document.addEventListener('poladent:route',e=>{if(e.detail?.route==='inicio')setTimeout(render,30);if(e.detail?.route==='seguridad')setTimeout(renderSecurityAlertsManager,40)},{passive:true});document.addEventListener('poladent:show-late-today',()=>setTimeout(showLateToday,20),{passive:true});}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(boot,1500));else setTimeout(boot,1500);
 })();

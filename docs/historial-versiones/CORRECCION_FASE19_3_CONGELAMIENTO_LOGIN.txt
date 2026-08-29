@@ -1,0 +1,18 @@
+POLADENT SISTEMA — FASE 19.3
+CORRECCIÓN DE CONGELAMIENTO AL ENTRAR COMO ADMINISTRADOR
+
+Corregido:
+- Error de ejecución en panel-lateral-unico.js (observererver -> observer).
+- Eliminado MutationObserver global de seguridad que vigilaba todo el DOM y podía saturar el navegador durante la carga masiva de Firebase.
+- Permisos ahora se sincronizan mediante eventos reales: admin-ready, permissions-ready y navegación.
+- Lecturas iniciales de usuario/rol/permisos se realizan en paralelo para reducir el tiempo de acceso.
+- Eliminado sondeo infinito de usuarios-acceso.js; ahora usa intentos acotados y eventos.
+- Actualizado versionado de caché para GitHub Pages.
+
+No se modificó:
+- firebase/config.js
+- historial
+- marcaciones
+- empleados
+- nómina
+- roles/datos de Firebase

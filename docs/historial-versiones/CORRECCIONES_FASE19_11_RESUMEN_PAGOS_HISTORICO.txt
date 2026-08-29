@@ -1,0 +1,30 @@
+POLADENT SISTEMA — FASE 19.11
+
+1. RESUMEN DE PAGOS Y BANCO DE HORAS
+- Ahora es un módulo independiente.
+- Tiene sus propios filtros Desde / Hasta / Funcionario.
+- Botón Actualizar y acceso rápido Este mes.
+- Explica claramente qué significa Banco de horas, Nómina cerrada y Horas no cumplidas.
+- Muestra por funcionario:
+  * Horas trabajadas
+  * Horas pagadas
+  * Horas no cumplidas
+  * Banco de horas extra
+  * Base calculada por asistencia
+  * Bonificación cerrada
+  * Descuento manual cerrado
+  * Total realmente cerrado en Nómina
+  * Método de pago cuando existe
+  * Detalle día por día
+- Ya no depende de las fechas del Resumen de marcaciones.
+
+2. HISTÓRICOS DUPLICADOS
+- El botón Eliminar historial ahora trabaja por ID histórico exacto.
+- Se niega a borrar si ese ID todavía tiene una ficha activa.
+- Requiere confirmación y escribir BORRAR HISTORIAL.
+- Elimina marcaciones, días libres, justificaciones y nómina asociadas únicamente a ese ID histórico.
+- No toca una ficha activa con el mismo nombre pero otro ID.
+
+3. VALIDACIÓN
+- 31 JavaScript: 0 errores de sintaxis.
+- firebase/config.js intacto.

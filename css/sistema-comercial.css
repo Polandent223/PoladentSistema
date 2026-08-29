@@ -763,3 +763,159 @@ body.pf-compact input,body.pf-compact select,body.pf-compact button{min-height:4
 
 /* Fase 19.6 - directorio limpio */
 .emp-pro-card .pd-foto-box{display:none!important}
+
+/* Fase 19.8 - diagnóstico del directorio */
+.emp-directory-diagnostic{display:grid;grid-template-columns:repeat(4,minmax(120px,1fr));gap:8px;margin:0 0 14px}
+.emp-directory-diagnostic>div{display:grid;gap:2px;padding:10px 12px;border:1px solid #e2e8f0;border-radius:12px;background:#f8fbff}
+.emp-directory-diagnostic>div.warn{background:#fff7ed;border-color:#fed7aa}
+.emp-directory-diagnostic b{font-size:18px;color:#123f6d}.emp-directory-diagnostic span{font-size:10px;color:#718497;text-transform:uppercase;font-weight:800}
+.emp-directory-diagnostic p{grid-column:1/-1;margin:0;padding:10px 12px;border-radius:12px;background:#fff7ed;color:#9a3412;font-size:12px;border:1px solid #fed7aa}
+.emp-status.historic{background:#fef3c7;color:#92400e}
+.empleado-historico{border-style:dashed!important;background:linear-gradient(135deg,#fff,#fffdf5)!important}
+.empleado-historico .emp-pro-meta{color:#7c6f54}
+@media(max-width:720px){.emp-directory-diagnostic{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:420px){.emp-directory-diagnostic{grid-template-columns:1fr}}
+
+/* Fase 19.10 - nómina reactiva */
+.pay-live-review{margin:10px 0 0;padding:10px 12px;border-radius:11px;background:#eef7ff;border:1px solid #cfe4f7;color:#315a7b;font-size:12px}
+.pay-live-review strong{color:#0b5cab;font-size:14px}
+.pay-card.pay-dirty{border-color:#9bc5ef!important;box-shadow:0 8px 24px rgba(11,92,171,.10)!important}
+.pay-card.pay-dirty .pay-live-review{background:#fff7ed;border-color:#fed7aa;color:#8a4b13}
+
+/* Fase 19.11 - Resumen de pagos independiente */
+.pay-bank-title h4{margin:0 0 4px}.pay-bank-title p{margin:0;color:#64748b;font-size:12px}
+.pay-bank-toolbar{display:grid;grid-template-columns:160px 160px minmax(180px,1fr) auto auto;gap:10px;align-items:end;margin:14px 0;padding:13px;border:1px solid #dce8f3;border-radius:15px;background:#f8fbff}
+.pay-bank-toolbar label{display:grid;gap:5px;font-size:11px;font-weight:800;color:#52677a}
+.pay-bank-toolbar input,.pay-bank-toolbar select{height:42px;border:1px solid #cfdde9;border-radius:10px;background:#fff;padding:0 10px}
+.pay-bank-toolbar button{margin:0!important;min-height:42px}
+.pay-bank-explain{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:8px 0 12px}
+.pay-bank-explain>div{display:grid;gap:3px;padding:10px 12px;border-radius:12px;background:#eef6ff;border:1px solid #dbeafe}
+.pay-bank-explain b{color:#174f82}.pay-bank-explain span{font-size:11px;color:#60758a}
+.pay-bank-empty{padding:20px;text-align:center;border:1px dashed #cbd5e1;border-radius:13px;background:#f8fafc;color:#64748b}
+@media(max-width:850px){.pay-bank-toolbar{grid-template-columns:1fr 1fr}.pay-bank-toolbar label:nth-child(3){grid-column:1/-1}.pay-bank-explain{grid-template-columns:1fr}}
+@media(max-width:480px){.pay-bank-toolbar{grid-template-columns:1fr}}
+
+/* Fase 19.13 - Días libres y feriados profesionales */
+.free-summary-pro,.holiday-summary-pro{
+  display:grid;grid-template-columns:repeat(3,minmax(130px,1fr));gap:9px;margin:10px 0 14px;
+}
+.free-summary-pro>div,.holiday-summary-pro>div{
+  display:grid;gap:3px;padding:12px 13px;border:1px solid #dce8f3;border-radius:13px;background:#f8fbff;
+}
+.free-summary-pro small,.holiday-summary-pro small{font-size:10px;text-transform:uppercase;color:#708397;font-weight:800}
+.free-summary-pro strong,.holiday-summary-pro strong{font-size:20px;color:#124a7e}
+.free-summary-pro p,.holiday-summary-pro p{
+  grid-column:1/-1;margin:0;padding:10px 12px;border-radius:11px;background:#eef7ff;color:#49677f;font-size:12px;
+}
+.free-historic{border-style:dashed!important;opacity:.82}
+.holiday-list-pro{display:grid;gap:9px}
+.holiday-card-pro{
+  display:grid;grid-template-columns:62px minmax(0,1fr) auto;gap:12px;align-items:center;
+  padding:12px 14px;border:1px solid #e1e9f2;border-radius:15px;background:#fff;box-shadow:0 5px 16px rgba(15,63,103,.05);
+}
+.holiday-date-pro{display:grid;place-items:center;padding:8px;border-radius:12px;background:#eef6ff}
+.holiday-date-pro b{font-size:21px;color:#0d5fbd}.holiday-date-pro span{font-size:11px;text-transform:uppercase;color:#60758b}
+.holiday-info-pro{display:grid;gap:3px}.holiday-info-pro strong{color:#102a43}.holiday-info-pro span{color:#60758b;text-transform:capitalize}.holiday-info-pro small{color:#16734a;font-weight:700}
+.holiday-card-pro button{margin:0!important;min-width:auto!important}
+
+/* Fase 19.13 - refuerzo visual del resumen de pagos */
+#plu-view-asistencia-pagos #resumenPagos{display:block!important;min-height:220px}
+.pay-bank-toolbar{position:relative;z-index:1}
+.pay-bank-title{margin-bottom:4px}
+
+/* Centro de reportes */
+#plu-view-reportes .pc-report-center{display:block!important;width:100%;margin:0}
+#plu-view-reportes .pc-report-filters select,#plu-view-reportes .pc-report-filters input{min-height:42px}
+@media(max-width:700px){
+  .free-summary-pro,.holiday-summary-pro{grid-template-columns:1fr 1fr}
+  .holiday-card-pro{grid-template-columns:54px minmax(0,1fr)}
+  .holiday-card-pro button{grid-column:1/-1;width:100%}
+}
+@media(max-width:430px){.free-summary-pro,.holiday-summary-pro{grid-template-columns:1fr}}
+
+/* Fase 19.14 - Notificaciones independientes */
+.notif-pro-title h4{margin:0 0 4px;font-size:18px;color:#102a43}
+.notif-pro-title p{margin:0;color:#64748b;font-size:12px}
+.notif-filter-pro{
+  display:grid;grid-template-columns:150px 150px minmax(190px,1fr) minmax(170px,1fr) auto;
+  gap:9px;align-items:end;margin:14px 0 9px;padding:13px;border:1px solid #dce8f3;border-radius:15px;background:#f8fbff;
+}
+.notif-filter-pro label{display:grid;gap:5px;font-size:10px;font-weight:800;text-transform:uppercase;color:#60758a}
+.notif-filter-pro input,.notif-filter-pro select{height:42px;border:1px solid #cfdeea;border-radius:10px;background:#fff;padding:0 9px}
+.notif-filter-pro button{margin:0!important;min-height:42px}
+.notif-quick-pro{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:12px}
+.notif-quick-pro button{margin:0!important;min-width:auto!important;padding:8px 11px!important;border-radius:10px!important}
+.notif-summary-pro{display:grid;grid-template-columns:repeat(5,minmax(100px,1fr));gap:8px;margin:9px 0 13px}
+.notif-summary-pro>div{display:grid;gap:2px;padding:11px;border:1px solid #dce8f3;border-radius:12px;background:#fff}
+.notif-summary-pro small{font-size:9px;text-transform:uppercase;color:#718497;font-weight:800}
+.notif-summary-pro strong{font-size:20px;color:#124a7e}
+.notif-list-pro{display:grid;gap:8px;max-height:620px;overflow:auto;padding-right:4px}
+.notif-pro-full{grid-template-columns:42px minmax(0,1fr) auto!important}
+.notif-pro-full.notif-alert{border-color:#fed7aa;background:#fffaf3}
+.notif-pro-full.notif-alert .notif-pro-icon{background:#fff1df}
+@media(max-width:900px){
+ .notif-filter-pro{grid-template-columns:1fr 1fr}
+ .notif-filter-pro label:nth-child(3),.notif-filter-pro label:nth-child(4){grid-column:auto}
+ .notif-summary-pro{grid-template-columns:repeat(3,1fr)}
+}
+@media(max-width:520px){
+ .notif-filter-pro{grid-template-columns:1fr}
+ .notif-summary-pro{grid-template-columns:1fr 1fr}
+ .notif-pro-full{grid-template-columns:42px 1fr!important}
+ .notif-pro-full .notif-pro-badge{grid-column:2}
+}
+
+/* Fase 19.15 - Centro de Control en tiempo real */
+.plu-live-status{display:flex;align-items:center;gap:9px;flex-wrap:wrap;justify-content:flex-end}
+.plu-live-status small{font-size:10px;color:#60758a}
+.plu-live-status button{margin:0!important;min-width:auto!important;padding:7px 10px!important;border-radius:10px!important;font-size:11px!important}
+.plu-live-today-grid{
+  display:grid;grid-template-columns:repeat(5,minmax(120px,1fr));gap:9px;margin:11px 0 14px;
+}
+.plu-live-today-grid button{
+  display:flex;align-items:center;gap:10px;text-align:left;padding:12px!important;margin:0!important;
+  border:1px solid #dce8f3!important;border-radius:14px!important;background:#fff!important;color:#183b56!important;
+  box-shadow:0 5px 16px rgba(15,63,103,.05)!important;min-width:0!important;
+}
+.plu-live-today-grid button>span{font-size:20px}
+.plu-live-today-grid button>div{display:grid;gap:2px}
+.plu-live-today-grid small{font-size:9px;text-transform:uppercase;color:#718497;font-weight:800}
+.plu-live-today-grid strong{font-size:20px;color:#124a7e}
+@media(max-width:950px){.plu-live-today-grid{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:620px){.plu-live-status{justify-content:flex-start}.plu-live-today-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:420px){.plu-live-today-grid{grid-template-columns:1fr}}
+
+/* Fase 19.16 - Centro de alertas de seguridad */
+.pcp16-security-alerts{margin-top:14px;padding-top:14px;border-top:1px solid #e2e8f0}
+.pcp16-sec-head{display:flex;justify-content:space-between;gap:14px;align-items:flex-start;margin-bottom:12px}
+.pcp16-sec-head small{font-size:9px;font-weight:900;letter-spacing:.05em;color:#718497}
+.pcp16-sec-head h3{margin:3px 0 4px;color:#102a43}
+.pcp16-sec-head p{margin:0;color:#64748b;font-size:12px}
+.pcp16-sec-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.pcp16-sec-actions span{font-size:11px;color:#60758a}
+.pcp16-sec-actions button{margin:0!important;min-width:auto!important;padding:8px 10px!important;border-radius:10px!important}
+.pcp16-sec-filters{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:10px}
+.pcp16-sec-filters button{margin:0!important;min-width:auto!important;padding:8px 11px!important;border-radius:999px!important;background:#f8fafc!important;color:#52677a!important;border:1px solid #dbe5ef!important}
+.pcp16-sec-filters button.active{background:#e8f3ff!important;color:#0b5cab!important;border-color:#b9d7f5!important}
+.pcp16-sec-list{display:grid;gap:9px}
+.pcp16-alert{display:grid;grid-template-columns:46px minmax(0,1fr) auto;gap:12px;align-items:center;padding:12px 13px;border:1px solid #e1e9f2;border-radius:14px;background:#fff}
+.pcp16-alert.pending{border-color:#fed7aa;background:#fffaf4}
+.pcp16-alert.reviewed{opacity:.82}
+.pcp16-alert-icon{width:46px;height:46px;border-radius:12px;display:grid;place-items:center;background:#eef6ff;font-size:20px}
+.pcp16-alert.pending .pcp16-alert-icon{background:#fff1df}
+.pcp16-alert-body{display:grid;gap:3px;min-width:0}
+.pcp16-alert-body>div{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.pcp16-alert-body b{color:#102a43}
+.pcp16-alert-body strong{font-size:12px;color:#35566f}
+.pcp16-alert-body span{font-size:12px;color:#5f7387}
+.pcp16-alert-body small{font-size:10px;color:#8797a6}
+.pcp16-state{padding:4px 7px;border-radius:999px;font-size:9px!important;font-weight:900}
+.pcp16-state.warn{background:#fff1df;color:#9a4d08}.pcp16-state.ok{background:#dcfce7;color:#166534}
+.pcp16-alert-actions{display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end}
+.pcp16-alert-actions button{margin:0!important;min-width:auto!important;padding:8px 10px!important;border-radius:10px!important;font-size:11px!important}
+@media(max-width:760px){
+ .pcp16-sec-head{flex-direction:column}.pcp16-sec-actions{justify-content:flex-start}
+ .pcp16-alert{grid-template-columns:46px minmax(0,1fr)}
+ .pcp16-alert-actions{grid-column:1/-1;justify-content:stretch}
+ .pcp16-alert-actions button{flex:1}
+}

@@ -1,0 +1,52 @@
+POLADENT SISTEMA — FASE 5 SEGURIDAD Y ESTABILIDAD
+Fecha: 2026-08-08
+
+OBJETIVO
+Reforzar seguridad y estabilidad sin borrar ni migrar historial existente.
+
+CORRECCIONES APLICADAS
+1. Pantalla heredada de marcación bloqueada.
+   - El acceso de funcionario desde index.html redirige a empleado.html.
+   - empleado.html es la única ruta operativa de marcación y aplica sesión anónima Firebase, GPS multisede, geocerca, cámara y control de dispositivo.
+   - La función antigua de marcación queda bloqueada por compatibilidad, evitando que se use como bypass accidental.
+
+2. Protección de sesión administrativa.
+   - Una sesión anónima de empleado nunca habilita el panel administrador.
+   - Si se pierde/cambia la sesión mientras el panel está abierto, el panel se oculta.
+   - El login normaliza el correo y cierra primero una posible sesión anónima conservada por el navegador.
+
+3. Bloqueo de PIN persistente por dispositivo.
+   - Los intentos inválidos y el tiempo de bloqueo usan localStorage en vez de sessionStorage.
+   - Recargar o cerrar una pestaña ya no reinicia automáticamente el bloqueo local.
+   - Las alertas de PIN continúan registrándose en alertas_seguridad.
+
+4. Validación de estado justo antes de marcar.
+   - Antes de cada marcación se vuelve a leer empleados/{id}.
+   - Un funcionario archivado/inactivo no puede marcar aunque hubiera introducido su PIN antes de ser archivado.
+
+5. Alertas GPS sin borrado destructivo.
+   - “Limpiar alertas” ahora marca las pendientes como revisadas.
+   - Las alertas revisadas permanecen en Firebase como historial de seguridad.
+   - La acción individual también marca revisada en vez de eliminar.
+
+6. Auditoría de archivado/reactivación.
+   - El registro usa el correo/UID autenticado real cuando está disponible.
+   - Continúa conservándose todo el historial del funcionario.
+
+7. Caché/publicación.
+   - Referencias locales actualizadas a fase5 para evitar servir archivos antiguos.
+   - El service worker existente sigue retirando cachés Poladent y se desregistra.
+
+NO MODIFICADO
+- firebase/config.js
+- rutas históricas de Firebase
+- marcaciones existentes
+- nómina/recibos existentes
+- auditorías existentes
+- horarios o salarios existentes
+
+LIMITACIÓN IMPORTANTE
+Las Firebase Realtime Database Security Rules están configuradas en el proyecto Firebase, no dentro de este ZIP. Por ello no es posible certificar desde estos archivos que las reglas del servidor bloqueen escrituras/lecturas no autorizadas. La protección de interfaz fue reforzada, pero la seguridad definitiva requiere revisar las reglas reales en Firebase Console antes de considerarla cerrada al 100%.
+
+NOTA SOBRE PIN
+El bloqueo local reduce intentos repetidos desde el mismo navegador, pero un usuario puede limpiar el almacenamiento local o usar otro dispositivo. Un bloqueo anti-fuerza-bruta completamente resistente requiere soporte del lado servidor (Security Rules/Cloud Functions o un mecanismo equivalente).

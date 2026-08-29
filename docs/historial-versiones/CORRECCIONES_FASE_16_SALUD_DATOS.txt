@@ -1,0 +1,19 @@
+POLADENT · FASE 16 · MANTENIMIENTO Y SALUD DE DATOS
+
+Se añadió un módulo de diagnóstico preventivo de solo lectura.
+
+Comprueba automáticamente:
+- PIN duplicados, especialmente entre funcionarios activos.
+- Funcionarios activos sin PIN o sin nombre.
+- Posibles nombres/funcionarios duplicados.
+- Horarios personalizados incompletos o con horas fuera de orden.
+- Funcionarios activos con todos los días laborales desmarcados.
+- Funcionarios que todavía usan el horario general.
+- Marcaciones asociadas a un ID de funcionario que ya no existe.
+- Marcaciones fuera de secuencia.
+- Tipo de marcación inconsistente con su clave.
+- Horas/timestamps de marcación fuera de orden.
+- Jornadas históricas incompletas (fechas anteriores a hoy).
+
+IMPORTANTE:
+La herramienta NO corrige, fusiona, archiva ni elimina información. Solo informa qué debe revisarse manualmente.

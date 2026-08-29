@@ -1,0 +1,35 @@
+POLADENT SISTEMA — FASE 14: CIERRE Y PRUEBA FINAL EN MÓVIL
+Fecha: 2026-08-08
+
+Objetivo
+- Cerrar problemas reales de uso en teléfonos sin alterar historial, marcaciones, nómina ni firebase/config.js.
+
+Correcciones aplicadas
+1. Configuración real antes de marcar
+   - La pantalla de empleado queda bloqueada hasta recibir desde Firebase la configuración de GPS y cámara.
+   - Evita que un teléfono con conexión lenta use valores temporales incorrectos.
+   - Valores seguros por defecto: foto Entrada=Sí, Almuerzo salida=No, Regreso=No, Salida=Sí.
+   - La configuración guardada por el administrador sigue siendo la autoridad final.
+
+2. Cámara móvil
+   - El botón de captura permanece deshabilitado hasta que el video entregue dimensiones reales.
+   - Evita fotografías negras/vacías por capturar antes de que la cámara termine de iniciar.
+   - Mejores mensajes para permiso bloqueado, cámara inexistente u ocupada.
+   - La cámara se cierra y libera correctamente al confirmar/cancelar.
+   - Mejor adaptación a teléfonos pequeños y orientación horizontal.
+
+3. Estabilidad del scroll del administrador
+   - El MutationObserver de la interfaz ya no reacciona a cada fila o cambio interno de tablas/listas.
+   - Solo reorganiza la interfaz cuando aparece un módulo o tarjeta que realmente requiere reubicación.
+   - Reduce el riesgo de que el contenido se mueva mientras el administrador está leyendo.
+
+4. Móvil y caché
+   - Ajustes safe-area/100dvh para teléfonos modernos.
+   - Botones con interacción táctil más estable.
+   - Versionado local actualizado a Fase 14 para evitar que GitHub Pages/navegador cargue archivos viejos.
+
+Validaciones
+- 26 archivos JavaScript pasan node --check.
+- index.html y empleado.html no tienen referencias locales faltantes.
+- firebase/config.js conserva el mismo SHA-256 de la Fase 13.
+- No se modificó ninguna ruta ni dato Firebase durante esta fase.

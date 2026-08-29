@@ -1,0 +1,24 @@
+POLADENT SISTEMA — FASE 19.4
+CORRECCIÓN DE MARCACIÓN Y ETAPA PENDIENTE
+
+Problema corregido:
+- En algunos historiales las marcaciones estaban guardadas con claves antiguas (push IDs).
+- La protección atómica nueva buscaba entrada/almuerzo/regreso/salida como claves directas.
+- Eso podía interpretar falsamente que la jornada había cambiado y rechazar la marcación.
+
+Cambios:
+- El sistema reconoce tanto el formato histórico como el formato actual de marcaciones.
+- Después de ingresar el PIN se consulta la jornada de hoy y se determina la etapa pendiente.
+- Solo queda habilitado el botón de la etapa que corresponde.
+- Las demás etapas quedan deshabilitadas visual y funcionalmente.
+- La transacción Firebase conserva la protección contra dos teléfonos marcando al mismo tiempo.
+- Si otra marcación realmente entra primero, se vuelve a consultar la etapa correcta.
+- No se borraron ni migraron marcaciones históricas.
+- firebase/config.js permanece intacto.
+
+Pruebas:
+- Jornada vacía -> Entrada.
+- Entrada en formato histórico -> Salida almuerzo.
+- Entrada en formato actual -> Salida almuerzo.
+- Entrada + almuerzo -> Regreso almuerzo.
+- Jornada completa -> ningún botón habilitado.

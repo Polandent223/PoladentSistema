@@ -2,7 +2,13 @@
    Cálculo por período, recibos congelados, reapertura auditada y detalle diario. */
 (function(){
 'use strict';
-const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>Array.from(r.querySelectorAll(s));
+const $=(s,r=document)=>{
+  const root=typeof r==='string'?document.querySelector(r):r;
+  return root?.querySelector?.(s)||null;
+}, $$=(s,r=document)=>{
+  const root=typeof r==='string'?document.querySelector(r):r;
+  return Array.from(root?.querySelectorAll?.(s)||[]);
+};
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const money=n=>`$${Number(n||0).toFixed(2)}`;
 let db=null, empleados={}, marcaciones={}, feriados={}, diasLibres={}, ajustes={}, recibos={};
@@ -72,8 +78,62 @@ function periodText(){const f=$('#payFrom')?.value,t=$('#payTo')?.value;if(isFul
 function dayStatus(d){if(d.scheduled&&!d.complete&&d.missing>0)return 'FALTA';if(d.complete&&d.missing>0)return 'Jornada incompleta';if(d.complete)return 'Trabajado';return d.label||'Descanso'}
 function dayDetailHtml(r){return `<details class="pay-detail"><summary>Ver detalle del cálculo día por día</summary><div class="pay-detail-summary"><span>Trabajados <b>${r.calc.counts.worked}</b></span><span>Descansos <b>${r.calc.counts.rest}</b></span><span>Feriados <b>${r.calc.counts.holiday}</b></span><span>Libres pagados <b>${r.calc.counts.free}</b></span><span>Faltas <b>${r.calc.counts.absence}</b></span><span>Incompletos <b>${r.calc.counts.incomplete}</b></span></div><div class="pay-detail-table"><table><thead><tr><th>Fecha</th><th>Estado</th><th>Trabajadas</th><th>Pagadas</th><th>Extra</th><th>No cumplidas</th></tr></thead><tbody>${r.calc.detail.map(d=>`<tr><td>${esc(d.date)}</td><td>${esc(dayStatus(d))}</td><td>${Number(d.worked||0).toFixed(2)}</td><td>${Number(d.regular||0).toFixed(2)}</td><td>${Number(d.extra||0).toFixed(2)}</td><td>${Number(d.missing||0).toFixed(2)}</td></tr>`).join('')}</tbody></table></div></details>`}
 function render(){if(!$('#payList'))return;const rs=rows(),total=rs.reduce((n,r)=>n+r.total,0),paid=rs.filter(r=>r.status==='pagado').reduce((n,r)=>n+r.total,0);if($('#payPeriodNotice'))$('#payPeriodNotice').innerHTML=`<b>Regla del período:</b> ${esc(periodText())}`;$('#paySummary').innerHTML=`<div><small>Funcionarios</small><b>${rs.length}</b></div><div><small>Total nómina</small><b>${money(total)}</b></div><div><small>Pagado cerrado</small><b>${money(paid)}</b></div><div><small>Pendiente</small><b>${money(total-paid)}</b></div><div><small>Horas extra</small><b>${rs.reduce((n,r)=>n+(r.locked?Number(r.receipt?.horasExtra||0):r.calc.extra),0).toFixed(2)}</b></div><div><small>Horas no cumplidas</small><b>${rs.reduce((n,r)=>n+(r.locked?Number(r.receipt?.horasNoCumplidas||0):r.calc.missing),0).toFixed(2)}</b></div>`;
- $('#payList').innerHTML=rs.length?rs.map(r=>{const locked=r.locked,rc=r.receipt||{},baseShown=locked?Number(rc.pagoBase||0):r.calc.base,extraShown=locked?Number(rc.pagoExtra||0):r.extraPay,bonusShown=locked?Number(rc.bonificacion||0):r.bonus,dedShown=locked?Number(rc.descuento||0):r.ded,workedShown=locked?Number(rc.horasTrabajadas||0):r.calc.work,extraHoursShown=locked?Number(rc.horasExtra||0):r.calc.extra,missingShown=locked?Number(rc.horasNoCumplidas||0):r.calc.missing;return `<article class="pay-card ${locked?'paid locked':''}" data-id="${r.id}"><header><div><h3>${esc(r.emp.nombre||'Sin nombre')} ${locked?'🔒':''}</h3><span>${locked?`Pago cerrado · ${esc(rc.tipoSalario||r.emp.tipoSalario||'diario')} · salario congelado ${money(rc.salarioBase??r.emp.salario)}`:`${money(r.emp.salario)} · ${esc(r.emp.tipoSalario||'diario')}`}</span></div><label><input type="radio" name="paySelected" value="${r.id}"> Seleccionar</label></header>${locked?'<div class="pay-lock-note">✅ Este pago está cerrado. Cambios posteriores en salario, horario o asistencia no modifican este recibo.</div>':''}<div class="pay-metrics"><span>Horas trabajadas: <b>${workedShown.toFixed(2)}</b></span><span>Extra: <b>${extraHoursShown.toFixed(2)}</b></span><span>No cumplidas: <b>${missingShown.toFixed(2)}</b></span><span>Base: <b>${money(baseShown)}</b></span><span>Extra $: <b>${money(extraShown)}</b></span><span>Bonificación: <b>${money(bonusShown)}</b></span><span>Descuento manual: <b>${money(dedShown)}</b></span><span>Total: <b>${money(r.total)}</b></span></div>${!locked?dayDetailHtml(r):`<details class="pay-detail"><summary>Ver resumen guardado del pago</summary><div class="pay-detail-summary"><span>Trabajados <b>${Number(rc.diasTrabajados||0)}</b></span><span>Descansos <b>${Number(rc.diasDescanso||0)}</b></span><span>Feriados <b>${Number(rc.feriados||0)}</b></span><span>Libres <b>${Number(rc.libresPagados||0)}</b></span><span>Faltas <b>${Number(rc.faltas||0)}</b></span><span>Incompletos <b>${Number(rc.incompletos||0)}</b></span></div></details>`}<div class="pay-fields"><label>Valor hora extra<input type="number" step="0.01" data-f="valorHoraExtra" value="${Number(locked?rc.valorHoraExtra:r.extraRate).toFixed(2)}" ${locked?'disabled':''}></label><label>Bonificación<input type="number" step="0.01" data-f="bonificacion" value="${bonusShown.toFixed(2)}" ${locked?'disabled':''}></label><label>Descuento<input type="number" step="0.01" data-f="descuento" value="${dedShown.toFixed(2)}" ${locked?'disabled':''}></label><label>Método<select data-f="metodo" ${locked?'disabled':''}><option ${(locked?rc.metodo:r.a.metodo)==='Efectivo'?'selected':''}>Efectivo</option><option ${(locked?rc.metodo:r.a.metodo)==='Transferencia'?'selected':''}>Transferencia</option><option ${(locked?rc.metodo:r.a.metodo)==='Pago móvil'?'selected':''}>Pago móvil</option><option ${(locked?rc.metodo:r.a.metodo)==='Otro'?'selected':''}>Otro</option></select></label><label class="pay-note">Observación<input data-f="nota" value="${esc(locked?(rc.nota||''):(r.a.nota||''))}" ${locked?'disabled':''}></label></div><footer>${locked?`<button data-receipt>🧾 Recibo PDF</button><button data-reopen>🔓 Reabrir con auditoría</button>`:`<button data-save>💾 Guardar ajustes</button><button data-paid>✅ Cerrar y marcar pagado</button><button data-receipt>🧾 Vista previa PDF</button>`}</footer></article>`}).join(''):'<div class="pc-card">No hay funcionarios con esos filtros.</div>';
- $$('[data-save]','#payList').forEach(b=>b.onclick=()=>saveCard(b.closest('.pay-card'),false));$$('[data-paid]','#payList').forEach(b=>b.onclick=()=>saveCard(b.closest('.pay-card'),true));$$('[data-receipt]','#payList').forEach(b=>b.onclick=()=>makePdf(b.closest('.pay-card').dataset.id));$$('[data-reopen]','#payList').forEach(b=>b.onclick=()=>reopenPayment(b.closest('.pay-card').dataset.id));
+ $('#payList').innerHTML=rs.length?rs.map(r=>{const locked=r.locked,rc=r.receipt||{},baseShown=locked?Number(rc.pagoBase||0):r.calc.base,extraShown=locked?Number(rc.pagoExtra||0):r.extraPay,bonusShown=locked?Number(rc.bonificacion||0):r.bonus,dedShown=locked?Number(rc.descuento||0):r.ded,workedShown=locked?Number(rc.horasTrabajadas||0):r.calc.work,extraHoursShown=locked?Number(rc.horasExtra||0):r.calc.extra,missingShown=locked?Number(rc.horasNoCumplidas||0):r.calc.missing;return `<article class="pay-card ${locked?'paid locked':''}" data-id="${r.id}"><header><div><h3>${esc(r.emp.nombre||'Sin nombre')} ${locked?'🔒':''}</h3><span>${locked?`Pago cerrado · ${esc(rc.tipoSalario||r.emp.tipoSalario||'diario')} · salario congelado ${money(rc.salarioBase??r.emp.salario)}`:`${money(r.emp.salario)} · ${esc(r.emp.tipoSalario||'diario')}`}</span></div><label><input type="radio" name="paySelected" value="${r.id}"> Seleccionar</label></header>${locked?'<div class="pay-lock-note">✅ Este pago está cerrado. Cambios posteriores en salario, horario o asistencia no modifican este recibo.</div>':''}<div class="pay-metrics"><span>Horas trabajadas: <b>${workedShown.toFixed(2)}</b></span><span>Extra: <b data-live-extra-hours>${extraHoursShown.toFixed(2)}</b></span><span>No cumplidas: <b>${missingShown.toFixed(2)}</b></span><span>Base: <b data-live-base>${money(baseShown)}</b></span><span>Extra $: <b data-live-extra-pay>${money(extraShown)}</b></span><span>Bonificación: <b data-live-bonus>${money(bonusShown)}</b></span><span>Descuento manual: <b data-live-ded>${money(dedShown)}</b></span><span>Total: <b data-live-total>${money(r.total)}</b></span></div>${!locked?dayDetailHtml(r):`<details class="pay-detail"><summary>Ver resumen guardado del pago</summary><div class="pay-detail-summary"><span>Trabajados <b>${Number(rc.diasTrabajados||0)}</b></span><span>Descansos <b>${Number(rc.diasDescanso||0)}</b></span><span>Feriados <b>${Number(rc.feriados||0)}</b></span><span>Libres <b>${Number(rc.libresPagados||0)}</b></span><span>Faltas <b>${Number(rc.faltas||0)}</b></span><span>Incompletos <b>${Number(rc.incompletos||0)}</b></span></div></details>`}<div class="pay-fields"><label>Valor hora extra<input type="number" step="0.01" data-f="valorHoraExtra" value="${Number(locked?rc.valorHoraExtra:r.extraRate).toFixed(2)}" ${locked?'disabled':''}></label><label>Bonificación<input type="number" step="0.01" data-f="bonificacion" value="${bonusShown.toFixed(2)}" ${locked?'disabled':''}></label><label>Descuento<input type="number" step="0.01" data-f="descuento" value="${dedShown.toFixed(2)}" ${locked?'disabled':''}></label><label>Método<select data-f="metodo" ${locked?'disabled':''}><option ${(locked?rc.metodo:r.a.metodo)==='Efectivo'?'selected':''}>Efectivo</option><option ${(locked?rc.metodo:r.a.metodo)==='Transferencia'?'selected':''}>Transferencia</option><option ${(locked?rc.metodo:r.a.metodo)==='Pago móvil'?'selected':''}>Pago móvil</option><option ${(locked?rc.metodo:r.a.metodo)==='Otro'?'selected':''}>Otro</option></select></label><label class="pay-note">Observación<input data-f="nota" value="${esc(locked?(rc.nota||''):(r.a.nota||''))}" ${locked?'disabled':''}></label></div>${locked?'':`<div class="pay-live-review" data-live-review>Vista previa de ajustes pendiente de guardar.</div>`}<footer>${locked?`<button data-receipt>🧾 Recibo PDF</button><button data-reopen>🔓 Reabrir con auditoría</button>`:`<button data-save>💾 Guardar ajustes</button><button data-paid>✅ Cerrar y marcar pagado</button><button data-receipt>🧾 Vista previa PDF</button>`}</footer></article>`}).join(''):'<div class="pc-card">No hay funcionarios con esos filtros.</div>';
+ bindPayCardEvents(rs);
+}
+function liveCardCalc(card,row){
+  if(!card||!row||row.locked)return;
+  const rate=Math.max(0,Number(card.querySelector('[data-f="valorHoraExtra"]')?.value||0));
+  const bonus=Math.max(0,Number(card.querySelector('[data-f="bonificacion"]')?.value||0));
+  const ded=Math.max(0,Number(card.querySelector('[data-f="descuento"]')?.value||0));
+  const extraPay=Number(row.calc.extra||0)*rate;
+  const total=Math.max(0,Number(row.calc.base||0)+extraPay+bonus-ded);
+  const set=(sel,val)=>{const el=card.querySelector(sel);if(el)el.textContent=val};
+  set('[data-live-extra-pay]',money(extraPay));
+  set('[data-live-bonus]',money(bonus));
+  set('[data-live-ded]',money(ded));
+  set('[data-live-total]',money(total));
+  const method=card.querySelector('[data-f="metodo"]')?.value||'Otro';
+  const review=card.querySelector('[data-live-review]');
+  if(review)review.innerHTML=`<b>Antes de guardar:</b> Hora extra ${money(rate)} · Bonificación ${money(bonus)} · Descuento ${money(ded)} · Método ${method} · <strong>Total ${money(total)}</strong>`;
+  card.dataset.liveTotal=String(total);
+  card.dataset.liveExtraPay=String(extraPay);
+}
+function refreshPayrollSummaryLive(){
+  const visible=rows();
+  let total=0,paid=0;
+  visible.forEach(r=>{
+    if(r.locked){total+=r.total;paid+=r.total;return;}
+    const card=document.querySelector(`.pay-card[data-id="${CSS.escape(r.id)}"]`);
+    total+=card?Number(card.dataset.liveTotal||r.total):r.total;
+  });
+  const boxes=$$('#paySummary > div');
+  if(boxes[1]?.querySelector('b'))boxes[1].querySelector('b').textContent=money(total);
+  if(boxes[2]?.querySelector('b'))boxes[2].querySelector('b').textContent=money(paid);
+  if(boxes[3]?.querySelector('b'))boxes[3].querySelector('b').textContent=money(Math.max(0,total-paid));
+}
+function bindPayCardEvents(rs){
+  const host=$('#payList');if(!host)return;
+  const map=new Map((rs||[]).map(r=>[r.id,r]));
+  $$('[data-save]',host).forEach(b=>b.onclick=()=>saveCard(b.closest('.pay-card'),false));
+  $$('[data-paid]',host).forEach(b=>b.onclick=()=>saveCard(b.closest('.pay-card'),true));
+  $$('[data-receipt]',host).forEach(b=>b.onclick=()=>makePdf(b.closest('.pay-card').dataset.id));
+  $$('[data-reopen]',host).forEach(b=>b.onclick=()=>reopenPayment(b.closest('.pay-card').dataset.id));
+  $$('.pay-card',host).forEach(card=>{
+    const row=map.get(card.dataset.id);
+    if(!row||row.locked)return;
+    ['valorHoraExtra','bonificacion','descuento','metodo'].forEach(f=>{
+      const input=card.querySelector(`[data-f="${f}"]`);
+      if(!input)return;
+      const update=()=>{liveCardCalc(card,row);refreshPayrollSummaryLive();card.classList.add('pay-dirty');};
+      input.addEventListener('input',update);
+      input.addEventListener('change',update);
+    });
+    const note=card.querySelector('[data-f="nota"]');
+    if(note)note.addEventListener('input',()=>card.classList.add('pay-dirty'));
+    liveCardCalc(card,row);
+  });
+  refreshPayrollSummaryLive();
 }
 function cardData(card,current={}){const data={...current};$$('[data-f]',card).forEach(x=>data[x.dataset.f]=x.value);data.bonificacion=Number(data.bonificacion||0);data.descuento=Number(data.descuento||0);data.valorHoraExtra=Number(data.valorHoraExtra||0);data.actualizadoEn=Date.now();return data}
 function snapshotFor(r,data){return {...data,estado:'pagado',empleado:r.id,empleadoNombre:r.emp.nombre||'Empleado',periodo:key(),desde:$('#payFrom').value,hasta:$('#payTo').value,salarioBase:Number(r.emp.salario||0),tipoSalario:r.emp.tipoSalario||'diario',horasTrabajadas:Number(r.calc.work||0),horasExtra:Number(r.calc.extra||0),horasNoCumplidas:Number(r.calc.missing||0),diasProgramados:Number(r.calc.scheduledDays||0),diasTrabajados:Number(r.calc.counts.worked||0),diasDescanso:Number(r.calc.counts.rest||0),feriados:Number(r.calc.counts.holiday||0),libresPagados:Number(r.calc.counts.free||0),faltas:Number(r.calc.counts.absence||0),incompletos:Number(r.calc.counts.incomplete||0),pagoBase:Number(r.calc.base||0),descuentoAsistencia:Number(r.calc.discount||0),pagoExtra:Number(r.calc.extra*Number(data.valorHoraExtra||r.extraRate)||0),bonificacion:Number(data.bonificacion||0),descuento:Number(data.descuento||0),total:Number(Math.max(0,r.calc.base+(r.calc.extra*Number(data.valorHoraExtra||r.extraRate))+Number(data.bonificacion||0)-Number(data.descuento||0))),detalleDias:r.calc.detail.map(d=>({fecha:d.date,estado:dayStatus(d),trabajadas:Number(d.worked||0),pagadas:Number(d.regular||0),extra:Number(d.extra||0),noCumplidas:Number(d.missing||0),etiqueta:d.label||''})),pagadoEn:Date.now(),versionCalculo:'Fase11'} }
@@ -90,6 +150,16 @@ function addReceiptLines(doc,r,title='RECIBO DE PAGO'){doc.setFontSize(18);doc.t
 function pdfHistory(periodo,id){const r=recibos?.[periodo]?.[id];if(!r)return alert('No se encontró el recibo guardado.');if(!window.jspdf?.jsPDF)return alert('PDF todavía no cargó.');const {jsPDF}=window.jspdf,doc=new jsPDF();let y=addReceiptLines(doc,r);y+=12;if(y<275){doc.line(20,y,90,y);doc.line(120,y,190,y);doc.text('Firma del funcionario',25,y+6);doc.text('Firma autorizada',135,y+6)}doc.save(`Recibo_${String(r.empleadoNombre||'empleado').replace(/\s+/g,'_')}_${r.desde||periodo}.pdf`)}
 function pdfGeneral(){if(!validPeriod())return;const rs=rows();if(!rs.length)return alert('No hay nómina para generar.');if(!window.jspdf?.jsPDF)return alert('PDF todavía no cargó.');const {jsPDF}=window.jspdf,doc=new jsPDF();doc.setFontSize(17);doc.text('POLADENT CASA DENTAL',14,18);doc.setFontSize(13);doc.text(`RESUMEN DE NÓMINA · ${$('#payFrom').value} al ${$('#payTo').value}`,14,29);doc.setFontSize(9);let y=40;rs.forEach((r,i)=>{if(y>270){doc.addPage();y=20}const x=r.locked?r.receipt:null;doc.text(`${i+1}. ${r.emp.nombre||'Empleado'} · Trab. ${x?.diasTrabajados??r.calc.counts.worked} · Desc. ${x?.diasDescanso??r.calc.counts.rest} · Faltas ${x?.faltas??r.calc.counts.absence} · Total ${money(x?.total??r.total)} · ${r.status}`,14,y);y+=7});y+=5;doc.setFontSize(11);doc.text(`TOTAL GENERAL: ${money(rs.reduce((n,r)=>n+r.total,0))}`,14,y);doc.save(`Resumen_Nomina_${$('#payFrom').value}_${$('#payTo').value}.pdf`)}
 function pdfSelected(){const id=$('input[name="paySelected"]:checked')?.value;if(!id)return alert('Selecciona un funcionario.');makePdf(id)}
-function makePdf(id){const r=rows().find(x=>x.id===id);if(!r)return alert('No se encontró el funcionario.');if(r.locked)return pdfHistory(key(),id);if(!window.jspdf?.jsPDF)return alert('PDF todavía no cargó.');const data=snapshotFor(r,{...r.a,bonificacion:r.bonus,descuento:r.ded,valorHoraExtra:r.extraRate,pagadoEn:null});delete data.pagadoEn;const {jsPDF}=window.jspdf,doc=new jsPDF();let y=addReceiptLines(doc,data,'VISTA PREVIA DE RECIBO');y+=12;if(y<275){doc.line(20,y,90,y);doc.line(120,y,190,y);doc.text('Firma del funcionario',25,y+6);doc.text('Firma autorizada',135,y+6)}doc.save(`Recibo_PREVIO_${String(r.emp.nombre||'empleado').replace(/\s+/g,'_')}_${$('#payFrom').value}.pdf`)}
+function makePdf(id){
+ const r=rows().find(x=>x.id===id);if(!r)return alert('No se encontró el funcionario.');
+ if(r.locked)return pdfHistory(key(),id);
+ if(!window.jspdf?.jsPDF)return alert('PDF todavía no cargó.');
+ const card=document.querySelector(`.pay-card[data-id="${CSS.escape(id)}"]`);
+ const live=card?cardData(card,r.a||{}):{...r.a,bonificacion:r.bonus,descuento:r.ded,valorHoraExtra:r.extraRate};
+ const data=snapshotFor(r,{...live,pagadoEn:null});delete data.pagadoEn;
+ const {jsPDF}=window.jspdf,doc=new jsPDF();let y=addReceiptLines(doc,data,'VISTA PREVIA DE RECIBO');
+ y+=12;if(y<275){doc.line(20,y,90,y);doc.line(120,y,190,y);doc.text('Firma del funcionario',25,y+6);doc.text('Firma autorizada',135,y+6)}
+ doc.save(`Recibo_PREVIO_${String(r.emp.nombre||'empleado').replace(/\s+/g,'_')}_${$('#payFrom').value}.pdf`);
+}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(mount,400));else setTimeout(mount,400);
 })();

@@ -1,0 +1,13 @@
+POLADENT - FASE 11 NÓMINA PROFESIONAL
+Fecha: 2026-08-08
+
+1. Salarios mensuales normalizados: un mes completo paga el salario mensual fijo aunque tenga 28, 29, 30 o 31 días, descontando faltas/jornadas no cumplidas según el motor de asistencia.
+2. Quincenas normalizadas: 1-15 y 16-fin de mes respetan el monto fijo correspondiente y evitan pagar de más por una segunda quincena de 16 días.
+3. Rangos personalizados: mensual prorratea sobre 30 días; quincenal sobre 15 días.
+4. Detalle visible por funcionario: días trabajados, descansos pagados, feriados, libres pagados, faltas, jornadas incompletas, horas, extras y no cumplidas.
+5. Cierre de pago protegido: al marcar Pagado se guarda una fotografía del salario, tipo, período, cálculo, conceptos y detalle diario.
+6. Los recibos cerrados no se recalculan si luego cambia el salario, horario o asistencia.
+7. Reapertura de pago requiere motivo y deja auditoría en auditoria_nomina.
+8. Al volver a cerrar un pago corregido, la versión anterior se conserva en nomina_recibos_historial.
+9. Respaldo completo ampliado para incluir nomina_recibos_historial y auditoria_nomina.
+10. El historial de marcaciones NO se modifica ni se elimina.

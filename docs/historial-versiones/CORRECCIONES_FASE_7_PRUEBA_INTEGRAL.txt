@@ -1,0 +1,25 @@
+POLADENT SISTEMA — FASE 7 PRUEBA INTEGRAL Y DEPURACIÓN
+Fecha: 2026-08-08
+
+Correcciones aplicadas:
+1. Marcación atómica en Firebase: evita que dos dispositivos sobrescriban la misma etapa del mismo funcionario.
+2. Se mantiene el orden obligatorio Entrada > Salida almuerzo > Regreso almuerzo > Salida.
+3. Configuración y Permisos dejó de redibujarse cada 1,8 segundos; ahora reacciona a eventos y cambios reales.
+4. Funcionario del Mes usa tolerancia individual si existe y, en su defecto, la tolerancia general de configuracion_v44.
+5. Se conserva todo el historial y no se modificaron rutas de Firebase.
+6. Se actualizó la versión de caché a fase7 para GitHub Pages/navegadores.
+
+Pruebas superadas:
+- Jornada completa de 8 horas con almuerzo.
+- Ausencia en día laboral.
+- Feriado pagado.
+- Día libre pagado.
+- Domingo libre pagado.
+- Período de varios días con horas faltantes.
+- Doble Entrada rechazada.
+- Salida fuera de secuencia rechazada.
+- Sintaxis de todos los JavaScript.
+- Referencias locales de index.html y empleado.html.
+- Integridad del ZIP.
+
+IMPORTANTE: firebase/config.js no fue modificado.

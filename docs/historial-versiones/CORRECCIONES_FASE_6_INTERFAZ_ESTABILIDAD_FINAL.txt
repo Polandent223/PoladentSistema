@@ -1,0 +1,11 @@
+FASE 6 — INTERFAZ Y ESTABILIDAD FINAL
+
+- Se mantiene el mismo sistema y las mismas rutas de Firebase.
+- No se eliminó ni migró historial.
+- Se eliminó el refresco permanente del panel cada 2,5 segundos.
+- El panel único conserva MutationObserver con estabilización limitada durante el arranque.
+- Inicio ahora muestra indicadores reales: funcionarios activos, entradas de hoy, jornadas completadas y alertas pendientes.
+- Se agregaron accesos rápidos a Análisis, Historial, Nómina y GPS.
+- Se reforzó responsive móvil para tarjetas, formularios, tablas y navegación.
+- Se añadió mejor foco de teclado/accesibilidad para navegación principal.
+- Se actualizó la versión de caché local a fase6.

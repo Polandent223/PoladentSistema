@@ -1,0 +1,28 @@
+POLADENT SISTEMA — FASE 19.9
+
+CORRECCIONES:
+
+1. HISTORIAL PROFESIONAL EN BLANCO
+- Corregido el orden de navegación.
+- La vista de cada ruta ahora se crea ANTES de disparar el evento poladent:route.
+- Historial profesional puede montar su contenido correctamente al abrirse desde el menú.
+- “Ver historial” desde un registro histórico también abre y selecciona al funcionario.
+
+2. ELIMINAR FICHA DE EMPLEADO
+- Solo disponible después de archivar.
+- Elimina únicamente /empleados/{id}.
+- Conserva marcaciones, nómina, días libres y auditoría.
+- Registra la acción antes de quitar la ficha.
+- Requiere confirmación y escribir ELIMINAR.
+
+3. REGISTROS HISTÓRICOS DUPLICADOS O NO DESEADOS EN LA LISTA
+- Nuevo botón “Quitar de lista”.
+- NO borra historial.
+- Guarda una preferencia en /directorio_empleados_ocultos/{id}.
+- Registra auditoría de la ocultación.
+- El registro deja de aparecer en la Lista de empleados, pero sus datos históricos siguen en Firebase.
+
+VALIDACIÓN:
+- 31 JavaScript: 0 errores de sintaxis.
+- firebase/config.js intacto.
+- No se borró ni migró historial durante la preparación.

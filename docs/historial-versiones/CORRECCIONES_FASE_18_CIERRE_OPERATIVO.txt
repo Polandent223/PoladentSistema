@@ -1,0 +1,19 @@
+POLADENT SISTEMA — FASE 18: CIERRE OPERATIVO
+
+Cambios:
+- Se añadió una capa operativa de roles/permisos al panel único.
+- Los permisos asignados en roles_v44 + permisos_roles_v44 ahora controlan qué áreas se muestran y pueden abrirse.
+- Administrador: acceso completo.
+- Gerente: Inicio, Empleados, Asistencia, Nómina, GPS y Reportes por defecto.
+- Empleado: Inicio y Asistencia por defecto.
+- Roles personalizados respetan sus permisos configurados.
+- Un rol desactivado queda sin acceso a las áreas administrativas.
+- Los administradores históricos que no tengan una asignación explícita conservan acceso completo para evitar bloqueos accidentales.
+- Se muestra el rol/correo activo en el panel.
+- Se protege tanto el clic del menú como la navegación programática entre módulos.
+- No se modificaron empleados, marcaciones, nóminas ni historial.
+- firebase/config.js permanece intacto.
+
+IMPORTANTE:
+Esta protección de interfaz NO sustituye las Firebase Realtime Database Rules del servidor.
+Para seguridad total, las reglas del proyecto Firebase deben restringir escrituras por usuario/rol.

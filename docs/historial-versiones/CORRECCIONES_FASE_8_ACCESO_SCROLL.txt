@@ -1,0 +1,19 @@
+POLADENT — FASE 8: ACCESO Y SCROLL
+Fecha: 2026-08-08
+
+1. LOGIN ADMINISTRADOR
+- Se separó el error real de autenticación de los errores de carga posteriores.
+- Ya no debe aparecer “Error de acceso” si Firebase autenticó correctamente y falla un módulo secundario.
+- Se evita el doble clic/doble intento mientras se está autenticando.
+- Los fallos de módulos posteriores se registran en consola sin sacar al administrador.
+
+2. SCROLL DEL PANEL
+- Se eliminó el MutationObserver sobre todo el subárbol del panel.
+- Antes, cambios normales de Firebase podían disparar relocate() continuamente y alterar la posición vertical.
+- Ahora solo se observan nuevos bloques directos del panel.
+- Se eliminaron múltiples pasadas temporizadas que podían mover el contenido mientras el usuario estaba leyendo.
+- Se hace una sola sincronización corta y otra al terminar correctamente el login.
+
+3. HISTORIAL Y FIREBASE
+- No se modificaron rutas de datos ni firebase/config.js.
+- No se borró ni migró historial.

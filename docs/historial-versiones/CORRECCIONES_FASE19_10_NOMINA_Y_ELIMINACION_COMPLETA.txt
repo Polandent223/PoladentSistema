@@ -1,0 +1,37 @@
+POLADENT SISTEMA — FASE 19.10
+
+1. NÓMINA — BOTONES SIN FUNCIÓN
+Causa:
+- El helper $$ recibía '#payList' como texto y trataba ese texto como elemento DOM.
+- La ejecución se detenía justo después de dibujar las tarjetas.
+
+Corregido:
+- Guardar ajustes.
+- Cerrar y marcar pagado.
+- Vista previa PDF.
+- Reabrir pago.
+- Botones de recibo dentro de cada tarjeta.
+
+2. NÓMINA — CÁLCULO EN VIVO
+- Valor hora extra actualiza Extra $ y Total inmediatamente.
+- Bonificación actualiza Total inmediatamente.
+- Descuento actualiza Total inmediatamente.
+- Método aparece en una franja de “Antes de guardar”.
+- El resumen superior Total nómina / Pendiente se actualiza antes de guardar.
+- La tarjeta queda marcada visualmente cuando hay cambios sin guardar.
+
+3. VISTA PREVIA PDF
+- Usa los valores que están escritos actualmente en la tarjeta, aunque todavía no se hayan guardado.
+- Permite revisar bonificación, descuento, valor hora extra y método antes del cierre.
+
+4. ELIMINACIÓN COMPLETA OPCIONAL
+- Se mantiene “Eliminar ficha” como opción segura que conserva historial.
+- Se añade “Eliminar todo” para un funcionario archivado.
+- En registros históricos aparece “Eliminar historial”.
+- Requiere doble confirmación y escribir ELIMINAR TODO.
+- Elimina ficha, marcaciones, días libres, justificaciones, ajustes y recibos de nómina, historial de recibos, auditoría de nómina y alertas asociadas.
+- Conserva únicamente una constancia administrativa mínima en auditoria_eliminaciones.
+
+5. SEGURIDAD
+- firebase/config.js intacto.
+- 31 JavaScript verificados: 0 errores de sintaxis.

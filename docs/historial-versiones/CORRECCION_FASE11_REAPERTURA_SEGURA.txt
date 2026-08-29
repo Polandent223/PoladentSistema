@@ -1,0 +1,12 @@
+POLADENT - Ajuste Fase 11.1
+
+- Una nómina abierta continúa siendo editable normalmente.
+- Una nómina cerrada/pagada permanece bloqueada.
+- Para reabrir un pago cerrado se exige:
+  1) contraseña actual del administrador (campo oculto),
+  2) motivo obligatorio de al menos 5 caracteres.
+- La contraseña se valida mediante reautenticación real de Firebase Auth.
+- Una contraseña incorrecta NO reabre la nómina.
+- La reapertura registra administrador, motivo, fecha y período en auditoria_nomina.
+- El recibo cerrado anterior permanece protegido y se conserva en el historial al volver a cerrar.
+- No se modificó firebase/config.js ni se borraron datos históricos.
