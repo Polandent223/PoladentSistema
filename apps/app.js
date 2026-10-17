@@ -115,6 +115,18 @@ async function loginAdmin() {
       return;
     }
 
+    // CORTE SEGURO: antes de mostrar el panel, exigir claim administrativa
+    // concedida exclusivamente por Admin SDK en Firebase. Un correo
+    // autenticado cualquiera NO es suficiente para entrar.
+    let identity;
+    try { identity=await auth.currentUser.getIdTokenResult(true); }
+    catch(e){alert("No se pudo comprobar tu autorización administrativa. Revisa conexión.");return;}
+    if(identity.claims?.poladent_admin!==true){
+      try{await auth.signOut();}catch(_){}
+      alert("Esta cuenta no tiene autorización administrativa verificada.");
+      return;
+    }
+
     // Carga y valida el rol antes de mostrar el panel.
     try {
       if (window.PoladentSecurity?.refresh) await window.PoladentSecurity.refresh();

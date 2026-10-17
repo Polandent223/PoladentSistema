@@ -1,0 +1,24 @@
+{
+  "name": "poladent-secure-functions",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Transición protegida de POLADENT, no desplegar sin corte validado",
+  "main": "index.js",
+  "engines": {
+    "node": "22"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "check": "node --check index.js && node --check lib/core.js",
+    "serve": "firebase emulators:start --config ../firebase.staging.json",
+    "test:rules": "node --test test/rules.emulator.cjs"
+  },
+  "dependencies": {
+    "firebase-admin": "^14.2.0",
+    "firebase-functions": "^7.4.0"
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "^6.0.0",
+    "firebase": "^12.4.0"
+  }
+}
