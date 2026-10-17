@@ -591,6 +591,8 @@ async function eliminarEmpleadoCompleto(id, nombre) {
     const updates = {};
     updates[`empleados/${id}`] = null;
     updates[`marcaciones/${id}`] = null;
+    updates[`dispositivos_empleados/${id}`] = null;
+    updates[`solicitudes_dispositivo/${id}`] = null;
     updates[`dias_libres_empleado/${id}`] = null;
     updates[`justificaciones_v44/${id}`] = null;
     updates[`auditoria_ediciones/${id}`] = null;
