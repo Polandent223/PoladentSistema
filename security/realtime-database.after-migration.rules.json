@@ -1,0 +1,119 @@
+{
+  "rules": {
+    ".read": "auth != null && auth.token.poladent_admin === true",
+    ".write": false,
+    "empleados": {
+      ".write": "auth != null && auth.token.poladent_admin === true",
+      ".indexOn": [
+        "pin"
+      ]
+    },
+    "marcaciones": {
+      ".write": "auth != null && auth.token.poladent_admin === true"
+    },
+    "feriados_global": {
+      ".write": "auth != null && auth.token.poladent_admin === true"
+    },
+    "dias_libres_empleado": {
+      ".write": "auth != null && auth.token.poladent_admin === true"
+    },
+    "configuracion_v44": {
+      ".write": "auth != null && auth.token.poladent_admin === true"
+    },
+    "configuracion_gps_v51": {
+      ".write": "auth != null && auth.token.poladent_admin === true"
+    },
+    "configuracion_seguridad_asistencia": {
+      ".write": "auth != null && auth.token.poladent_admin === true"
+    },
+    "roles_v44": {
+      ".write": "auth != null && auth.token.poladent_admin === true"
+    },
+    "catalogo_roles_v45": {
+      ".write": "auth != null && auth.token.poladent_admin === true"
+    },
+    "permisos_roles_v44": {
+      ".write": "auth != null && auth.token.poladent_admin === true"
+    },
+    "roles_sistema": {
+      ".write": "auth != null && auth.token.poladent_admin === true"
+    },
+    "locales": {
+      ".write": "auth != null && auth.token.poladent_admin === true"
+    },
+    "asignaciones_locales": {
+      ".write": "auth != null && auth.token.poladent_admin === true"
+    },
+    "justificaciones_v44": {
+      ".write": "auth != null && auth.token.poladent_admin === true"
+    },
+    "auditoria_ediciones": {
+      ".write": "auth != null && auth.token.poladent_admin === true"
+    },
+    "alertas_gps": {
+      ".write": "auth != null && auth.token.poladent_admin === true"
+    },
+    "alertas_seguridad": {
+      ".write": "auth != null && auth.token.poladent_admin === true"
+    },
+    "dispositivos_marcacion": {
+      ".write": "auth != null && auth.token.poladent_admin === true"
+    },
+    "dispositivos_empleados": {
+      ".write": "auth != null && auth.token.poladent_admin === true"
+    },
+    "solicitudes_dispositivo": {
+      ".write": "auth != null && auth.token.poladent_admin === true"
+    },
+    "auditoria_dispositivos": {
+      ".write": "auth != null && auth.token.poladent_admin === true"
+    },
+    "nomina_ajustes": {
+      ".write": "auth != null && auth.token.poladent_admin === true"
+    },
+    "nomina_recibos": {
+      ".write": "auth != null && auth.token.poladent_admin === true"
+    },
+    "nomina_recibos_historial": {
+      ".write": "auth != null && auth.token.poladent_admin === true"
+    },
+    "auditoria_nomina": {
+      ".write": "auth != null && auth.token.poladent_admin === true"
+    },
+    "auditoria_restauraciones": {
+      ".write": "auth != null && auth.token.poladent_admin === true"
+    },
+    "usuarios_admin": {
+      ".write": "auth != null && auth.token.poladent_admin === true"
+    },
+    "auditoria_usuarios": {
+      ".write": "auth != null && auth.token.poladent_admin === true"
+    },
+    "auditoria_eliminaciones": {
+      ".write": "auth != null && auth.token.poladent_admin === true"
+    },
+    "directorio_empleados_ocultos": {
+      ".write": "auth != null && auth.token.poladent_admin === true"
+    },
+    "empresas": {
+      ".write": "auth != null && auth.token.poladent_admin === true"
+    },
+    "licencias": {
+      ".write": "auth != null && auth.token.poladent_admin === true"
+    },
+    "licencias_v1": {
+      ".write": "auth != null && auth.token.poladent_admin === true"
+    },
+    "configuracion_empresa": {
+      ".write": "auth != null && auth.token.poladent_admin === true"
+    },
+    "_sesiones_asistencia": {
+      ".read": false,
+      ".write": false
+    },
+    "_seguridad_intentos_pin": {
+      ".read": false,
+      ".write": false
+    }
+  }
+}
