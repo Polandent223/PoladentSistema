@@ -94,11 +94,12 @@ async function operar(accion,eid,did){
   if(accion==='aprobar'||accion==='rechazar'){
     const s=(await db().ref('solicitudes_dispositivo/'+eid+'/'+did).once('value')).val();
     if(!s||s.estado!=='pendiente')throw new Error('Esta solicitud ya no esta pendiente. Actualiza la pantalla.');
+    if(accion==='aprobar'&&!s.authUid)throw new Error('Esta solicitud no tiene identificador de sesion verificable. El funcionario debe repetir su solicitud.');
     if(accion==='aprobar'){
       const list=(await db().ref('dispositivos_empleados').once('value')).val()||{};
       const duplicado=Object.entries(list).some(([id,x])=>id!==eid&&x?.activo!==false&&x?.dispositivoId===did);
       if(duplicado)throw new Error('Este teléfono ya está autorizado para otro funcionario. No se puede compartir.');
-      paths['dispositivos_empleados/'+eid]={dispositivoId:did,empleadoId:eid,empleado:nom,activo:true,autorizadoPor:u.email,autorizadoEn:time};
+      paths['dispositivos_empleados/'+eid]={dispositivoId:did,authUid:s.authUid,empleadoId:eid,empleado:nom,activo:true,autorizadoPor:u.email,autorizadoEn:time};
     }
     paths['solicitudes_dispositivo/'+eid+'/'+did+'/estado']=accion==='aprobar'?'aprobada':'rechazada';
     paths['solicitudes_dispositivo/'+eid+'/'+did+'/revisadoEn']=time;
