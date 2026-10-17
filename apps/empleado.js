@@ -186,15 +186,16 @@
   async function verificarDispositivoAutorizado(tipo){
     const obligatorio=segConfig.registroDispositivoObligatorio===true;
     if(!obligatorio&&segConfig.registroDispositivoPreparacion===false)return;
-    const eid=String(empleadoActual.id),did=deviceId();
+    const eid=String(empleadoActual.id),did=deviceId(),authUid=String(firebase.auth().currentUser?.uid||'');
+    if(!authUid)throw new Error('No hay una sesion autenticada para verificar este telefono. Recarga la pagina.');
     const asignacion=(await db().ref('dispositivos_empleados/'+eid).once('value')).val()||{};
-    if(asignacion.dispositivoId===did&&asignacion.activo!==false)return;
+    if(asignacion.dispositivoId===did&&asignacion.authUid===authUid&&asignacion.activo!==false)return;
     const solicitud=db().ref('solicitudes_dispositivo/'+eid+'/'+did);
     try{
       await solicitud.transaction(current=>{
         const previo=current||{};
         if(previo.estado==='pendiente')return;
-        return {empleadoId:eid,empleado:empleadoActual.nombre||'Empleado',dispositivoId:did,
+        return {empleadoId:eid,empleado:empleadoActual.nombre||'Empleado',dispositivoId:did,authUid,
           estado:'pendiente',solicitadoEn:firebase.database.ServerValue.TIMESTAMP,
           agente:navigator.userAgent||'',tipoMarcacion:tipo||'',fecha:todayKey()};
       },undefined,false);
