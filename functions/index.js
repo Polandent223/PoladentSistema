@@ -22,7 +22,7 @@ function inputDevice(id){
 }
 function safePIN(pin){
  const p=String(pin||'').trim();
- if(!/^\d{4,12}$/.test(p))throw error('invalid-argument','Código inválido.');
+ if(!/^\d{1,20}$/.test(p))throw error('invalid-argument','Código inválido.');
  return p;
 }
 async function limiter(uid){
@@ -104,7 +104,8 @@ exports.poladentBuscarFuncionario=onCall(settings,async request=>{
    funcionario:{id:employee.id,nombre:employee.nombre||'Empleado',
      // Solo identidad mínima tras introducir PIN correcto. No entregar pin/salario/historial.
      foto:typeof employee.foto==='string'&&employee.foto.length<500000?employee.foto:null},
-   dispositivo:status,gpsObligatorio:cfg.gps.activo!==false
+   dispositivo:status,gpsObligatorio:cfg.gps.activo!==false,
+   fotoObligatoria:fotoNecesaria(siguienteEtapa(dia),cfg.seg)
  };
 });
 exports.poladentMarcarAsistencia=onCall(settings,async request=>{
