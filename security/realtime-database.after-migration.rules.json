@@ -1,118 +1,125 @@
 {
   "rules": {
-    ".read": "auth != null && auth.token.poladent_admin === true",
+    ".read": "auth != null && auth.token.poladent_admin === true && root.child('autorizaciones_admin').child(auth.uid).child('activo').val() === true",
     ".write": false,
     "empleados": {
-      ".write": "auth != null && auth.token.poladent_admin === true",
+      ".write": "auth != null && auth.token.poladent_admin === true && root.child('autorizaciones_admin').child(auth.uid).child('activo').val() === true",
       ".indexOn": [
         "pin"
       ]
     },
     "marcaciones": {
-      ".write": "auth != null && auth.token.poladent_admin === true"
+      ".write": "auth != null && auth.token.poladent_admin === true && root.child('autorizaciones_admin').child(auth.uid).child('activo').val() === true"
     },
     "feriados_global": {
-      ".write": "auth != null && auth.token.poladent_admin === true"
+      ".write": "auth != null && auth.token.poladent_admin === true && root.child('autorizaciones_admin').child(auth.uid).child('activo').val() === true"
     },
     "dias_libres_empleado": {
-      ".write": "auth != null && auth.token.poladent_admin === true"
+      ".write": "auth != null && auth.token.poladent_admin === true && root.child('autorizaciones_admin').child(auth.uid).child('activo').val() === true"
     },
     "configuracion_v44": {
-      ".write": "auth != null && auth.token.poladent_admin === true"
+      ".write": "auth != null && auth.token.poladent_admin === true && root.child('autorizaciones_admin').child(auth.uid).child('activo').val() === true"
     },
     "configuracion_gps_v51": {
-      ".write": "auth != null && auth.token.poladent_admin === true"
+      ".write": "auth != null && auth.token.poladent_admin === true && root.child('autorizaciones_admin').child(auth.uid).child('activo').val() === true"
     },
     "configuracion_seguridad_asistencia": {
-      ".write": "auth != null && auth.token.poladent_admin === true"
+      ".write": "auth != null && auth.token.poladent_admin === true && root.child('autorizaciones_admin').child(auth.uid).child('activo').val() === true"
     },
     "roles_v44": {
-      ".write": "auth != null && auth.token.poladent_admin === true"
+      ".write": "auth != null && auth.token.poladent_admin === true && root.child('autorizaciones_admin').child(auth.uid).child('activo').val() === true"
     },
     "catalogo_roles_v45": {
-      ".write": "auth != null && auth.token.poladent_admin === true"
+      ".write": "auth != null && auth.token.poladent_admin === true && root.child('autorizaciones_admin').child(auth.uid).child('activo').val() === true"
     },
     "permisos_roles_v44": {
-      ".write": "auth != null && auth.token.poladent_admin === true"
+      ".write": "auth != null && auth.token.poladent_admin === true && root.child('autorizaciones_admin').child(auth.uid).child('activo').val() === true"
     },
     "roles_sistema": {
-      ".write": "auth != null && auth.token.poladent_admin === true"
+      ".write": "auth != null && auth.token.poladent_admin === true && root.child('autorizaciones_admin').child(auth.uid).child('activo').val() === true"
     },
     "locales": {
-      ".write": "auth != null && auth.token.poladent_admin === true"
+      ".write": "auth != null && auth.token.poladent_admin === true && root.child('autorizaciones_admin').child(auth.uid).child('activo').val() === true"
     },
     "asignaciones_locales": {
-      ".write": "auth != null && auth.token.poladent_admin === true"
+      ".write": "auth != null && auth.token.poladent_admin === true && root.child('autorizaciones_admin').child(auth.uid).child('activo').val() === true"
     },
     "justificaciones_v44": {
-      ".write": "auth != null && auth.token.poladent_admin === true"
+      ".write": "auth != null && auth.token.poladent_admin === true && root.child('autorizaciones_admin').child(auth.uid).child('activo').val() === true"
     },
     "auditoria_ediciones": {
-      ".write": "auth != null && auth.token.poladent_admin === true"
+      ".write": "auth != null && auth.token.poladent_admin === true && root.child('autorizaciones_admin').child(auth.uid).child('activo').val() === true"
     },
     "alertas_gps": {
-      ".write": "auth != null && auth.token.poladent_admin === true"
+      ".write": "auth != null && auth.token.poladent_admin === true && root.child('autorizaciones_admin').child(auth.uid).child('activo').val() === true"
     },
     "alertas_seguridad": {
-      ".write": "auth != null && auth.token.poladent_admin === true"
+      ".write": "auth != null && auth.token.poladent_admin === true && root.child('autorizaciones_admin').child(auth.uid).child('activo').val() === true"
     },
     "dispositivos_marcacion": {
-      ".write": "auth != null && auth.token.poladent_admin === true"
+      ".write": "auth != null && auth.token.poladent_admin === true && root.child('autorizaciones_admin').child(auth.uid).child('activo').val() === true"
     },
     "dispositivos_empleados": {
-      ".write": "auth != null && auth.token.poladent_admin === true"
+      ".write": "auth != null && auth.token.poladent_admin === true && root.child('autorizaciones_admin').child(auth.uid).child('activo').val() === true"
     },
     "solicitudes_dispositivo": {
-      ".write": "auth != null && auth.token.poladent_admin === true"
+      ".write": "auth != null && auth.token.poladent_admin === true && root.child('autorizaciones_admin').child(auth.uid).child('activo').val() === true"
     },
     "auditoria_dispositivos": {
-      ".write": "auth != null && auth.token.poladent_admin === true"
+      ".write": "auth != null && auth.token.poladent_admin === true && root.child('autorizaciones_admin').child(auth.uid).child('activo').val() === true"
     },
     "nomina_ajustes": {
-      ".write": "auth != null && auth.token.poladent_admin === true"
+      ".write": "auth != null && auth.token.poladent_admin === true && root.child('autorizaciones_admin').child(auth.uid).child('activo').val() === true"
     },
     "nomina_recibos": {
-      ".write": "auth != null && auth.token.poladent_admin === true"
+      ".write": "auth != null && auth.token.poladent_admin === true && root.child('autorizaciones_admin').child(auth.uid).child('activo').val() === true"
     },
     "nomina_recibos_historial": {
-      ".write": "auth != null && auth.token.poladent_admin === true"
+      ".write": "auth != null && auth.token.poladent_admin === true && root.child('autorizaciones_admin').child(auth.uid).child('activo').val() === true"
     },
     "auditoria_nomina": {
-      ".write": "auth != null && auth.token.poladent_admin === true"
+      ".write": "auth != null && auth.token.poladent_admin === true && root.child('autorizaciones_admin').child(auth.uid).child('activo').val() === true"
     },
     "auditoria_restauraciones": {
-      ".write": "auth != null && auth.token.poladent_admin === true"
+      ".write": "auth != null && auth.token.poladent_admin === true && root.child('autorizaciones_admin').child(auth.uid).child('activo').val() === true"
     },
     "usuarios_admin": {
-      ".write": "auth != null && auth.token.poladent_admin === true"
+      ".write": "auth != null && auth.token.poladent_admin === true && root.child('autorizaciones_admin').child(auth.uid).child('activo').val() === true"
     },
     "auditoria_usuarios": {
-      ".write": "auth != null && auth.token.poladent_admin === true"
+      ".write": "auth != null && auth.token.poladent_admin === true && root.child('autorizaciones_admin').child(auth.uid).child('activo').val() === true"
     },
     "auditoria_eliminaciones": {
-      ".write": "auth != null && auth.token.poladent_admin === true"
+      ".write": "auth != null && auth.token.poladent_admin === true && root.child('autorizaciones_admin').child(auth.uid).child('activo').val() === true"
     },
     "directorio_empleados_ocultos": {
-      ".write": "auth != null && auth.token.poladent_admin === true"
+      ".write": "auth != null && auth.token.poladent_admin === true && root.child('autorizaciones_admin').child(auth.uid).child('activo').val() === true"
     },
     "empresas": {
-      ".write": "auth != null && auth.token.poladent_admin === true"
+      ".write": "auth != null && auth.token.poladent_admin === true && root.child('autorizaciones_admin').child(auth.uid).child('activo').val() === true"
     },
     "licencias": {
-      ".write": "auth != null && auth.token.poladent_admin === true"
+      ".write": "auth != null && auth.token.poladent_admin === true && root.child('autorizaciones_admin').child(auth.uid).child('activo').val() === true"
     },
     "licencias_v1": {
-      ".write": "auth != null && auth.token.poladent_admin === true"
+      ".write": "auth != null && auth.token.poladent_admin === true && root.child('autorizaciones_admin').child(auth.uid).child('activo').val() === true"
     },
     "configuracion_empresa": {
-      ".write": "auth != null && auth.token.poladent_admin === true"
+      ".write": "auth != null && auth.token.poladent_admin === true && root.child('autorizaciones_admin').child(auth.uid).child('activo').val() === true"
     },
     "_sesiones_asistencia": {
       ".read": false,
-      ".write": false
+      ".write": "auth != null && auth.token.poladent_admin === true && root.child('autorizaciones_admin').child(auth.uid).child('activo').val() === true"
     },
     "_seguridad_intentos_pin": {
       ".read": false,
+      ".write": "auth != null && auth.token.poladent_admin === true && root.child('autorizaciones_admin').child(auth.uid).child('activo').val() === true"
+    },
+    "autorizaciones_admin": {
+      ".read": false,
+      ".write": false
+    },
+    "auditoria_seguridad_config": {
       ".write": false
     }
   }
