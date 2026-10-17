@@ -1,0 +1,111 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "empleados": {
+      ".read": "auth != null && auth.token.poladent_admin === true",
+      ".write": false
+    },
+    "marcaciones": {
+      ".read": "auth != null && auth.token.poladent_admin === true",
+      ".write": false
+    },
+    "nomina_ajustes": {
+      ".read": "auth != null && auth.token.poladent_admin === true",
+      ".write": false
+    },
+    "nomina_recibos": {
+      ".read": "auth != null && auth.token.poladent_admin === true",
+      ".write": false
+    },
+    "nomina_recibos_historial": {
+      ".read": "auth != null && auth.token.poladent_admin === true",
+      ".write": false
+    },
+    "auditoria_nomina": {
+      ".read": "auth != null && auth.token.poladent_admin === true",
+      ".write": false
+    },
+    "auditoria_ediciones": {
+      ".read": "auth != null && auth.token.poladent_admin === true",
+      ".write": false
+    },
+    "auditoria_dispositivos": {
+      ".read": "auth != null && auth.token.poladent_admin === true",
+      ".write": false
+    },
+    "auditoria_eliminaciones": {
+      ".read": "auth != null && auth.token.poladent_admin === true",
+      ".write": false
+    },
+    "auditoria_restauraciones": {
+      ".read": "auth != null && auth.token.poladent_admin === true",
+      ".write": false
+    },
+    "auditoria_usuarios": {
+      ".read": "auth != null && auth.token.poladent_admin === true",
+      ".write": false
+    },
+    "alertas_seguridad": {
+      ".read": "auth != null && auth.token.poladent_admin === true",
+      ".write": false
+    },
+    "alertas_gps": {
+      ".read": "auth != null && auth.token.poladent_admin === true",
+      ".write": false
+    },
+    "dispositivos_marcacion": {
+      ".read": "auth != null && auth.token.poladent_admin === true",
+      ".write": false
+    },
+    "dispositivos_empleados": {
+      ".read": "auth != null && auth.token.poladent_admin === true",
+      ".write": false
+    },
+    "solicitudes_dispositivo": {
+      ".read": "auth != null && auth.token.poladent_admin === true",
+      ".write": false
+    },
+    "usuarios_admin": {
+      ".read": "auth != null && auth.token.poladent_admin === true",
+      ".write": false
+    },
+    "roles_v44": {
+      ".read": "auth != null && auth.token.poladent_admin === true",
+      ".write": false
+    },
+    "permisos_roles_v44": {
+      ".read": "auth != null && auth.token.poladent_admin === true",
+      ".write": false
+    },
+    "catalogo_roles_v45": {
+      ".read": "auth != null && auth.token.poladent_admin === true",
+      ".write": false
+    },
+    "configuracion_seguridad_asistencia": {
+      ".read": "auth != null && auth.token.poladent_admin === true",
+      ".write": false
+    },
+    "configuracion_gps_v51": {
+      ".read": "auth != null && auth.token.poladent_admin === true",
+      ".write": false
+    },
+    "configuracion_v44": {
+      ".read": "auth != null && auth.token.poladent_admin === true",
+      ".write": false
+    },
+    "dias_libres_empleado": {
+      ".read": "auth != null && auth.token.poladent_admin === true",
+      ".write": false
+    },
+    "justificaciones_v44": {
+      ".read": "auth != null && auth.token.poladent_admin === true",
+      ".write": false
+    },
+    "feriados_global": {
+      ".read": "auth != null && auth.token.poladent_admin === true",
+      ".write": false
+    },
+    ".validate": true
+  }
+}
