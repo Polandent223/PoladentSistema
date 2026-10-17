@@ -17,22 +17,23 @@ const ROUTE={
  seguridad:'seguridad',auditoria:'seguridad',respaldo:'configuracion',diagnostico:'configuracion',configuracion:'configuracion',
  empresas:'empresas',licencia:'licencia'
 };
-let role='administrador', permissions=new Set(BUILTIN.administrador), ready=false, email='';
+let role='sin_verificar', permissions=new Set(), ready=false, email='',fallosVerificacion=0;
 const key=e=>String(e||'').toLowerCase().replace(/[.#$\[\]]/g,'_');
 const db=()=>window.firebase?.apps?.length?firebase.database():null;
 function notice(msg){
  let n=$('#soAccessNotice');if(!n){n=document.createElement('div');n.id='soAccessNotice';n.style.cssText='position:fixed;z-index:99999;left:50%;top:18px;transform:translateX(-50%);max-width:min(92vw,620px);padding:12px 16px;border-radius:12px;background:#7f1d1d;color:#fff;font-weight:700;box-shadow:0 8px 28px #0004';document.body.appendChild(n)}
  n.textContent=msg;n.hidden=false;clearTimeout(notice.t);notice.t=setTimeout(()=>n.hidden=true,4200);
 }
-function allowedRoute(route){if(!ready)return true;const p=ROUTE[route]||'configuracion';return permissions.has(p)}
+function allowedRoute(route){if(!ready)return false;const p=ROUTE[route]||'configuracion';return permissions.has(p)}
 function applyNav(){
  $$('#plu-nav button[data-route]').forEach(b=>{const ok=allowedRoute(b.dataset.route);b.hidden=!ok;b.disabled=!ok;b.setAttribute('aria-hidden',ok?'false':'true')});
  const badge=$('#soRoleBadge');if(badge){badge.textContent=`Rol: ${role}${email?' · '+email:''}`;badge.hidden=false}
 }
 async function loadAccess(user){
- if(!user||user.isAnonymous){ready=false;return}
+ if(!user||user.isAnonymous){ready=false;role='sin_verificar';permissions=new Set();email='';applyNav();return}
+ ready=false;role='sin_verificar';permissions=new Set();applyNav();
  email=(user.email||'').toLowerCase();
- const d=db();if(!d){role='administrador';permissions=new Set(BUILTIN.administrador);ready=true;applyNav();return}
+ const d=db();if(!d){role='sin_verificar';permissions=new Set();ready=true;applyNav();notice('No se pudo comprobar el acceso administrativo. Comprueba la conexión.');return}
  try{
    // Lee usuario y asignación en paralelo para no demorar el acceso.
    const [userSnap,assignSnap]=await Promise.all([
@@ -56,12 +57,14 @@ async function loadAccess(user){
    const custom=customSnap.val(),cat=catSnap.val();
    if(custom&&Array.isArray(custom.permisos))perms=custom.permisos;
    if(cat&&cat.activo===false){role='sin_acceso';perms=[]}
-   permissions=new Set(perms);ready=true;applyNav();
+   permissions=new Set(perms);ready=true;fallosVerificacion=0;applyNav();
    document.dispatchEvent(new CustomEvent('poladent:permissions-ready',{detail:{email,role,permissions:[...permissions]}}));
  }catch(e){
    console.error('[Poladent] No se pudieron cargar permisos:',e);
-   // Fail-safe para no bloquear al administrador histórico por un fallo de lectura.
-   role='administrador';permissions=new Set(BUILTIN.administrador);ready=true;applyNav();
+   // Fallo de verificación: NO conceder permisos administrativos por defecto.
+   role='sin_verificar';permissions=new Set();ready=true;applyNav();
+   notice('No se pudieron validar los permisos. Las acciones administrativas permanecen bloqueadas hasta recuperar la conexión.');
+   if(++fallosVerificacion<=3){const espera=3000*fallosVerificacion;setTimeout(()=>{const actual=firebase.auth().currentUser;if(actual&&!actual.isAnonymous&&actual.uid===user.uid)loadAccess(actual);},espera);}
  }
 }
 document.addEventListener('poladent:route',e=>{
@@ -81,6 +84,7 @@ function mountBadge(){
 function syncUi(){mountBadge();if(ready)applyNav()}
 function init(){
  mountBadge();
+ window.addEventListener('online',()=>{const u=firebase.auth?.().currentUser;if(u&&!u.isAnonymous)loadAccess(u);});
  if(window.firebase?.auth)firebase.auth().onAuthStateChanged(u=>loadAccess(u));
  // Fase 19.3: sin MutationObserver global. El anterior reaccionaba a miles de
  // cambios de tablas al entrar y podía congelar Chrome/Android.
@@ -90,6 +94,6 @@ function init(){
  // Dos pasadas acotadas cubren el montaje tardío del menú sin ciclos permanentes.
  setTimeout(syncUi,900);setTimeout(syncUi,1800);
 }
-window.PoladentSecurity={can:p=>!ready||permissions.has(p),role:()=>role,permissions:()=>[...permissions],refresh:()=>loadAccess(firebase.auth().currentUser)};
+window.PoladentSecurity={can:p=>ready&&permissions.has(p),role:()=>role,permissions:()=>[...permissions],refresh:()=>loadAccess(firebase.auth().currentUser)};
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
