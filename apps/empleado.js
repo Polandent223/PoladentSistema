@@ -190,7 +190,12 @@
     if(!authUid)throw new Error('No hay una sesion autenticada para verificar este telefono. Recarga la pagina.');
     let asignacion={};
     try{asignacion=(await db().ref('dispositivos_empleados/'+eid).once('value')).val()||{};}
-    catch(err){if(obligatorio)throw new Error('No fue posible comprobar el teléfono autorizado en Firebase. La marcación no fue registrada.');console.warn('[Poladent] Consulta de registro no disponible; modo preparación sin bloqueo.',err);return;}
+    catch(err){
+      // Firebase puede ocultar el dispositivo ya vinculado a una sesión distinta.
+      // Eso no impide enviar una solicitud nueva: la marcación seguirá bloqueada.
+      if(err?.code==='PERMISSION_DENIED')asignacion={};
+      else {if(obligatorio)throw new Error('No fue posible comprobar el teléfono autorizado en Firebase. La marcación no fue registrada.');console.warn('[Poladent] Consulta de registro no disponible; modo preparación sin bloqueo.',err);return;}
+    }
     if(asignacion.dispositivoId===did&&asignacion.authUid===authUid&&asignacion.activo!==false)return;
     const solicitud=db().ref('solicitudes_dispositivo/'+eid+'/'+did);
     try{
