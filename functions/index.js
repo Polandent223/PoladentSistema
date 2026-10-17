@@ -129,7 +129,7 @@ exports.poladentMarcarAsistencia=onCall(settings,async request=>{
  let nuevoBloqueo=false;
  if(allConfig.seg.bloquearDispositivoJornada!==false){
    const rt=await devRef.transaction(current=>{
-     if(current?.fecha===fecha){
+     if(current?.fecha===fecha && current.estado!=='fallida'){
        if(String(current.empleadoId)!==String(eid))return;
        return current;
      }
@@ -170,11 +170,13 @@ exports.poladentMarcarAsistencia=onCall(settings,async request=>{
      sedeNombre:gps.sede?.nombre||null};
  }finally{
    if(!committed&&nuevoBloqueo){
-     // Liberar solo una reserva fallida SIN marcaciones persistidas en esa jornada.
+     // Conservar la reserva fallida como evidencia; permitir reintentar sin eliminarla.
      const marcado=(await markRef.once('value')).val()||{};
      const hayExito=Object.values(marcado).some(v=>v?.dispositivoId===device);
      if(!hayExito){
-       await devRef.transaction(current=>current?.reserva===reserva?null:undefined,undefined,false);
+       await devRef.transaction(current=>current?.reserva===reserva
+         ? {...current,estado:'fallida',falloRegistradoEn:ServerValue.TIMESTAMP}
+         : undefined,undefined,false);
      }
    }
  }
