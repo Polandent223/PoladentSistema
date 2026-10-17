@@ -174,6 +174,11 @@ exports.poladentMarcarAsistencia=onCall(settings,async request=>{
      const marcado=(await markRef.once('value')).val()||{};
      const hayExito=Object.values(marcado).some(v=>v?.dispositivoId===device);
      if(!hayExito){
+       // El historial independiente evita que un reintento sobreescriba esta evidencia.
+       await db().ref('auditoria_reservas_marcacion').push().set({
+         evento:'reserva_fallida',empleadoId:eid,authUid:uid,
+         dispositivoId:device,fecha,tipo,reserva,registradoEn:ServerValue.TIMESTAMP
+       });
        await devRef.transaction(current=>current?.reserva===reserva
          ? {...current,estado:'fallida',falloRegistradoEn:ServerValue.TIMESTAMP}
          : undefined,undefined,false);
